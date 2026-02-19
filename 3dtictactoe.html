@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Tic-Tac-Toe — 5×5×5</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1d;
+    --surface3: #222226;
+    --border: #252528;
+    --text: #e8e8ea;
+    --muted: #666670;
+    --accent: #c8ff4a;
+    --accent2: #ff6b6b;
+    --accent3: #60efff;
+    --p1: #c8ff4a;
+    --p2: #ff6b6b;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.6;
+  }
+
+  body { display: flex; flex-direction: column; align-items: center; }
+
+  header {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 24px 0;
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .version { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1000px;
+    padding: 0 24px 60px;
+    flex: 1;
+  }
+  .screen.active { display: flex; animation: fadeIn 0.3s ease both; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); font-weight: 500; }
+  .btn.primary:hover { background: #d4ff6a; }
+  .btn.sm { padding: 7px 16px; font-size: 11px; border-radius: 8px; }
+
+  /* ── HOME ── */
+  #home { justify-content: center; }
+
+  .hero-gap { height: 52px; }
+  .hero-eyebrow { font-size: 11px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 20px; text-align: center; }
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(48px, 10vw, 88px);
+    line-height: 1;
+    letter-spacing: -3px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.03em;
+    max-width: 400px;
+    line-height: 1.8;
+    margin-bottom: 52px;
+  }
+
+  /* ── ROTATING 3D CUBE HERO ── */
+  .hero-scene {
+    width: 220px;
+    height: 220px;
+    perspective: 600px;
+    margin-bottom: 52px;
+  }
+  .hero-cube {
+    width: 160px;
+    height: 160px;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: heroSpin 18s linear infinite;
+    margin: 30px;
+  }
+  @keyframes heroSpin {
+    from { transform: rotateX(-20deg) rotateY(0deg); }
+    to   { transform: rotateX(-20deg) rotateY(360deg); }
+  }
+  .hf {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border: 1px solid rgba(200, 255, 74, 0.12);
+    border-radius: 6px;
+    background: rgba(17, 17, 19, 0.6);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 10px;
+    backface-visibility: visible;
+  }
+  .hf-front  { transform: translateZ(80px); }
+  .hf-back   { transform: rotateY(180deg) translateZ(80px); }
+  .hf-left   { transform: rotateY(-90deg) translateZ(80px); }
+  .hf-right  { transform: rotateY(90deg) translateZ(80px); }
+  .hf-top    { transform: rotateX(90deg) translateZ(80px); }
+  .hf-bottom { transform: rotateX(-90deg) translateZ(80px); }
+  .hf .hc {
+    border-radius: 3px;
+    border: 1px solid rgba(200, 255, 74, 0.08);
+    background: rgba(200, 255, 74, 0.02);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .hc.hx { color: var(--p1); background: rgba(200, 255, 74, 0.08); border-color: rgba(200, 255, 74, 0.2); }
+  .hc.ho { color: var(--p2); background: rgba(255, 107, 107, 0.08); border-color: rgba(255, 107, 107, 0.2); }
+
+  .home-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* ── GAME ── */
+  #game { padding-top: 28px; gap: 16px; justify-content: flex-start; min-height: calc(100vh - 80px); }
+
+  .game-bar {
+    width: 100%; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .game-title { font-family: 'Instrument Serif', serif; font-size: 20px; letter-spacing: -0.5px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    display: flex; gap: 6px; align-items: center; transition: all 0.3s;
+    font-variant-numeric: tabular-nums;
+  }
+  .chip strong { color: var(--text); font-weight: 400; transition: color 0.3s; }
+  .chip .cdot {
+    width: 8px; height: 8px; border-radius: 50%;
+    animation: blinker 2s ease infinite;
+  }
+  @keyframes blinker { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .game-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── LAYER TABS ── */
+  .layer-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .layer-tab {
+    padding: 8px 18px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .layer-tab:hover { color: var(--text); }
+  .layer-tab.active {
+    background: var(--surface2);
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  /* ── 3D INTERACTIVE CUBES ── */
+  .scene-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    min-height: 380px;
+    width: 100%;
+  }
+  .scene-wrap.active { display: flex; }
+
+  .cube-scene {
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1;
+    perspective: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    position: relative;
+  }
+
+  .cube-3d {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-25deg) rotateY(-35deg);
+  }
+
+  .mini-cube {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    transform-style: preserve-3d;
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                width 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                margin 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .mini-cube:hover:not(.filled) .cf { border-color: var(--muted); background: rgba(34, 34, 38, 0.95); }
+  .mini-cube.filled { cursor: not-allowed; }
+  .mini-cube.dimmed { opacity: 0.06; pointer-events: none; }
+  .mini-cube.x .cf { background: rgba(200, 255, 74, 0.12); border-color: rgba(200, 255, 74, 0.35); }
+  .mini-cube.o .cf { background: rgba(255, 107, 107, 0.12); border-color: rgba(255, 107, 107, 0.35); }
+  .mini-cube.wc .cf { animation: winGlow 0.8s ease infinite; }
+  .mini-cube.x.wc .cf { box-shadow: 0 0 8px rgba(200, 255, 74, 0.3); }
+  .mini-cube.o.wc .cf { box-shadow: 0 0 8px rgba(255, 107, 107, 0.3); }
+
+  .cf {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    background: rgba(26, 26, 29, 0.92);
+    border: 1px solid rgba(37, 37, 40, 0.7);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    backface-visibility: hidden;
+    transition: width 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                font-size 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .cf-front  { transform: translateZ(14px); }
+  .cf-back   { transform: rotateY(180deg) translateZ(14px); }
+  .cf-left   { transform: rotateY(-90deg) translateZ(14px); }
+  .cf-right  { transform: rotateY(90deg) translateZ(14px); }
+  .cf-top    { transform: rotateX(90deg) translateZ(14px); }
+  .cf-bottom { transform: rotateX(-90deg) translateZ(14px); }
+
+  @keyframes facePop {
+    0%   { opacity: 0; }
+    40%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  @keyframes faceBounce {
+    0%   { scale: 0.3; }
+    60%  { scale: 1.12; }
+    100% { scale: 1; }
+  }
+  .mini-cube.cube-pop .cf {
+    animation: facePop 0.3s ease both, faceBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .scene-hint {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    opacity: 0.5;
+  }
+
+  body.view-3d .mini-cube:not(.filled) { cursor: pointer; }
+
+  /* ── FLAT VIEW ── */
+  .flat-view {
+    display: none;
+    gap: 12px;
+    width: 100%;
+    max-width: 720px;
+    justify-content: center;
+  }
+  .flat-view.active { display: flex; flex-wrap: wrap; }
+
+  .flat-layer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    transition: opacity 0.3s;
+  }
+  .flat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .flat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 3px;
+    background: var(--surface);
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .flat-layer.hl .flat-grid {
+    border-color: var(--accent);
+  }
+
+  /* ── CELLS (shared) ── */
+  .gc {
+    width: clamp(28px, 6vw, 40px);
+    height: clamp(28px, 6vw, 40px);
+    border-radius: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(13px, 3vw, 18px);
+    font-weight: 600;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .gc:hover:not(.filled) {
+    background: var(--surface3);
+    border-color: var(--muted);
+    transform: scale(1.08);
+  }
+  .gc:active:not(.filled) { transform: scale(0.94); }
+  .gc.filled { cursor: not-allowed; }
+  .gc.x {
+    background: rgba(200, 255, 74, 0.10);
+    border-color: var(--p1);
+    color: var(--p1);
+  }
+  .gc.o {
+    background: rgba(255, 107, 107, 0.10);
+    border-color: var(--p2);
+    color: var(--p2);
+  }
+  .gc.wc {
+    animation: winGlow 0.8s ease infinite;
+  }
+  .gc.x.wc { box-shadow: 0 0 10px rgba(200, 255, 74, 0.35); }
+  .gc.o.wc { box-shadow: 0 0 10px rgba(255, 107, 107, 0.35); }
+  @keyframes winGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes cellPop { 0% { transform: scale(0.5); opacity: 0.3; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  .gc.pop { animation: cellPop 0.2s ease both; }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    width: 100%; max-width: 500px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 13px 20px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
+    transition: border-color 0.3s;
+  }
+  .status-bar .sd {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; transition: background 0.3s;
+    animation: blinker 2s ease infinite;
+  }
+
+  .game-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  /* ── MODALS ── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78); z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
+
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 44px; max-width: 440px;
+    width: calc(100% - 48px); display: flex; flex-direction: column;
+    align-items: center; gap: 20px; text-align: center;
+  }
+
+  .modal-icon { font-size: 54px; line-height: 1; }
+  .modal-heading {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(32px, 7vw, 52px);
+    letter-spacing: -2px; line-height: 1;
+  }
+  .modal-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; line-height: 1.8; max-width: 340px; }
+
+  .modal-stats { display: flex; gap: 12px; width: 100%; justify-content: center; flex-wrap: wrap; }
+  .modal-stat {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 20px; flex: 1; min-width: 80px;
+  }
+  .modal-stat .v { font-family: 'Instrument Serif', serif; font-size: 28px; letter-spacing: -1px; display: block; }
+  .modal-stat .l { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+
+  .modal-actions { display: flex; gap: 10px; width: 100%; }
+  .modal-actions .btn { flex: 1; text-align: center; }
+
+  .howto-modal { max-width: 500px; align-items: flex-start; text-align: left; gap: 0; }
+  .how-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--accent); flex-shrink: 0; margin-top: 2px;
+  }
+  .step-text { font-size: 12px; color: var(--muted); line-height: 1.8; letter-spacing: 0.03em; }
+  .step-text strong { color: var(--text); font-weight: 400; }
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ── FOOTER ── */
+  footer {
+    max-width: 1000px;
+    margin: 60px auto 0;
+    padding: 32px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .flat-view { gap: 8px; }
+    .gc { width: 24px; height: 24px; font-size: 10px; }
+    .flat-grid { gap: 2px; padding: 4px; }
+    .cube-scene { max-width: 320px; }
+    .modal { padding: 28px; }
+    .chips { gap: 4px; }
+    .layer-tab { padding: 6px 10px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" onclick="nav('home')">3D TTT<span>.</span></a>
+  <div class="header-right">
+    <span class="version">v1.0</span>
+    <button class="btn sm" onclick="openModal('howto')">How to Play</button>
+  </div>
+</header>
+
+<!-- ══ HOME ══ -->
+<div id="home" class="screen active">
+  <div class="hero-gap"></div>
+  <p class="hero-eyebrow">Two players · One cube</p>
+  <h1 class="hero-title">Tic-Tac-<br><em>Toe<span style="color:var(--accent)">.</span></em></h1>
+  <p class="hero-sub">5×5×5 three-dimensional grid. Get five in a row — in any direction, on any axis — to win.</p>
+
+  <!-- Rotating 3D cube preview -->
+  <div class="hero-scene">
+    <div class="hero-cube" id="heroCube">
+      <div class="hf hf-front"></div>
+      <div class="hf hf-back"></div>
+      <div class="hf hf-left"></div>
+      <div class="hf hf-right"></div>
+      <div class="hf hf-top"></div>
+      <div class="hf hf-bottom"></div>
+    </div>
+  </div>
+
+  <div class="home-actions">
+    <button class="btn primary" onclick="startGame()">Start Game →</button>
+    <button class="btn" onclick="openModal('howto')">How to Play</button>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="game" class="screen">
+  <div class="game-bar">
+    <span class="game-title" id="turnTitle">Player 1's Turn</span>
+    <div class="chips">
+      <div class="chip" id="turnChip">
+        <div class="cdot" id="turnDot" style="background:var(--p1);"></div>
+        <span>Turn: <strong id="turnLabel">X</strong></span>
+      </div>
+      <div class="chip">Moves: <strong id="moveCount">0</strong></div>
+    </div>
+  </div>
+
+  <div class="layer-tabs" id="layerTabs"></div>
+
+  <div class="game-container">
+    <div class="flat-view active" id="flatView"></div>
+    <div class="scene-wrap" id="sceneWrap">
+      <div class="cube-scene" id="cubeScene">
+        <div class="cube-3d" id="gameCube"></div>
+      </div>
+      <p class="scene-hint">right-click drag to rotate · shift + scroll to explode · left-click cubes to play</p>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div class="sd" id="statusDot" style="background:var(--p1);"></div>
+    <span id="statusText">Player 1 (X) to move — All layers</span>
+  </div>
+
+  <div class="game-actions">
+    <button class="btn sm" id="viewBtn" onclick="toggleView()">3D View</button>
+    <button class="btn sm" onclick="openModal('howto')">Rules</button>
+    <button class="btn sm" onclick="confirmReset()">New Game</button>
+    <button class="btn sm" onclick="nav('home')">Home</button>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══ -->
+<div class="modal-backdrop" id="howtoModal">
+  <div class="modal howto-modal">
+    <h2 class="modal-heading" style="width:100%; text-align:center; margin-bottom:8px;">How to Play</h2>
+    <div class="divider"></div>
+    <div class="how-step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Two players</strong> take turns placing X and O on a 5×5×5 grid.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">2</div>
+      <div class="step-text">The cube is shown as <strong>5 layers</strong>. Click tabs to focus a layer, or switch to 3D view to rotate the cube.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">3</div>
+      <div class="step-text">In 3D view, <strong>right-click drag</strong> anywhere to rotate. Hold <strong>Shift + scroll</strong> to explode the cube apart so you can reach inner cells.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">4</div>
+      <div class="step-text">Get <strong>5 in a row</strong> to win — horizontal, vertical, diagonal, through depth, or any 3D diagonal.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">5</div>
+      <div class="step-text">There are <strong>109 possible winning lines</strong>: rows, columns, pillars, face diagonals, and space diagonals.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">6</div>
+      <div class="step-text">If all <strong>125 cells</strong> are filled with no winner, the game is a draw.</div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn primary" onclick="closeModal('howto')" style="width:100%; text-align:center;">Got it</button>
+  </div>
+</div>
+
+<!-- ══ WIN MODAL ══ -->
+<div class="modal-backdrop" id="winModal">
+  <div class="modal">
+    <div class="modal-icon" id="winIcon">🎉</div>
+    <h2 class="modal-heading" id="winHeading">Player 1 Wins!</h2>
+    <p class="modal-sub" id="winSub">Five in a row</p>
+    <div class="modal-stats">
+      <div class="modal-stat"><span class="v" id="winMoves">—</span><span class="l">Moves</span></div>
+      <div class="modal-stat"><span class="v" id="winType">—</span><span class="l">Line type</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('win'); nav('home')">Home</button>
+      <button class="btn primary" onclick="closeModal('win'); resetGame()">Play Again →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DRAW MODAL ══ -->
+<div class="modal-backdrop" id="drawModal">
+  <div class="modal">
+    <div class="modal-icon">🤝</div>
+    <h2 class="modal-heading">Draw<span style="color:var(--accent)">.</span></h2>
+    <p class="modal-sub">All 125 cells filled — nobody wins this round.</p>
+    <div class="modal-stats">
+      <div class="modal-stat"><span class="v">125</span><span class="l">Moves</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('draw'); nav('home')">Home</button>
+      <button class="btn primary" onclick="closeModal('draw'); resetGame()">Play Again →</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
+  <span>Made with love · 3D TTT v1.0<span style="color:var(--accent)">.</span></span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════
+//  CONSTANTS & STATE
+// ═══════════════════════════════════════
+const S = 5;
+const TOTAL = S * S * S; // 125
+
+let grid = [];       // [layer][row][col] → 0=empty, 1=P1(X), 2=P2(O)
+let player = 1;
+let moves = 0;
+let over = false;
+let focusLayer = -1; // -1 = all
+let view = 'flat';
+let winResult = null;
+
+// 3D drag state
+let dragging = false;
+let dragX0 = 0, dragY0 = 0;
+let rx = -25, ry = -35;
+let rx0 = 0, ry0 = 0;
+
+// Explode gap (Shift+scroll)
+let explodeGap = 10; // default gap between cubes
+const EXPLODE_MIN = 4;
+const EXPLODE_MAX = 120;
+
+// ═══════════════════════════════════════
+//  PRECOMPUTE ALL 109 WINNING LINES
+// ═══════════════════════════════════════
+const LINES = [];
+
+(function buildLines() {
+  // 1) Rows: fixed layer & row, col varies (5×5 = 25)
+  for (let l = 0; l < S; l++)
+    for (let r = 0; r < S; r++) {
+      const ln = [];
+      for (let c = 0; c < S; c++) ln.push([l, r, c]);
+      LINES.push({ cells: ln, type: 'Row' });
+    }
+
+  // 2) Columns: fixed layer & col, row varies (25)
+  for (let l = 0; l < S; l++)
+    for (let c = 0; c < S; c++) {
+      const ln = [];
+      for (let r = 0; r < S; r++) ln.push([l, r, c]);
+      LINES.push({ cells: ln, type: 'Column' });
+    }
+
+  // 3) In-layer diagonals (2 per layer = 10)
+  for (let l = 0; l < S; l++) {
+    const a = [], b = [];
+    for (let i = 0; i < S; i++) {
+      a.push([l, i, i]);
+      b.push([l, i, S - 1 - i]);
+    }
+    LINES.push({ cells: a, type: 'Diagonal' });
+    LINES.push({ cells: b, type: 'Diagonal' });
+  }
+
+  // 4) Pillars: fixed row & col, layer varies (25)
+  for (let r = 0; r < S; r++)
+    for (let c = 0; c < S; c++) {
+      const ln = [];
+      for (let l = 0; l < S; l++) ln.push([l, r, c]);
+      LINES.push({ cells: ln, type: 'Pillar' });
+    }
+
+  // 5) Layer-col diagonals: fixed row, layer & col vary (2 per row = 10)
+  for (let r = 0; r < S; r++) {
+    const a = [], b = [];
+    for (let i = 0; i < S; i++) {
+      a.push([i, r, i]);
+      b.push([i, r, S - 1 - i]);
+    }
+    LINES.push({ cells: a, type: '3D Diagonal' });
+    LINES.push({ cells: b, type: '3D Diagonal' });
+  }
+
+  // 6) Layer-row diagonals: fixed col, layer & row vary (2 per col = 10)
+  for (let c = 0; c < S; c++) {
+    const a = [], b = [];
+    for (let i = 0; i < S; i++) {
+      a.push([i, i, c]);
+      b.push([i, S - 1 - i, c]);
+    }
+    LINES.push({ cells: a, type: '3D Diagonal' });
+    LINES.push({ cells: b, type: '3D Diagonal' });
+  }
+
+  // 7) Space diagonals: all 3 coords vary (4)
+  const corners = [
+    [[0,0,0],[1,1,1],[2,2,2],[3,3,3],[4,4,4]],
+    [[0,0,4],[1,1,3],[2,2,2],[3,3,1],[4,4,0]],
+    [[0,4,0],[1,3,1],[2,2,2],[3,1,3],[4,0,4]],
+    [[0,4,4],[1,3,3],[2,2,2],[3,1,1],[4,0,0]],
+  ];
+  for (const c of corners) LINES.push({ cells: c, type: 'Space Diagonal' });
+})();
+// Total: 25+25+10+25+10+10+4 = 109 ✓
+
+// ═══════════════════════════════════════
+//  INIT / RESET
+// ═══════════════════════════════════════
+
+function mkGrid() {
+  grid = [];
+  for (let l = 0; l < S; l++) {
+    grid[l] = [];
+    for (let r = 0; r < S; r++)
+      grid[l][r] = new Array(S).fill(0);
+  }
+}
+
+function startGame() {
+  mkGrid();
+  player = 1;
+  moves = 0;
+  over = false;
+  winResult = null;
+  focusLayer = -1;
+  view = 'flat';
+  rx = -25; ry = -35;
+  explodeGap = 10;
+  document.getElementById('flatView').classList.add('active');
+  document.getElementById('sceneWrap').classList.remove('active');
+  const vb = document.getElementById('viewBtn');
+  if (vb) vb.textContent = '3D View';
+  document.body.classList.remove('view-3d', 'dragging-cube');
+  buildTabs();
+  renderFlat();
+  render3D();
+  updateHUD();
+  nav('game');
+}
+
+function resetGame() { startGame(); }
+
+function confirmReset() {
+  if (moves > 0 && !over) {
+    if (!confirm('Start a new game? Current progress will be lost.')) return;
+  }
+  resetGame();
+}
+
+// ═══════════════════════════════════════
+//  LAYER TABS
+// ═══════════════════════════════════════
+
+function buildTabs() {
+  const wrap = document.getElementById('layerTabs');
+  wrap.innerHTML = '';
+
+  const all = document.createElement('button');
+  all.className = 'layer-tab' + (focusLayer === -1 ? ' active' : '');
+  all.textContent = 'All';
+  all.onclick = () => setFocus(-1);
+  wrap.appendChild(all);
+
+  for (let l = 0; l < S; l++) {
+    const t = document.createElement('button');
+    t.className = 'layer-tab' + (focusLayer === l ? ' active' : '');
+    t.textContent = `L${l + 1}`;
+    t.onclick = () => setFocus(l);
+    wrap.appendChild(t);
+  }
+}
+
+function setFocus(l) {
+  focusLayer = l;
+
+  // Update tabs
+  document.querySelectorAll('.layer-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 ? -1 : i - 1) === l);
+  });
+
+  // Update flat layers
+  document.querySelectorAll('.flat-layer').forEach(el => {
+    const ll = +el.dataset.l;
+    if (l === -1) {
+      el.classList.add('hl');
+      el.style.opacity = '1';
+    } else {
+      el.classList.toggle('hl', ll === l);
+      el.style.opacity = ll === l ? '1' : '0.25';
+    }
+  });
+
+  // Update 3D cubes
+  document.querySelectorAll('.mini-cube').forEach(el => {
+    const ll = +el.dataset.l;
+    if (l === -1) el.classList.remove('dimmed');
+    else el.classList.toggle('dimmed', ll !== l);
+  });
+
+  updateStatus();
+}
+
+// ═══════════════════════════════════════
+//  FLAT VIEW RENDERING
+// ═══════════════════════════════════════
+
+function renderFlat() {
+  const box = document.getElementById('flatView');
+  box.innerHTML = '';
+
+  for (let l = 0; l < S; l++) {
+    const layerDiv = document.createElement('div');
+    layerDiv.className = 'flat-layer' + (focusLayer === -1 || focusLayer === l ? ' hl' : '');
+    layerDiv.dataset.l = l;
+    if (focusLayer !== -1 && focusLayer !== l) layerDiv.style.opacity = '0.25';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'flat-label';
+    lbl.textContent = `Layer ${l + 1}`;
+    layerDiv.appendChild(lbl);
+
+    const g = document.createElement('div');
+    g.className = 'flat-grid';
+
+    for (let r = 0; r < S; r++) {
+      for (let c = 0; c < S; c++) {
+        g.appendChild(makeCell(l, r, c));
+      }
+    }
+
+    layerDiv.appendChild(g);
+    box.appendChild(layerDiv);
+  }
+}
+
+function makeCell(l, r, c) {
+  const el = document.createElement('div');
+  el.className = 'gc';
+  el.dataset.l = l;
+  el.dataset.r = r;
+  el.dataset.c = c;
+
+  const v = grid[l][r][c];
+  if (v === 1) { el.classList.add('filled', 'x'); el.textContent = '✕'; }
+  else if (v === 2) { el.classList.add('filled', 'o'); el.textContent = '○'; }
+
+  // Win highlight
+  if (winResult) {
+    for (const p of winResult.cells) {
+      if (p[0] === l && p[1] === r && p[2] === c) {
+        el.classList.add('wc');
+        break;
+      }
+    }
+  }
+
+  el.addEventListener('click', () => play(l, r, c));
+  return el;
+}
+
+// ═══════════════════════════════════════
+//  3D VIEW RENDERING
+// ═══════════════════════════════════════
+
+function render3D() {
+  const cube = document.getElementById('gameCube');
+  cube.innerHTML = '';
+
+  const baseSize = 28;
+  const sizeScale = 1 + (explodeGap - 10) * 0.012; // cubes grow as gap increases
+  const cellSize = Math.round(baseSize * Math.max(1, sizeScale));
+  const step = cellSize + explodeGap;
+  const half = cellSize / 2;
+
+  for (let l = 0; l < S; l++) {
+    for (let r = 0; r < S; r++) {
+      for (let c = 0; c < S; c++) {
+        const x = (c - 2) * step;
+        const y = (r - 2) * step;
+        const z = (l - 2) * step;
+
+        const cell = document.createElement('div');
+        cell.className = 'mini-cube';
+        cell.dataset.l = l;
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+        cell.style.setProperty('--tx', x + 'px');
+        cell.style.setProperty('--ty', y + 'px');
+        cell.style.setProperty('--tz', z + 'px');
+        cell.style.width = cellSize + 'px';
+        cell.style.height = cellSize + 'px';
+        cell.style.margin = `-${half}px 0 0 -${half}px`;
+
+        const v = grid[l][r][c];
+        const mark = v === 1 ? '\u2715' : v === 2 ? '\u25CB' : '';
+        if (v === 1) cell.classList.add('filled', 'x');
+        else if (v === 2) cell.classList.add('filled', 'o');
+
+        if (focusLayer !== -1 && focusLayer !== l) cell.classList.add('dimmed');
+
+        if (winResult) {
+          for (const p of winResult.cells) {
+            if (p[0] === l && p[1] === r && p[2] === c) {
+              cell.classList.add('wc');
+              break;
+            }
+          }
+        }
+
+        const faceNames = ['front', 'back', 'left', 'right', 'top', 'bottom'];
+        const faceTransforms = [
+          `translateZ(${half}px)`,
+          `rotateY(180deg) translateZ(${half}px)`,
+          `rotateY(-90deg) translateZ(${half}px)`,
+          `rotateY(90deg) translateZ(${half}px)`,
+          `rotateX(90deg) translateZ(${half}px)`,
+          `rotateX(-90deg) translateZ(${half}px)`,
+        ];
+
+        for (let f = 0; f < 6; f++) {
+          const face = document.createElement('div');
+          face.className = `cf cf-${faceNames[f]}`;
+          face.style.transform = faceTransforms[f];
+          face.style.width = cellSize + 'px';
+          face.style.height = cellSize + 'px';
+          face.style.fontSize = Math.round(11 * sizeScale) + 'px';
+          if (mark) {
+            face.textContent = mark;
+            face.style.color = v === 1 ? 'var(--p1)' : 'var(--p2)';
+          }
+          cell.appendChild(face);
+        }
+
+        cell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          play(l, r, c);
+        });
+
+        cube.appendChild(cell);
+      }
+    }
+  }
+
+  cube.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+}
+
+// ═══════════════════════════════════════
+//  3D DRAG ROTATION
+// ═══════════════════════════════════════
+
+function initDrag() {
+  function isUI(el) {
+    return el.closest('.btn, .layer-tab, .chip, .modal-backdrop, header, footer, .status-bar, .mini-cube, .gc, a');
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 2) return; // right-click only
+    if (view !== '3d' || !document.getElementById('game').classList.contains('active')) return;
+    dragging = true;
+    document.body.classList.add('dragging-cube');
+    dragX0 = e.clientX; dragY0 = e.clientY;
+    rx0 = rx; ry0 = ry;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    ry = ry0 + (e.clientX - dragX0) * 0.4;
+    rx = Math.max(-80, Math.min(80, rx0 - (e.clientY - dragY0) * 0.4));
+    const cube = document.getElementById('gameCube');
+    if (cube) cube.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.classList.remove('dragging-cube');
+  });
+
+  document.addEventListener('touchstart', (e) => {
+    if (view !== '3d' || !document.getElementById('game').classList.contains('active')) return;
+    if (isUI(e.target)) return;
+    dragging = true;
+    dragX0 = e.touches[0].clientX; dragY0 = e.touches[0].clientY;
+    rx0 = rx; ry0 = ry;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    ry = ry0 + (e.touches[0].clientX - dragX0) * 0.4;
+    rx = Math.max(-80, Math.min(80, rx0 - (e.touches[0].clientY - dragY0) * 0.4));
+    const cube = document.getElementById('gameCube');
+    if (cube) cube.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    dragging = false;
+    document.body.classList.remove('dragging-cube');
+  });
+
+  // Shift+scroll to explode/collapse cube spacing
+  document.addEventListener('wheel', (e) => {
+    if (!e.shiftKey) return;
+    if (view !== '3d' || !document.getElementById('game').classList.contains('active')) return;
+    e.preventDefault();
+    explodeGap = Math.max(EXPLODE_MIN, Math.min(EXPLODE_MAX, explodeGap + (e.deltaY > 0 ? -6 : 6)));
+    updateExplode();
+  }, { passive: false });
+
+  // Disable context menu in 3D game view
+  document.addEventListener('contextmenu', (e) => {
+    if (view === '3d' && document.getElementById('game').classList.contains('active')) {
+      e.preventDefault();
+    }
+  });
+}
+
+// Smoothly update cube positions/sizes without rebuilding DOM
+function updateExplode() {
+  const baseSize = 28;
+  const sizeScale = 1 + (explodeGap - 10) * 0.012;
+  const cellSize = Math.round(baseSize * Math.max(1, sizeScale));
+  const step = cellSize + explodeGap;
+  const half = cellSize / 2;
+
+  document.querySelectorAll('.mini-cube').forEach(el => {
+    const l = +el.dataset.l, r = +el.dataset.r, c = +el.dataset.c;
+    const x = (c - 2) * step;
+    const y = (r - 2) * step;
+    const z = (l - 2) * step;
+    el.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+    el.style.setProperty('--tx', x + 'px');
+    el.style.setProperty('--ty', y + 'px');
+    el.style.setProperty('--tz', z + 'px');
+    el.style.width = cellSize + 'px';
+    el.style.height = cellSize + 'px';
+    el.style.margin = `-${half}px 0 0 -${half}px`;
+
+    el.querySelectorAll('.cf').forEach((face, f) => {
+      const faceTransforms = [
+        `translateZ(${half}px)`,
+        `rotateY(180deg) translateZ(${half}px)`,
+        `rotateY(-90deg) translateZ(${half}px)`,
+        `rotateY(90deg) translateZ(${half}px)`,
+        `rotateX(90deg) translateZ(${half}px)`,
+        `rotateX(-90deg) translateZ(${half}px)`,
+      ];
+      face.style.transform = faceTransforms[f];
+      face.style.width = cellSize + 'px';
+      face.style.height = cellSize + 'px';
+      face.style.fontSize = Math.round(11 * sizeScale) + 'px';
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════
+
+function play(l, r, c) {
+  if (over || grid[l][r][c] !== 0) return;
+
+  grid[l][r][c] = player;
+  moves++;
+
+  // Re-render
+  renderFlat();
+  render3D();
+
+  // Pop animation on placed cell
+  document.querySelectorAll(`.gc[data-l="${l}"][data-r="${r}"][data-c="${c}"]`).forEach(el => {
+    el.classList.add('pop');
+  });
+
+  // Pop animation on 3D mini-cube
+  document.querySelectorAll(`.mini-cube[data-l="${l}"][data-r="${r}"][data-c="${c}"]`).forEach(el => {
+    el.classList.add('cube-pop');
+  });
+
+  // Check win
+  const result = checkWin(l, r, c);
+  if (result) {
+    over = true;
+    winResult = result;
+    renderFlat();
+    render3D();
+    updateHUD();
+    setTimeout(() => showWin(player, result), 600);
+    return;
+  }
+
+  // Check draw
+  if (moves >= TOTAL) {
+    over = true;
+    updateHUD();
+    setTimeout(() => openModal('draw'), 400);
+    return;
+  }
+
+  // Next player
+  player = player === 1 ? 2 : 1;
+  updateHUD();
+}
+
+function checkWin(lastL, lastR, lastC) {
+  // Only check lines that pass through the last-placed cell for efficiency
+  for (const line of LINES) {
+    let passesThrough = false;
+    for (const [cl, cr, cc] of line.cells) {
+      if (cl === lastL && cr === lastR && cc === lastC) {
+        passesThrough = true;
+        break;
+      }
+    }
+    if (!passesThrough) continue;
+
+    const first = grid[line.cells[0][0]][line.cells[0][1]][line.cells[0][2]];
+    if (first === 0) continue;
+
+    let win = true;
+    for (let i = 1; i < S; i++) {
+      const [cl, cr, cc] = line.cells[i];
+      if (grid[cl][cr][cc] !== first) { win = false; break; }
+    }
+    if (win) return line;
+  }
+  return null;
+}
+
+function showWin(p, line) {
+  document.getElementById('winIcon').textContent = p === 1 ? '🎉' : '🎊';
+  document.getElementById('winHeading').innerHTML =
+    `<span style="color:var(--p${p})">Player ${p}</span> Wins!`;
+  document.getElementById('winSub').textContent =
+    `Five ${p === 1 ? 'X' : 'O'} marks in a row`;
+  document.getElementById('winMoves').textContent = moves;
+  document.getElementById('winType').textContent = line.type;
+  openModal('win');
+}
+
+// ═══════════════════════════════════════
+//  HUD
+// ═══════════════════════════════════════
+
+function updateHUD() {
+  const title = document.getElementById('turnTitle');
+  const dot = document.getElementById('turnDot');
+  const lbl = document.getElementById('turnLabel');
+
+  if (over) {
+    title.textContent = winResult ? `Player ${grid[winResult.cells[0][0]][winResult.cells[0][1]][winResult.cells[0][2]]} Wins!` : 'Draw!';
+    dot.style.background = 'var(--muted)';
+    dot.style.animation = 'none';
+  } else {
+    title.textContent = `Player ${player}'s Turn`;
+    dot.style.background = `var(--p${player})`;
+    dot.style.animation = '';
+    lbl.textContent = player === 1 ? 'X' : 'O';
+    lbl.style.color = `var(--p${player})`;
+  }
+
+  document.getElementById('moveCount').textContent = moves;
+  updateStatus();
+}
+
+function updateStatus() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+
+  if (over) {
+    dot.style.background = 'var(--muted)';
+    dot.style.animation = 'none';
+    text.textContent = winResult ? 'Game over — we have a winner!' : 'Game over — draw.';
+    return;
+  }
+
+  dot.style.background = `var(--p${player})`;
+  dot.style.animation = '';
+  const pName = player === 1 ? 'Player 1 (X)' : 'Player 2 (O)';
+  const lText = focusLayer === -1 ? 'All layers' : `Layer ${focusLayer + 1}`;
+  text.textContent = `${pName} to move — ${lText}`;
+}
+
+// ═══════════════════════════════════════
+//  VIEW TOGGLE
+// ═══════════════════════════════════════
+
+function toggleView() {
+  if (view === 'flat') {
+    view = '3d';
+    document.getElementById('flatView').classList.remove('active');
+    document.getElementById('sceneWrap').classList.add('active');
+    document.getElementById('viewBtn').textContent = 'Flat View';
+    document.body.classList.add('view-3d');
+  } else {
+    view = 'flat';
+    document.getElementById('sceneWrap').classList.remove('active');
+    document.getElementById('flatView').classList.add('active');
+    document.getElementById('viewBtn').textContent = '3D View';
+    document.body.classList.remove('view-3d', 'dragging-cube');
+  }
+}
+
+// ═══════════════════════════════════════
+//  NAV & MODALS
+// ═══════════════════════════════════════
+
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id !== 'game') {
+    document.body.classList.remove('view-3d', 'dragging-cube');
+  } else if (view === '3d') {
+    document.body.classList.add('view-3d');
+  }
+}
+
+function openModal(id) { document.getElementById(id + 'Modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id + 'Modal').classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', (e) => { if (e.target === bd) bd.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════
+//  HERO CUBE DECORATION
+// ═══════════════════════════════════════
+
+function initHero() {
+  // Static X/O marks in the hero cube
+  const marks = [
+    // Front face
+    [0, 'x'], [4, 'o'], [6, 'x'], [8, 'o'],
+    // Back
+    [1, 'o'], [3, 'x'], [7, 'x'],
+    // Left
+    [0, 'o'], [2, 'x'], [5, 'o'],
+    // Right
+    [1, 'x'], [4, 'o'], [8, 'x'],
+    // Top
+    [0, 'x'], [3, 'o'], [6, 'x'], [8, 'o'],
+    // Bottom
+    [2, 'o'], [4, 'x'], [7, 'o'],
+  ];
+
+  const faces = document.querySelectorAll('.hf');
+  let markIdx = 0;
+
+  faces.forEach((face, fi) => {
+    face.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const d = document.createElement('div');
+      d.className = 'hc';
+
+      // Check if this cell should have a mark
+      while (markIdx < marks.length && marks[markIdx][0] < i) markIdx++;
+
+      const faceMarks = marks.filter((m, mi) => {
+        const faceStart = fi * 4; // approximate
+        return true; // we'll use random instead for simplicity
+      });
+
+      // Use seeded positions for visual appeal
+      if (Math.sin(fi * 9 + i * 7 + 42) > 0.3) {
+        d.classList.add(Math.sin(fi * 3 + i * 11 + 17) > 0 ? 'hx' : 'ho');
+        d.textContent = d.classList.contains('hx') ? '✕' : '○';
+      }
+
+      face.appendChild(d);
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════
+
+mkGrid();
+initHero();
+initDrag();
+</script>
+
+</body>
+</html>

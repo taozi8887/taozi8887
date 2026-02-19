@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Squares — How Sharp Is Your Memory?</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1d;
+    --surface3: #222226;
+    --border: #252528;
+    --text: #e8e8ea;
+    --muted: #666670;
+    --accent: #c8ff4a;
+    --accent2: #ff6b6b;
+    --accent3: #4aff8c;
+    --radius: 12px;
+    --grid-radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.6;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 24px 0;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .version { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 960px;
+    padding: 0 24px;
+    flex: 1;
+  }
+  .screen.active { display: flex; animation: fadeIn 0.35s ease both; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HOME ── */
+  #home {
+    justify-content: center;
+    padding-bottom: 80px;
+    gap: 0;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(56px, 10vw, 96px);
+    line-height: 1;
+    letter-spacing: -3px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.03em;
+    max-width: 400px;
+    line-height: 1.8;
+    margin-bottom: 56px;
+  }
+
+  /* Animated grid preview */
+  .hero-preview {
+    width: 220px;
+    height: 220px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 52px;
+  }
+
+  .preview-cell {
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .preview-cell.lit {
+    background: var(--text);
+    border-color: var(--text);
+    box-shadow: 0 0 12px rgba(232,232,234,0.3);
+  }
+
+  .home-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 13px 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: var(--accent);
+    color: #0a0a0b;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .btn.primary:hover { background: #d4ff6a; }
+  .btn.danger {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .btn.danger:hover { background: var(--accent2); color: #0a0a0b; }
+
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .stat-chip strong { color: var(--text); font-weight: 400; }
+
+  /* ── HOW TO PLAY MODAL ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 520px;
+    width: calc(100% - 48px);
+    position: relative;
+  }
+
+  .modal h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    letter-spacing: -1px;
+    margin-bottom: 24px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { border-color: var(--text); color: var(--text); }
+
+  .how-to-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 12px; color: var(--muted); line-height: 1.8; letter-spacing: 0.03em; }
+  .step-text strong { color: var(--text); font-weight: 400; }
+
+  .legend-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted); }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+
+  /* ── COUNTDOWN ── */
+  #countdown {
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .countdown-label {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .countdown-num {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(100px, 25vw, 180px);
+    line-height: 1;
+    letter-spacing: -6px;
+    animation: pulse 0.5s ease;
+  }
+  @keyframes pulse {
+    from { transform: scale(1.2); opacity: 0.5; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .countdown-sub {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── GAME ── */
+  #game {
+    padding-top: 32px;
+    gap: 20px;
+    justify-content: flex-start;
+  }
+
+  .game-top {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .level-badge {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .game-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    transition: all 0.3s;
+  }
+  .chip strong { color: var(--text); font-weight: 400; }
+  .chip.highlight { border-color: var(--accent); }
+  .chip.highlight strong { color: var(--accent); }
+
+  /* Grid wrapper */
+  .grid-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .cell {
+    border-radius: var(--grid-radius);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    cursor: default;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* States */
+  .cell.target {
+    background: var(--text);
+    border-color: transparent;
+    box-shadow: 0 0 20px rgba(232,232,234,0.25);
+  }
+
+  .cell.clickable {
+    cursor: pointer;
+  }
+  .cell.clickable:hover {
+    background: var(--surface3);
+    border-color: var(--muted);
+    transform: scale(1.04);
+  }
+
+  .cell.clicked-pending {
+    background: var(--surface3);
+    border-color: var(--muted);
+    cursor: pointer;
+  }
+  .cell.clicked-pending:hover {
+    background: var(--surface2);
+    border-color: var(--border);
+    transform: scale(1.04);
+  }
+
+  .cell.correct {
+    background: var(--accent3) !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 16px rgba(74,255,140,0.3) !important;
+    cursor: default !important;
+    transform: none !important;
+  }
+
+  .cell.wrong {
+    background: var(--accent2) !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 16px rgba(255,107,107,0.3) !important;
+    cursor: default !important;
+    transform: none !important;
+  }
+
+  .cell.missed {
+    background: var(--surface3) !important;
+    border-color: var(--muted) !important;
+    cursor: default !important;
+  }
+  /* Ripple */
+  .cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.08);
+    opacity: 0;
+    border-radius: inherit;
+  }
+  .cell.clickable:active::after { opacity: 1; }
+
+  /* Phase banner */
+  .phase-banner {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .phase-text {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .phase-text strong { color: var(--text); font-weight: 400; }
+
+  .timer-bar-wrap {
+    flex: 1;
+    max-width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.1s linear, background 0.3s;
+  }
+
+  /* Score bar */
+  .score-display {
+    font-size: 22px;
+    font-family: 'Instrument Serif', serif;
+    letter-spacing: -1px;
+  }
+  .score-display.perfect { color: var(--accent); }
+  .score-display.partial { color: #ffd200; }
+  .score-display.failing { color: var(--accent2); }
+
+  /* ── LEVEL END ── */
+  #level-end {
+    justify-content: center;
+    gap: 28px;
+    padding-bottom: 60px;
+  }
+
+  .result-icon {
+    font-size: 48px;
+    line-height: 1;
+  }
+
+  .result-heading {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(42px, 10vw, 72px);
+    letter-spacing: -2px;
+    text-align: center;
+  }
+
+  .result-sub {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  .result-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .result-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 28px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .result-stat .val {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px;
+    letter-spacing: -1px;
+    display: block;
+  }
+  .result-stat .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── SETTINGS MODAL ── */
+  .settings-modal .modal {
+    max-width: 720px;
+    max-height: 85vh;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .settings-modal .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    background: var(--surface);
+  }
+
+  .settings-modal .modal-scroll {
+    overflow-y: auto;
+    padding: 32px 40px;
+    flex: 1;
+  }
+
+  .settings-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    letter-spacing: -1px;
+    margin-bottom: 24px;
+  }
+
+  .settings-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .setting-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .setting-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .setting-val { font-size: 18px; font-family: 'Instrument Serif', serif; letter-spacing: -0.5px; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  .toggle-row { display: flex; gap: 8px; }
+  .toggle-opt {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .toggle-opt.active { border-color: var(--accent); color: var(--accent); background: rgba(200,255,74,0.06); }
+
+  footer {
+    max-width: 1000px;
+    margin: 60px auto 0;
+    padding: 32px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--accent); }
+
+  .blink { animation: blink 1.1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .divider { width: 100%; height: 1px; background: var(--border); }
+
+  /* Shake animation */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+  .shake { animation: shake 0.4s ease; }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { 
+    background: var(--border); 
+    border-radius: 4px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo" onclick="nav('home')">Squares<span>.</span></span>
+  <div class="header-right">
+    <span class="version">v1.0</span>
+    <button class="btn" onclick="openSettings()" style="padding:8px 16px; font-size:11px;">Settings</button>
+  </div>
+</header>
+
+<!-- ══ HOME ══ -->
+<div id="home" class="screen active">
+  <div style="height:52px;"></div>
+  <p class="hero-eyebrow">A memory game</p>
+  <h1 class="hero-title">Memory<br><em>Squares.</em></h1>
+  <p class="hero-sub">A grid of squares lights up briefly. Memorize where they were, then find them all from memory.</p>
+
+  <div class="hero-preview" id="heroPreview">
+    <!-- 16 cells, animated -->
+  </div>
+
+  <div class="home-actions">
+    <button class="btn primary" onclick="startGame()">Play →</button>
+    <button class="btn" onclick="openModal('howto')">How to Play</button>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-chip">Highest Level <strong id="statLevel">—</strong></div>
+    <div class="stat-chip">Best Score <strong id="statBest">—</strong></div>
+    <div class="stat-chip">Last Score <strong id="statLast">—</strong></div>
+  </div>
+</div>
+
+<!-- ══ COUNTDOWN ══ -->
+<div id="countdown" class="screen">
+  <span class="countdown-label">Get Ready</span>
+  <div class="countdown-num" id="cdNum">3</div>
+  <span class="countdown-sub">Level <span id="cdLevel">1</span> · <span id="cdGrid">3×3</span> grid · <span id="cdTargets">3</span> squares</span>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="game" class="screen">
+  <div class="game-top">
+    <span class="level-badge">Level <span id="levelNum">1</span></span>
+    <div class="game-chips">
+      <div class="chip">Grid <strong id="chipGrid">3×3</strong></div>
+      <div class="chip" id="chipFound">Found <strong id="chipFoundVal">0/3</strong></div>
+      <div class="chip" id="chipScore">Score <strong id="chipScoreVal">—</strong></div>
+    </div>
+  </div>
+
+  <div class="phase-banner" id="phaseBanner">
+    <span class="phase-text" id="phaseText">Memorize<strong></strong></span>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar" style="width:100%"></div>
+    </div>
+    <span class="phase-text" id="phaseRight"></span>
+  </div>
+
+  <div class="grid-wrapper">
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<!-- ══ LEVEL END ══ -->
+<div id="level-end" class="screen">
+  <div class="result-icon" id="resultIcon">🎯</div>
+  <div class="result-heading" id="resultHeading">Perfect.</div>
+  <div class="result-sub" id="resultSub">All squares found correctly.</div>
+
+  <div class="result-stats">
+    <div class="result-stat">
+      <span class="val" id="resScore">—</span>
+      <span class="lbl">Score</span>
+    </div>
+    <div class="result-stat">
+      <span class="val" id="resCorrect">—</span>
+      <span class="lbl">Correct</span>
+    </div>
+    <div class="result-stat">
+      <span class="val" id="resWrong">—</span>
+      <span class="lbl">Wrong</span>
+    </div>
+    <div class="result-stat">
+      <span class="val" id="resLevel">—</span>
+      <span class="lbl">Level</span>
+    </div>
+  </div>
+
+  <div class="result-actions" id="resultActions">
+    <!-- populated dynamically -->
+  </div>
+</div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div class="modal-backdrop settings-modal" id="settingsModal" onclick="closeSettings()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+    <div class="modal-scroll">
+      <h2 class="settings-title">Settings</h2>
+      <div class="settings-grid">
+
+        <div class="setting-card">
+          <span class="setting-label">Grid Corner Radius (px)</span>
+          <span class="setting-val" id="valRadius">8</span>
+          <input type="range" min="0" max="32" value="8" id="slRadius" oninput="setSetting('radius',this.value)">
+        </div>
+
+        <div class="setting-card">
+          <span class="setting-label">Memorize Time</span>
+          <span class="setting-val" id="valMemTime">Auto</span>
+          <div class="toggle-row">
+            <button class="toggle-opt active" onclick="setMemTime('auto',this)">Auto</button>
+            <button class="toggle-opt" onclick="setMemTime('fast',this)">Fast</button>
+            <button class="toggle-opt" onclick="setMemTime('slow',this)">Slow</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <span class="setting-label">Show Target Count</span>
+          <div class="toggle-row">
+            <button class="toggle-opt active" id="tog-count-yes" onclick="setSetting('showCount',true); setActiveToggle('count',this)">Show</button>
+            <button class="toggle-opt" id="tog-count-no" onclick="setSetting('showCount',false); setActiveToggle('count',this)">Hide</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <span class="setting-label">Starting Level</span>
+          <span class="setting-val" id="valStartLevel">1</span>
+          <input type="range" min="1" max="10" value="1" id="slStartLevel" oninput="setSetting('startLevel',this.value)">
+        </div>
+
+        <div class="setting-card">
+          <span class="setting-label">Cell Size</span>
+          <span class="setting-val" id="valCellSize">Medium</span>
+          <div class="toggle-row">
+            <button class="toggle-opt" onclick="setSetting('cellSize','small'); setActiveToggle('cell',this)">Small</button>
+            <button class="toggle-opt active" id="tog-cell-med" onclick="setSetting('cellSize','medium'); setActiveToggle('cell',this)">Medium</button>
+            <button class="toggle-opt" onclick="setSetting('cellSize','large'); setActiveToggle('cell',this)">Large</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <span class="setting-label">Reveal Missed Squares</span>
+          <div class="toggle-row">
+            <button class="toggle-opt active" id="tog-reveal-yes" onclick="setSetting('revealMissed',true); setActiveToggle('reveal',this)">Yes</button>
+            <button class="toggle-opt" id="tog-reveal-no" onclick="setSetting('revealMissed',false); setActiveToggle('reveal',this)">No</button>
+          </div>
+        </div>
+
+      </div>
+      <button class="btn primary" onclick="closeSettings()" style="width:100%;">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY MODAL ══ -->
+<div class="modal-backdrop" id="howtoModal" onclick="closeModal('howto')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal('howto')">✕</button>
+    <h2>How to Play</h2>
+    <div class="how-to-step">
+      <div class="step-num">1</div>
+      <div class="step-text">A grid appears with <strong>highlighted squares</strong>. Memorize their positions — they'll disappear after a few seconds.</div>
+    </div>
+    <div class="how-to-step">
+      <div class="step-num">2</div>
+      <div class="step-text">After they vanish, <strong>click every square where a highlight was</strong>. The grid is fully interactive now.</div>
+    </div>
+    <div class="how-to-step">
+      <div class="step-num">3</div>
+      <div class="step-text">Get <strong>100%</strong> to advance to the next level. Wrong clicks don't end the game, but they hurt your score.</div>
+    </div>
+    <div class="how-to-step">
+      <div class="step-num">4</div>
+      <div class="step-text">Each level increases the <strong>grid size and number of targets</strong>. How far can you go?</div>
+    </div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--text);"></div> Target square</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--accent3);"></div> Correct</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--accent2);"></div> Wrong click</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--surface3); border:1px solid var(--muted);"></div> Missed</div>
+    </div>
+    <button class="btn primary" onclick="closeModal('howto'); startGame();" style="width:100%; margin-top:24px; text-align:center;">Let's Play →</button>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
+  <span>Made with love · Squares v1.0<span style="color:var(--accent)">.</span></span>
+</footer>
+
+<script>
+// ══ SETTINGS STATE ══
+const S = {
+  radius: 8,
+  memTime: 'auto',   // 'auto' | 'fast' | 'slow'
+  showCount: true,
+  startLevel: 1,
+  cellSize: 'medium',
+  revealMissed: true,
+};
+
+function setSetting(key, val) {
+  if (key === 'radius') {
+    S.radius = parseInt(val);
+    document.getElementById('valRadius').textContent = val + 'px';
+    document.documentElement.style.setProperty('--grid-radius', val + 'px');
+  } else if (key === 'startLevel') {
+    S.startLevel = parseInt(val);
+    document.getElementById('valStartLevel').textContent = val;
+  } else if (key === 'cellSize') {
+    S.cellSize = val;
+    const labels = { small: 'Small', medium: 'Medium', large: 'Large' };
+    document.getElementById('valCellSize').textContent = labels[val];
+  } else {
+    S[key] = val;
+  }
+}
+
+function setMemTime(val, btn) {
+  S.memTime = val;
+  const labels = { auto: 'Auto', fast: 'Fast', slow: 'Slow' };
+  document.getElementById('valMemTime').textContent = labels[val];
+  document.querySelectorAll('.setting-card .toggle-opt').forEach(b => {
+    if (['auto','fast','slow'].map(x => 'setMemTime(\'' + x + '\',this)').some(a => b.getAttribute('onclick') === a)) {
+      b.classList.remove('active');
+    }
+  });
+  btn.classList.add('active');
+}
+
+function setActiveToggle(group, btn) {
+  const selectors = {
+    count: '#tog-count-yes, #tog-count-no',
+    cell: '[onclick*="cellSize"]',
+    reveal: '#tog-reveal-yes, #tog-reveal-no',
+  };
+  document.querySelectorAll(selectors[group]).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ══ STATS ══
+let stats = JSON.parse(localStorage.getItem('msq_stats') || '{"level":0,"best":null,"last":null}');
+function saveStats() { localStorage.setItem('msq_stats', JSON.stringify(stats)); }
+function updateStatsDisplay() {
+  document.getElementById('statLevel').textContent = stats.level || '—';
+  document.getElementById('statBest').textContent = stats.best != null ? stats.best + '%' : '—';
+  document.getElementById('statLast').textContent = stats.last != null ? stats.last + '%' : '—';
+}
+updateStatsDisplay();
+
+// ══ NAV ══
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function openModal(id) { document.getElementById(id + 'Modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id + 'Modal').classList.remove('open'); }
+
+function openSettings() { 
+  document.getElementById('settingsModal').classList.add('open'); 
+}
+function closeSettings() { 
+  document.getElementById('settingsModal').classList.remove('open'); 
+}
+
+// ══ LEVEL CONFIG ══
+function levelConfig(lvl) {
+  // Grid grows: starts 3x3, increases every 2 levels (max 8x8)
+  const size = Math.min(3 + Math.floor((lvl - 1) / 2), 8);
+  // Targets: roughly 25% of cells, min 2, scales with level
+  const targets = Math.max(2, Math.min(Math.round(size * size * 0.25) + Math.floor((lvl - 1) / 3), Math.floor(size * size * 0.5)));
+  // Memorize time
+  let memSec;
+  if (S.memTime === 'auto') memSec = Math.max(2, 6 - (lvl - 1) * 0.4);
+  else if (S.memTime === 'fast') memSec = Math.max(1.5, 3 - (lvl - 1) * 0.2);
+  else memSec = Math.max(3, 8 - (lvl - 1) * 0.4);
+  return { size, targets, memSec: parseFloat(memSec.toFixed(1)) };
+}
+
+function cellPx() {
+  const map = { small: 56, medium: 72, large: 90 };
+  return map[S.cellSize];
+}
+
+// ══ HERO PREVIEW ANIMATION ══
+const heroPreview = document.getElementById('heroPreview');
+for (let i = 0; i < 16; i++) {
+  const c = document.createElement('div');
+  c.className = 'preview-cell';
+  heroPreview.appendChild(c);
+}
+function animateHero() {
+  const cells = heroPreview.querySelectorAll('.preview-cell');
+  cells.forEach(c => c.classList.remove('lit'));
+  const picks = new Set();
+  while (picks.size < 4) picks.add(Math.floor(Math.random() * 16));
+  picks.forEach(i => cells[i].classList.add('lit'));
+}
+animateHero();
+setInterval(animateHero, 1400);
+
+// ══ GAME STATE ══
+let level = 1;
+let cfg = null;
+let targetSet = new Set();
+let clickedCells = new Map(); // index -> 'correct'|'wrong'
+let phase = 'idle'; // 'memorize' | 'recall' | 'done'
+let timerInterval = null;
+
+function startGame() {
+  level = S.startLevel;
+  runLevel();
+}
+
+function runLevel() {
+  cfg = levelConfig(level);
+  targetSet = new Set();
+  clickedCells = new Map();
+  phase = 'idle';
+
+  // Countdown
+  nav('countdown');
+  document.getElementById('cdLevel').textContent = level;
+  document.getElementById('cdGrid').textContent = cfg.size + '×' + cfg.size;
+  document.getElementById('cdTargets').textContent = S.showCount ? cfg.targets : '?';
+
+  let cd = 3;
+  const cdEl = document.getElementById('cdNum');
+  cdEl.textContent = cd;
+
+  const tick = setInterval(() => {
+    cd--;
+    if (cd <= 0) {
+      clearInterval(tick);
+      beginLevel();
+    } else {
+      cdEl.style.animation = 'none';
+      cdEl.offsetHeight; // reflow
+      cdEl.style.animation = 'pulse 0.5s ease';
+      cdEl.textContent = cd;
+    }
+  }, 900);
+}
+
+function buildGrid() {
+  const grid = document.getElementById('grid');
+  const px = cellPx();
+  grid.style.gridTemplateColumns = `repeat(${cfg.size}, ${px}px)`;
+  grid.innerHTML = '';
+
+  for (let i = 0; i < cfg.size * cfg.size; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.style.width = px + 'px';
+    cell.style.height = px + 'px';
+    cell.dataset.index = i;
+    grid.appendChild(cell);
+  }
+}
+
+function pickTargets() {
+  const total = cfg.size * cfg.size;
+  while (targetSet.size < cfg.targets) {
+    targetSet.add(Math.floor(Math.random() * total));
+  }
+}
+
+function beginLevel() {
+  nav('game');
+
+  document.getElementById('levelNum').textContent = level;
+  document.getElementById('chipGrid').textContent = cfg.size + '×' + cfg.size;
+  document.getElementById('chipFoundVal').textContent = `0/${cfg.targets}`;
+  document.getElementById('chipScoreVal').textContent = '—';
+  document.getElementById('chipFound').classList.remove('highlight');
+  document.getElementById('chipScore').classList.remove('highlight');
+
+  buildGrid();
+  pickTargets();
+
+  // Memorize phase
+  phase = 'memorize';
+  showTargets(true);
+  updatePhaseBanner();
+  startTimerBar(cfg.memSec, () => {
+    showTargets(false);
+    beginRecall();
+  });
+}
+
+function showTargets(show) {
+  const cells = document.getElementById('grid').querySelectorAll('.cell');
+  cells.forEach((c, i) => {
+    if (targetSet.has(i)) {
+      c.classList.toggle('target', show);
+    }
+  });
+}
+
+function beginRecall() {
+  phase = 'recall';
+  updatePhaseBanner();
+
+  const cells = document.getElementById('grid').querySelectorAll('.cell');
+  cells.forEach(c => {
+    c.classList.add('clickable');
+    // Remove existing listener first to avoid duplicates
+    c.removeEventListener('click', onCellClick);
+    c.addEventListener('click', onCellClick);
+  });
+}
+
+function onCellClick(e) {
+  if (phase !== 'recall') return;
+  const cell = e.currentTarget;
+  const idx = parseInt(cell.dataset.index);
+  
+  // Allow unclicking
+  if (clickedCells.has(idx)) {
+    clickedCells.delete(idx);
+    cell.classList.remove('clicked-pending');
+    cell.classList.add('clickable');
+    updateRecallChips();
+    return;
+  }
+
+  // Clicking a new tile
+  if (targetSet.has(idx)) {
+    clickedCells.set(idx, 'correct');
+  } else {
+    clickedCells.set(idx, 'wrong');
+  }
+  
+  // Mark as clicked but don't reveal status yet
+  cell.classList.remove('clickable');
+  cell.classList.add('clicked-pending');
+
+  updateRecallChips();
+
+  // Check if player has clicked N tiles (where N = number of targets)
+  const totalClicks = clickedCells.size;
+
+  if (totalClicks === cfg.targets) {
+    // Player has clicked N tiles — reveal results and end
+    revealClickedCells();
+    setTimeout(() => endLevel(), 600);
+  }
+}
+
+function updateRecallChips() {
+  const correct = [...clickedCells.values()].filter(v => v === 'correct').length;
+  const wrong = [...clickedCells.values()].filter(v => v === 'wrong').length;
+  const totalClicks = correct + wrong;
+  
+  // Calculate score: correct clicks minus wrong clicks penalty
+  const score = Math.max(0, correct - wrong);
+  const pct = Math.round((score / cfg.targets) * 100);
+
+  document.getElementById('chipFoundVal').textContent = `${correct}/${cfg.targets}`;
+  if (correct > 0) document.getElementById('chipFound').classList.add('highlight');
+
+  const scoreEl = document.getElementById('chipScoreVal');
+  scoreEl.textContent = totalClicks > 0 ? pct + '%' : '—';
+  document.getElementById('chipScore').classList.toggle('highlight', totalClicks > 0);
+}
+
+function revealClickedCells() {
+  document.getElementById('grid').querySelectorAll('.cell').forEach((c, i) => {
+    const idx = parseInt(c.dataset.index);
+    if (clickedCells.has(idx)) {
+      c.classList.remove('clicked-pending');
+      const status = clickedCells.get(idx);
+      c.classList.add(status);
+      if (status === 'wrong') {
+        // Shake effect for wrong cells
+        const grid = document.getElementById('grid');
+        grid.classList.remove('shake');
+        grid.offsetHeight;
+        grid.classList.add('shake');
+        setTimeout(() => grid.classList.remove('shake'), 400);
+      }
+    }
+  });
+}
+
+function endLevel() {
+  phase = 'done';
+  clearInterval(timerInterval);
+
+  // Remove click listeners
+  document.getElementById('grid').querySelectorAll('.cell').forEach(c => {
+    c.classList.remove('clickable');
+    c.removeEventListener('click', onCellClick);
+  });
+
+  // Reveal missed squares
+  if (S.revealMissed) {
+    document.getElementById('grid').querySelectorAll('.cell').forEach((c, i) => {
+      if (targetSet.has(i) && !clickedCells.has(i)) {
+        c.classList.add('missed');
+      }
+    });
+  }
+
+  const correct = [...clickedCells.values()].filter(v => v === 'correct').length;
+  const wrong = [...clickedCells.values()].filter(v => v === 'wrong').length;
+  const score = Math.max(0, correct - wrong);
+  const pct = Math.round((score / cfg.targets) * 100);
+  const perfect = pct === 100 && wrong === 0;
+
+  // Update stats
+  if (level > (stats.level || 0)) stats.level = level;
+  if (stats.best == null || pct > stats.best) stats.best = pct;
+  stats.last = pct;
+  saveStats();
+  updateStatsDisplay();
+
+  setTimeout(() => showLevelEnd(pct, correct, wrong, perfect), 800);
+}
+
+function showLevelEnd(pct, correct, wrong, perfect) {
+  nav('level-end');
+
+  document.getElementById('resScore').textContent = pct + '%';
+  document.getElementById('resCorrect').textContent = correct;
+  document.getElementById('resWrong').textContent = wrong;
+  document.getElementById('resLevel').textContent = level;
+
+  const actionsEl = document.getElementById('resultActions');
+
+  if (perfect) {
+    document.getElementById('resultIcon').textContent = '🎯';
+    document.getElementById('resultHeading').textContent = level === 1 ? 'Perfect.' : ['Flawless.', 'Excellent.', 'Nailed it.'][Math.floor(Math.random()*3)];
+    document.getElementById('resultSub').textContent = `Level ${level} complete with 100% accuracy.`;
+    actionsEl.innerHTML = `
+      <button class="btn" onclick="nav('home')">Home</button>
+      <button class="btn primary" onclick="level++; runLevel();">Next Level →</button>`;
+  } else {
+    const msgs = pct >= 70
+      ? ['Close!', 'Almost.', 'Not bad.']
+      : ['Keep trying.', 'Try again.', 'Practice makes perfect.'];
+    document.getElementById('resultIcon').textContent = pct >= 70 ? '🟡' : '❌';
+    document.getElementById('resultHeading').textContent = msgs[Math.floor(Math.random()*3)];
+    document.getElementById('resultSub').textContent = `Need 100% to advance. Got ${pct}% on Level ${level}.`;
+    actionsEl.innerHTML = `
+      <button class="btn" onclick="nav('home')">Home</button>
+      <button class="btn primary" onclick="runLevel();">Retry Level ${level}</button>`;
+  }
+
+  document.getElementById('resScore').style.color = perfect ? 'var(--accent)' : pct >= 70 ? '#ffd200' : 'var(--accent2)';
+}
+
+// ══ PHASE BANNER + TIMER ══
+function updatePhaseBanner() {
+  const phaseTextEl = document.getElementById('phaseText');
+  const phaseRightEl = document.getElementById('phaseRight');
+  const bar = document.getElementById('timerBar');
+
+  if (phase === 'memorize') {
+    phaseTextEl.innerHTML = `<strong>Memorize</strong> the squares`;
+    phaseRightEl.textContent = S.showCount ? `${cfg.targets} targets` : '';
+    bar.style.background = 'var(--accent)';
+  } else if (phase === 'recall') {
+    phaseTextEl.innerHTML = `<strong>Click</strong> where they were`;
+    phaseRightEl.textContent = '';
+    bar.style.width = '100%';
+    bar.style.background = 'var(--muted)';
+  }
+}
+
+function startTimerBar(seconds, onDone) {
+  clearInterval(timerInterval);
+  const bar = document.getElementById('timerBar');
+  bar.style.width = '100%';
+  let elapsed = 0;
+  const interval = 50; // ms
+  const total = seconds * 1000;
+
+  timerInterval = setInterval(() => {
+    elapsed += interval;
+    const frac = Math.max(0, 1 - elapsed / total);
+    bar.style.width = (frac * 100) + '%';
+    if (frac <= 0.3) bar.style.background = 'var(--accent2)';
+    if (elapsed >= total) {
+      clearInterval(timerInterval);
+      onDone();
+    }
+  }, interval);
+}
+</script>
+</body>
+</html>

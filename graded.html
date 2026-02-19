@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graded — How Well Can You Recreate Gradients?</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1d;
+    --border: #252528;
+    --text: #e8e8ea;
+    --muted: #666670;
+    --accent: #c8ff4a;
+    --accent2: #ff6b6b;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 24px 0;
+  }
+
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent); }
+
+  .version {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* SCREENS */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    padding: 0 24px;
+    flex: 1;
+  }
+  .screen.active { display: flex; }
+
+  /* ─── HOME SCREEN ─── */
+  #home {
+    justify-content: center;
+    padding-bottom: 80px;
+  }
+
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(52px, 10vw, 88px);
+    line-height: 1;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.04em;
+    margin-bottom: 52px;
+    max-width: 380px;
+    line-height: 1.7;
+  }
+
+  /* Preview gradient preview on home */
+  .hero-gradient {
+    width: 100%;
+    max-width: 520px;
+    height: 200px;
+    border-radius: var(--radius);
+    margin-bottom: 48px;
+    animation: morphGradient 6s ease infinite alternate;
+    border: 1px solid var(--border);
+  }
+
+  @keyframes morphGradient {
+    0% { background: linear-gradient(135deg, #ff6b6b, #4ecdc4); }
+    20% { background: linear-gradient(200deg, #a18cd1, #fbc2eb); }
+    40% { background: linear-gradient(60deg, #f7971e, #ffd200); }
+    60% { background: linear-gradient(160deg, #0061ff, #60efff); }
+    80% { background: linear-gradient(90deg, #f953c6, #b91d73); }
+    100% { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  }
+
+  .mode-select {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .mode-btn {
+    padding: 13px 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-btn.primary {
+    background: var(--accent);
+    color: #0a0a0b;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .mode-btn.primary:hover { background: #d4ff6a; }
+
+  .difficulty-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .diff-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; margin-right: 4px; }
+  .diff-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .diff-btn.active { border-color: var(--accent); color: var(--accent); }
+  .diff-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* ─── MEMORIZE SCREEN ─── */
+  #memorize {
+    justify-content: flex-start;
+    padding-top: 48px;
+    gap: 32px;
+  }
+
+  .step-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .round-counter {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gradient-display {
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: opacity 0.5s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gradient-display.tall { height: 320px; }
+  .gradient-display.short { height: 160px; }
+
+  .timer-ring {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+  .timer-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
+  .timer-ring circle {
+    fill: none;
+    stroke: rgba(255,255,255,0.15);
+    stroke-width: 3;
+  }
+  .timer-ring .progress {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    stroke-dasharray: 138;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.1s linear;
+  }
+  .timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    transform: rotate(0deg);
+  }
+
+  .gradient-info {
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .info-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+
+  /* ─── RECREATE SCREEN ─── */
+  #recreate {
+    padding-top: 36px;
+    gap: 24px;
+    justify-content: flex-start;
+  }
+
+  .panels {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .gradient-panel {
+    height: 200px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .controls-area {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .control-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .control-name {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .control-val {
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Color stop rows */
+  .color-stops {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stop-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .stop-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .stop-swatch input[type=color] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .stop-sliders { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .slider-lbl { font-size: 10px; color: var(--muted); width: 12px; flex-shrink: 0; }
+  .slider-val { font-size: 10px; color: var(--text); width: 32px; text-align: right; flex-shrink: 0; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--border);
+    transition: background 0.15s;
+  }
+  input[type=range]:focus::-webkit-slider-thumb { background: var(--accent); }
+
+  .angle-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .angle-display {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+  .angle-needle {
+    position: absolute;
+    width: 2px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 1px;
+    transform-origin: bottom center;
+    bottom: 50%;
+    left: 50%;
+    margin-left: -1px;
+    transition: transform 0.1s;
+  }
+  .angle-label { font-size: 11px; color: var(--muted); }
+  .angle-val { font-size: 12px; color: var(--text); }
+
+  .submit-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .submit-btn {
+    flex: 1;
+    padding: 14px;
+    background: var(--accent);
+    color: #0a0a0b;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+  }
+  .submit-btn:hover { background: #d4ff6a; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .skip-btn {
+    padding: 14px 20px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .skip-btn:hover { border-color: var(--text); color: var(--text); }
+  .skip-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── RESULTS SCREEN ─── */
+  #results {
+    padding-top: 48px;
+    gap: 32px;
+  }
+
+  .score-hero {
+    text-align: center;
+  }
+  .score-big {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(64px, 15vw, 120px);
+    line-height: 1;
+    letter-spacing: -3px;
+  }
+  .score-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+  }
+
+  .rounds-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .round-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .round-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .round-score {
+    font-size: 22px;
+    font-family: 'Instrument Serif', serif;
+    letter-spacing: -1px;
+  }
+  .round-score.good { color: var(--accent); }
+  .round-score.ok { color: #ffd200; }
+  .round-score.bad { color: var(--accent2); }
+
+  .grad-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .grad-thumb {
+    height: 60px;
+    border-radius: 6px;
+  }
+
+  .grad-thumb-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+
+  .results-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  /* Divider */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Transition */
+  .fade-in {
+    animation: fadeIn 0.4s ease both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  footer {
+    max-width: 1000px;
+    margin: 60px auto 0;
+    padding: 32px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--accent); }
+
+  /* Difficulty pill */
+  .difficulty-indicator {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+
+  /* Blinking cursor */
+  .blink {
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { 
+    background: var(--border); 
+    border-radius: 4px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  @media (max-width: 600px) {
+    .panels { grid-template-columns: 1fr; }
+    .rounds-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 52px; }
+    .mode-select { flex-direction: column; width: 100%; }
+    .mode-btn { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="#" class="logo" onclick="showScreen('home'); return false;">Graded<span>.</span></a>
+  <span class="version">v1.0</span>
+</header>
+
+<!-- HOME -->
+<div id="home" class="screen active fade-in">
+  <div style="height: 64px;"></div>
+  <div class="hero-gradient" id="heroGradient"></div>
+  <h1 class="hero-title">Recreate<br><em>the gradient.</em></h1>
+  <p class="hero-sub">We show you a gradient. Then you rebuild it from memory using hue, saturation, and lightness controls. How close can you get?</p>
+
+  <div class="mode-select">
+    <button class="mode-btn primary" onclick="startGame()">Play Solo</button>
+  </div>
+
+  <div class="difficulty-row">
+    <span class="diff-label">DIFFICULTY</span>
+    <button class="diff-btn active" id="diff-easy" onclick="setDifficulty('easy')">Easy</button>
+    <button class="diff-btn" id="diff-hard" onclick="setDifficulty('hard')">Hard</button>
+  </div>
+</div>
+
+<!-- MEMORIZE -->
+<div id="memorize" class="screen fade-in">
+  <div class="top-bar">
+    <span class="step-label">Memorize</span>
+    <span class="round-counter" id="roundCounter">Round 1 of 5</span>
+    <span class="difficulty-indicator" id="diffIndicator">Easy</span>
+  </div>
+
+  <div class="gradient-display tall" id="targetDisplay">
+    <div class="timer-ring">
+      <svg viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="22"/>
+        <circle class="progress" id="timerCircle" cx="28" cy="28" r="22"/>
+      </svg>
+      <span class="timer-text" id="timerText">5</span>
+    </div>
+  </div>
+
+  <div class="gradient-info">
+    <div class="info-chip" id="infoStops">2 colors</div>
+    <div class="info-chip" id="infoAngle">angle hidden</div>
+  </div>
+
+  <p style="font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-align: center;">Study this gradient — it disappears in <span id="countdownLabel">5</span>s<span class="blink">_</span></p>
+</div>
+
+<!-- RECREATE -->
+<div id="recreate" class="screen fade-in">
+  <div class="top-bar">
+    <span class="step-label">Recreate</span>
+    <span class="round-counter" id="recreateRoundCounter">Round 1 of 5</span>
+  </div>
+
+  <div class="panels">
+    <div>
+      <div class="panel-label">Your Gradient</div>
+      <div class="gradient-panel" id="userPreview"></div>
+    </div>
+    <div>
+      <div class="panel-label">Original (hidden)</div>
+      <div class="gradient-panel" id="hiddenPanel" style="background: var(--surface2); display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:11px; color:var(--muted); letter-spacing:0.06em;">Submit to reveal</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-area">
+    <!-- Angle -->
+    <div class="control-row">
+      <div class="control-top">
+        <span class="control-name">Direction</span>
+        <span class="control-val" id="angleDisplay">135°</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">↻</span>
+        <input type="range" min="0" max="360" value="135" id="angleSlider" oninput="updateAngle(this.value)">
+        <span class="slider-val" id="angleVal">135°</span>
+      </div>
+    </div>
+
+    <!-- Color Stops -->
+    <div class="control-top">
+      <span class="control-name">Colors</span>
+    </div>
+
+    <div class="color-stops" id="colorStops">
+      <!-- dynamically populated -->
+    </div>
+
+    <div class="submit-row">
+      <button class="skip-btn" id="skipBtn" onclick="skipRound()">Skip</button>
+      <button class="submit-btn" id="submitBtn" onclick="submitRound()">Submit →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen fade-in">
+  <div class="score-hero">
+    <div class="score-big" id="finalScore">—</div>
+    <div class="score-label">/ 500 POINTS</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="rounds-grid" id="roundsGrid"></div>
+
+  <div class="results-actions">
+    <button class="mode-btn" onclick="showScreen('home')">Home</button>
+    <button class="mode-btn primary" onclick="startGame()">Play Again</button>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
+  <span>Made with love · Graded v1.0<span style="color:var(--accent)">.</span></span>
+</footer>
+
+<script>
+// ─── STATE ───
+const ROUNDS = 5;
+const MEMORIZE_EASY = 6;
+const MEMORIZE_HARD = 3;
+let difficulty = 'easy';
+let currentRound = 0;
+let rounds = []; // { target, userGuess, score }
+let timerInterval = null;
+let timerRemaining = 0;
+let currentTarget = null;
+let isSubmitting = false;
+
+// HSL helpers
+function hsl(h, s, l) { return `hsl(${h},${s}%,${l}%)`; }
+
+function randHSL() {
+  return { h: Math.round(Math.random() * 360), s: Math.round(30 + Math.random() * 60), l: Math.round(35 + Math.random() * 35) };
+}
+
+function generateTarget() {
+  const numStops = difficulty === 'hard' ? 3 : 2;
+  const stops = [];
+  for (let i = 0; i < numStops; i++) stops.push(randHSL());
+  const angle = Math.round(Math.random() * 360);
+  return { stops, angle, numStops };
+}
+
+function gradientCSS(angle, stops) {
+  const stopsStr = stops.map(c => hsl(c.h, c.s, c.l)).join(', ');
+  return `linear-gradient(${angle}deg, ${stopsStr})`;
+}
+
+// ─── SCORING ───
+
+// Render a gradient into a grayscale luminance buffer (Float32Array)
+function renderGradientToLuminance(grad, size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // Match CSS linear-gradient angle: 0°=bottom→top, 90°=left→right
+  const rad = grad.angle * Math.PI / 180;
+  const dx = Math.sin(rad), dy = -Math.cos(rad);
+  const halfLen = Math.abs(Math.cos(rad)) * size / 2 + Math.abs(Math.sin(rad)) * size / 2;
+  const cx = size / 2, cy = size / 2;
+  const g = ctx.createLinearGradient(
+    cx - dx * halfLen, cy - dy * halfLen,
+    cx + dx * halfLen, cy + dy * halfLen
+  );
+  const n = grad.stops.length;
+  grad.stops.forEach((stop, i) => {
+    g.addColorStop(i / (n - 1), `hsl(${stop.h},${stop.s}%,${stop.l}%)`);
+  });
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+
+  const data = ctx.getImageData(0, 0, size, size).data;
+  const lum = new Float32Array(size * size);
+  for (let i = 0; i < size * size; i++) {
+    // Rec.601 luminance
+    lum[i] = 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
+  }
+  return lum;
+}
+
+// Sobel 3×3 image gradient → returns { gx, gy } as Float32Arrays
+function sobelGradients(lum, size) {
+  const gx = new Float32Array(size * size);
+  const gy = new Float32Array(size * size);
+  for (let y = 1; y < size - 1; y++) {
+    for (let x = 1; x < size - 1; x++) {
+      const tl = lum[(y-1)*size+(x-1)], tm = lum[(y-1)*size+x], tr = lum[(y-1)*size+(x+1)];
+      const ml = lum[ y   *size+(x-1)],                          mr = lum[ y   *size+(x+1)];
+      const bl = lum[(y+1)*size+(x-1)], bm = lum[(y+1)*size+x], br = lum[(y+1)*size+(x+1)];
+      const idx = y * size + x;
+      gx[idx] = -tl + tr - 2*ml + 2*mr - bl + br;
+      gy[idx] = -tl - 2*tm - tr + bl + 2*bm + br;
+    }
+  }
+  return { gx, gy };
+}
+
+// Compare two gradients as 2D vector fields (direction + magnitude)
+// Direction score: weighted cosine similarity, masked on flat regions
+// Magnitude score: relative agreement in gradient strength
+// Final: 70% direction + 30% magnitude → 0–100
+function scoreRound(target, user) {
+  const SIZE = 96;
+  const EPS = 1e-6;
+  const TAU = 4; // ignore pixels where both gradients are flat (both magnitudes < TAU)
+
+  const tLum = renderGradientToLuminance(target, SIZE);
+  const uLum = renderGradientToLuminance(user, SIZE);
+  const { gx: tgx, gy: tgy } = sobelGradients(tLum, SIZE);
+  const { gx: ugx, gy: ugy } = sobelGradients(uLum, SIZE);
+
+  let wCosSum = 0, wMagSum = 0, wTotal = 0;
+
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const tmag = Math.sqrt(tgx[i]*tgx[i] + tgy[i]*tgy[i]);
+    const umag = Math.sqrt(ugx[i]*ugx[i] + ugy[i]*ugy[i]);
+
+    if (Math.max(tmag, umag) < TAU) continue; // mask flat/uninformative regions
+
+    // Direction: cosine similarity of gradient vectors
+    const dot = tgx[i]*ugx[i] + tgy[i]*ugy[i];
+    const cosine = dot / (tmag * umag + EPS); // ∈ [-1, 1]
+
+    // Magnitude: relative agreement ∈ [0, 1]
+    const magSim = 1 - Math.abs(tmag - umag) / (tmag + umag + EPS);
+
+    // Weight by the weaker of the two magnitudes (conservative)
+    const w = Math.min(tmag, umag);
+    wCosSum  += w * cosine;
+    wMagSum  += w * magSim;
+    wTotal   += w;
+  }
+
+  if (wTotal < EPS) return 50; // both completely flat — no signal, neutral score
+
+  const scoreDir = 50 * (wCosSum / wTotal + 1); // [-1,1] → [0,100]
+  const scoreMag = 100 * (wMagSum / wTotal);     // [0,1]  → [0,100]
+
+  return Math.round(0.7 * scoreDir + 0.3 * scoreMag);
+}
+
+// ─── UI HELPERS ───
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setDifficulty(d) {
+  difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('diff-' + d).classList.add('active');
+}
+
+// ─── Reset the hidden panel to its default "Submit to reveal" state ───
+function resetHiddenPanel() {
+  const panel = document.getElementById('hiddenPanel');
+  panel.style.background = 'var(--surface2)';
+  panel.style.display = 'flex';
+  panel.style.alignItems = 'center';
+  panel.style.justifyContent = 'center';
+  panel.innerHTML = '<span style="font-size:11px; color:var(--muted); letter-spacing:0.06em;">Submit to reveal</span>';
+}
+
+// ─── Enable/disable submit buttons ───
+function setButtonsEnabled(enabled) {
+  document.getElementById('submitBtn').disabled = !enabled;
+  document.getElementById('skipBtn').disabled = !enabled;
+}
+
+// ─── GAME FLOW ───
+function startGame() {
+  clearInterval(timerInterval);
+  rounds = [];
+  currentRound = 0;
+  isSubmitting = false;
+  nextRound();
+}
+
+function nextRound() {
+  currentTarget = generateTarget();
+  currentRound++;
+  isSubmitting = false;
+
+  // Memorize screen
+  document.getElementById('roundCounter').textContent = `Round ${currentRound} of ${ROUNDS}`;
+  document.getElementById('diffIndicator').textContent = difficulty === 'easy' ? 'Easy' : 'Hard';
+  document.getElementById('targetDisplay').style.background = gradientCSS(currentTarget.angle, currentTarget.stops);
+  document.getElementById('infoStops').textContent = `${currentTarget.numStops} colors`;
+  document.getElementById('infoAngle').textContent = difficulty === 'easy' ? `${currentTarget.angle}° angle` : 'angle hidden';
+
+  // Start timer
+  const totalTime = difficulty === 'easy' ? MEMORIZE_EASY : MEMORIZE_HARD;
+  timerRemaining = totalTime;
+  startTimer(totalTime);
+
+  showScreen('memorize');
+}
+
+function startTimer(total) {
+  clearInterval(timerInterval);
+  const circumference = 138;
+  const circle = document.getElementById('timerCircle');
+
+  function updateTimer() {
+    const frac = timerRemaining / total;
+    circle.style.strokeDashoffset = circumference * (1 - frac);
+    document.getElementById('timerText').textContent = Math.ceil(timerRemaining);
+    document.getElementById('countdownLabel').textContent = Math.ceil(timerRemaining);
+  }
+  updateTimer();
+
+  timerInterval = setInterval(() => {
+    timerRemaining -= 0.1;
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      timerRemaining = 0;
+      updateTimer();
+      showRecreateScreen();
+    } else {
+      updateTimer();
+    }
+  }, 100);
+}
+
+function showRecreateScreen() {
+  document.getElementById('recreateRoundCounter').textContent = `Round ${currentRound} of ${ROUNDS}`;
+
+  // BUG FIX: Reset hidden panel so previous round's gradient doesn't linger
+  resetHiddenPanel();
+
+  // Re-enable buttons
+  setButtonsEnabled(true);
+
+  // Build color stop sliders
+  const container = document.getElementById('colorStops');
+  container.innerHTML = '';
+  currentTarget.stops.forEach((_, i) => {
+    const initH = 180, initS = 50, initL = 50;
+    const div = document.createElement('div');
+    div.className = 'stop-row';
+    div.id = `stop-${i}`;
+    div.innerHTML = `
+      <div class="stop-swatch" id="swatch-${i}" style="background: hsl(${initH},${initS}%,${initL}%)">
+        <input type="color" id="picker-${i}" value="${hslToHex(initH,initS,initL)}" oninput="syncColorPicker(${i}, this.value)">
+      </div>
+      <div class="stop-sliders">
+        <div class="slider-row">
+          <span class="slider-lbl" style="font-size:9px;color:var(--muted)">H</span>
+          <input type="range" min="0" max="360" value="${initH}" id="h-${i}" oninput="updateStop(${i})">
+          <span class="slider-val" id="hv-${i}">${initH}</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-lbl" style="font-size:9px;color:var(--muted)">S</span>
+          <input type="range" min="0" max="100" value="${initS}" id="s-${i}" oninput="updateStop(${i})">
+          <span class="slider-val" id="sv-${i}">${initS}%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-lbl" style="font-size:9px;color:var(--muted)">L</span>
+          <input type="range" min="0" max="100" value="${initL}" id="l-${i}" oninput="updateStop(${i})">
+          <span class="slider-val" id="lv-${i}">${initL}%</span>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  // Reset angle
+  document.getElementById('angleSlider').value = 135;
+  updateAngle(135);
+
+  updateUserPreview();
+  showScreen('recreate');
+}
+
+function getUserGuess() {
+  const angle = parseInt(document.getElementById('angleSlider').value);
+  const stops = currentTarget.stops.map((_, i) => ({
+    h: parseInt(document.getElementById(`h-${i}`).value),
+    s: parseInt(document.getElementById(`s-${i}`).value),
+    l: parseInt(document.getElementById(`l-${i}`).value),
+  }));
+  return { angle, stops };
+}
+
+function updateStop(i) {
+  const h = parseInt(document.getElementById(`h-${i}`).value);
+  const s = parseInt(document.getElementById(`s-${i}`).value);
+  const l = parseInt(document.getElementById(`l-${i}`).value);
+  document.getElementById(`hv-${i}`).textContent = h;
+  document.getElementById(`sv-${i}`).textContent = s + '%';
+  document.getElementById(`lv-${i}`).textContent = l + '%';
+  document.getElementById(`swatch-${i}`).style.background = `hsl(${h},${s}%,${l}%)`;
+
+  // BUG FIX: Sync the native color picker so it stays in sync with sliders
+  const pickerEl = document.getElementById(`picker-${i}`);
+  if (pickerEl) {
+    pickerEl.value = hslToHex(h, s, l);
+  }
+
+  updateUserPreview();
+}
+
+function syncColorPicker(i, hex) {
+  const {h, s, l} = hexToHSL(hex);
+  document.getElementById(`h-${i}`).value = h;
+  document.getElementById(`s-${i}`).value = s;
+  document.getElementById(`l-${i}`).value = l;
+  updateStop(i);
+}
+
+function updateAngle(val) {
+  document.getElementById('angleVal').textContent = val + '°';
+  document.getElementById('angleDisplay').textContent = val + '°';
+  updateUserPreview();
+}
+
+function updateUserPreview() {
+  const guess = getUserGuess();
+  document.getElementById('userPreview').style.background = gradientCSS(guess.angle, guess.stops);
+}
+
+function submitRound() {
+  // BUG FIX: Prevent double-submit during reveal delay
+  if (isSubmitting) return;
+  isSubmitting = true;
+  setButtonsEnabled(false);
+
+  const guess = getUserGuess();
+  const score = scoreRound(currentTarget, guess);
+  rounds.push({ target: currentTarget, guess, score });
+
+  // Show reveal
+  const panel = document.getElementById('hiddenPanel');
+  panel.style.background = gradientCSS(currentTarget.angle, currentTarget.stops);
+  panel.innerHTML = '';
+
+  setTimeout(() => {
+    if (currentRound >= ROUNDS) {
+      showResults();
+    } else {
+      nextRound();
+    }
+  }, 1400);
+}
+
+function skipRound() {
+  if (isSubmitting) return;
+  isSubmitting = true;
+  setButtonsEnabled(false);
+
+  rounds.push({ target: currentTarget, guess: getUserGuess(), score: 0, skipped: true });
+  if (currentRound >= ROUNDS) showResults();
+  else nextRound();
+}
+
+function showResults() {
+  const total = rounds.reduce((a, r) => a + r.score, 0);
+  const scaled = Math.round(total / ROUNDS * 5); // /100 * 500
+
+  document.getElementById('finalScore').textContent = scaled;
+  const scoreEl = document.getElementById('finalScore');
+  scoreEl.style.color = scaled >= 400 ? 'var(--accent)' : scaled >= 250 ? '#ffd200' : 'var(--accent2)';
+
+  const grid = document.getElementById('roundsGrid');
+  grid.innerHTML = '';
+  rounds.forEach((r, i) => {
+    const cls = r.score >= 80 ? 'good' : r.score >= 50 ? 'ok' : 'bad';
+    const targetCSS = gradientCSS(r.target.angle, r.target.stops);
+    const guessCSS = gradientCSS(r.guess.angle, r.guess.stops);
+    const card = document.createElement('div');
+    card.className = 'round-card';
+    card.innerHTML = `
+      <div class="round-card-top">
+        <span>ROUND ${i+1}</span>
+        <span class="round-score ${cls}">${r.skipped ? 'skipped' : r.score + '/100'}</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div>
+          <div class="grad-thumb" style="background:${targetCSS}"></div>
+          <div class="grad-thumb-label">ORIGINAL</div>
+        </div>
+        <div>
+          <div class="grad-thumb" style="background:${guessCSS}"></div>
+          <div class="grad-thumb-label">YOUR GUESS</div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  showScreen('results');
+}
+
+// ─── COLOR UTILS ───
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => { const k = (n + h/30) % 12; const c = l - a*Math.max(Math.min(k-3,9-k,1),-1); return Math.round(255*c).toString(16).padStart(2,'0'); };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function hexToHSL(hex) {
+  let r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; } else {
+    const d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b-r)/d + 2) / 6; break;
+      case b: h = ((r-g)/d + 4) / 6; break;
+    }
+  }
+  return { h: Math.round(h*360), s: Math.round(s*100), l: Math.round(l*100) };
+}
+
+// Init hero gradient cycling
+document.getElementById('heroGradient').style.cssText = '';
+</script>
+</body>
+</html>
