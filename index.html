@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>taozi4887 — games & things</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0b;
@@ -534,6 +536,7 @@
     display: flex; align-items: center; justify-content: center; font-size: 24px;
     color: var(--accent); animation: popIn 0.4s ease 0.1s both;
   }
+  .sent-overlay.sent-error .sent-check { border-color: var(--accent2); color: var(--accent2); }
   @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .sent-text { font-size: 13px; color: var(--text); letter-spacing: 0.04em; }
   .sent-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-align: center; max-width: 280px; line-height: 1.6; }
@@ -748,7 +751,7 @@
   <div class="section-tag" style="width:100%;">Contact</div>
 
   <h2 class="contact-heading reveal">Draw me<br>something<span style="color:var(--accent)">.</span></h2>
-  <p class="contact-sub reveal" style="transition-delay:0.1s;">Skip the boring form. Sketch a doodle, write a note, and send it to me as a framed postcard.</p>
+  <p class="contact-sub reveal" style="transition-delay:0.1s;">Skip the boring form. Sketch a doodle, write a note, and hit send — your postcard flies straight to my inbox.</p>
 
   <div class="canvas-wrapper reveal" style="transition-delay:0.2s;">
 
@@ -823,9 +826,9 @@
 
     <!-- Sent overlay -->
     <div class="sent-overlay" id="sentOverlay">
-      <div class="sent-check">✓</div>
-      <div class="sent-text">Postcard ready!</div>
-      <div class="sent-sub">Your framed drawing was saved. Attach it to the email that just opened.</div>
+      <div class="sent-check" id="sentCheck">✓</div>
+      <div class="sent-text" id="sentText">Postcard sent!</div>
+      <div class="sent-sub" id="sentSub">Your drawing and message have been delivered to taozi's inbox.</div>
       <button class="btn-secondary" style="margin-top:12px;" onclick="resetContact()">Draw another</button>
     </div>
 
@@ -843,6 +846,38 @@
 
 <script>
 // ═══════════════════════════════════════
+//  EMAILJS CONFIG
+// ═══════════════════════════════════════
+// ┌─────────────────────────────────────────────────────────────────┐
+// │  SETUP (5 minutes, free tier = 200 emails/month):              │
+// │                                                                 │
+// │  1. Sign up at https://www.emailjs.com                         │
+// │  2. Connect an email service (Gmail, Outlook, etc.)            │
+// │     → Copy the Service ID                                      │
+// │  3. Create a template with these variables:                     │
+// │     Subject : {{subject}}                                       │
+// │     Body    : From: {{from_name}}                              │
+// │               Date: {{date}}                                    │
+// │               Message: {{message}}                              │
+// │     Attachment: {{postcard}}  (enable "Auto-Attachment" in      │
+// │     template settings — the base64 PNG will auto-attach)       │
+// │  4. Copy your Public Key from Account → General                │
+// │  5. Paste all three IDs below                                  │
+// └─────────────────────────────────────────────────────────────────┘
+
+const EMAILJS_PUBLIC_KEY  = 'pU69HevZd5TUt80Ch';     // ← paste your public key
+const EMAILJS_SERVICE_ID  = 'service_nqfo94v';     // ← paste your service ID
+const EMAILJS_TEMPLATE_ID = 'template_qtcvj9c';    // ← paste your template ID
+
+// Initialize EmailJS
+(function() {
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  }
+})();
+
+
+// ═══════════════════════════════════════
 //  DRAWING ENGINE
 // ═══════════════════════════════════════
 const canvas = document.getElementById('drawCanvas');
@@ -859,16 +894,11 @@ let historyStep = -1;
 const MAX_HIST = 50;
 
 function saveState() {
-  // Remove any states after current step (happens after undo then new action)
   historyStep++;
   if (historyStep < history.length) {
     history.length = historyStep;
   }
-  
-  // Add current state
   history.push(canvas.toDataURL());
-  
-  // Limit history size
   if (history.length > MAX_HIST) {
     history.shift();
     historyStep--;
@@ -953,7 +983,7 @@ function draw(e) {
 function endDraw() {
   if (isDrawing) {
     isDrawing = false;
-    saveState(); // Save state after stroke is complete
+    saveState();
   }
 }
 
@@ -1064,25 +1094,21 @@ function generateFramedPNG() {
   // Message
   if (msgH > 0) {
     const mY = drawY + dH + 20;
-    // Accent bar
     fx.fillStyle = '#c8ff4a';
     roundRect(fx, pad, mY, 3, 36, 1.5);
     fx.fill();
-    // Text
     fx.fillStyle = '#b8b8be';
     fx.font = '300 16px "DM Mono", Consolas, monospace';
-    wrapText(fx, '"' + msgText + '"', pad + 16, mY + 14, W - pad * 2 - 24, 22, 2);
+    wrapText(fx, '\u201c' + msgText + '\u201d', pad + 16, mY + 14, W - pad * 2 - 24, 22, 2);
   }
 
   // Footer divider
   const fY = H - pad - footerH + 8;
   fx.fillStyle = '#252528';
   fx.fillRect(pad, fY, W - pad * 2, 1);
-  // Footer text
   fx.fillStyle = '#555560';
   fx.font = '300 12px "DM Mono", monospace';
   fx.fillText('sent via taozi4887.dev', pad + 4, fY + 30);
-  // From name (right side)
   const senderName = document.getElementById('nameBox').value.trim();
   if (senderName) {
     fx.fillStyle = '#c8ff4a';
@@ -1091,7 +1117,6 @@ function generateFramedPNG() {
     fx.fillText('from ' + senderName, W - pad - 4, fY + 30);
     fx.textAlign = 'left';
   } else {
-    // Footer dot (fallback when no name)
     fx.fillStyle = '#c8ff4a';
     fx.beginPath();
     fx.arc(W - pad - 8, fY + 28, 3, 0, Math.PI * 2);
@@ -1126,7 +1151,7 @@ function wrapText(c, text, x, y, maxW, lh, maxLines) {
       line = words[i] + ' ';
       ln++;
       if (ln >= maxLines) {
-        c.fillText(line.trim() + '…', x, y + ln * lh);
+        c.fillText(line.trim() + '\u2026', x, y + ln * lh);
         return;
       }
     } else {
@@ -1137,7 +1162,7 @@ function wrapText(c, text, x, y, maxW, lh, maxLines) {
 }
 
 // ═══════════════════════════════════════
-//  DOWNLOAD & SEND
+//  DOWNLOAD & SEND (EmailJS)
 // ═══════════════════════════════════════
 function downloadFramed() {
   const framed = generateFramedPNG();
@@ -1147,45 +1172,80 @@ function downloadFramed() {
   a.click();
 }
 
-function sendMessage() {
+async function sendMessage() {
   const btn = document.getElementById('sendBtn');
+  const overlay = document.getElementById('sentOverlay');
+  const sentCheck = document.getElementById('sentCheck');
+  const sentText = document.getElementById('sentText');
+  const sentSub = document.getElementById('sentSub');
+
+  // Guard: check EmailJS is configured
+  if (EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+    alert('EmailJS not configured yet — see the setup instructions in the source code.');
+    return;
+  }
+
   btn.disabled = true;
-  btn.textContent = 'Preparing...';
+  btn.textContent = 'Sending...';
 
-  // 1. Download framed PNG
-  const framed = generateFramedPNG();
-  const fname = 'taozi-postcard-' + Date.now() + '.png';
-  const a = document.createElement('a');
-  a.download = fname;
-  a.href = framed.toDataURL('image/png');
-  a.click();
+  try {
+    // Generate framed postcard, then scale down + compress to JPEG
+    // to stay under EmailJS's ~50KB payload limit
+    const framed = generateFramedPNG();
+    const maxW = 640;
+    const scale = maxW / framed.width;
+    const small = document.createElement('canvas');
+    small.width = maxW;
+    small.height = Math.round(framed.height * scale);
+    const sx = small.getContext('2d');
+    sx.drawImage(framed, 0, 0, small.width, small.height);
+    const base64PNG = small.toDataURL('image/jpeg', 0.7);
 
-  // 2. Open mailto with message
-  const msg = document.getElementById('messageBox').value.trim();
-  const name = document.getElementById('nameBox').value.trim();
-  const subject = encodeURIComponent('Postcard from your site ✉');
-  const body = encodeURIComponent(
-    (name ? 'From: ' + name + '\n' : '') +
-    (msg ? msg + '\n\n' : '') +
-    '---\n' +
-    'Please attach: ' + fname + '\n' +
-    'Sent from taozi4887.dev'
-  );
+    const name = document.getElementById('nameBox').value.trim() || 'Anonymous';
+    const msg  = document.getElementById('messageBox').value.trim() || '(no message)';
+    const date = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
 
-  setTimeout(() => {
-    window.location.href = 'mailto:mail@taozi4887.dev?subject=' + subject + '&body=' + body;
-  }, 500);
+    // Build a proper subject line
+    const subject = 'Postcard from ' + name + ' - taozi4887.dev';
 
-  // 3. Show confirmation
-  setTimeout(() => {
-    document.getElementById('sentOverlay').classList.add('show');
-    btn.disabled = false;
-    btn.textContent = 'Send →';
-  }, 1100);
+    // Send via EmailJS  (postcard field becomes an auto-attachment)
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      subject   : subject,
+      from_name : name,
+      message   : msg,
+      date      : date,
+      postcard  : base64PNG     // auto-attached as PNG by EmailJS
+    });
+
+    // ── Success overlay ──
+    overlay.classList.remove('sent-error');
+    sentCheck.textContent = '\u2713';
+    sentText.textContent  = 'Postcard sent!';
+    sentSub.textContent   = 'Your drawing and message have been delivered to taozi\'s inbox.';
+    overlay.classList.add('show');
+
+  } catch (err) {
+    console.error('EmailJS error:', err);
+
+    // ── Error overlay ──
+    overlay.classList.add('sent-error');
+    sentCheck.textContent = '\u2715';
+    sentText.textContent  = 'Couldn\'t send';
+    sentSub.textContent   = 'Something went wrong. You can save the PNG and email it manually.';
+    overlay.classList.add('show');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Send \u2192';
 }
 
 function resetContact() {
-  document.getElementById('sentOverlay').classList.remove('show');
+  const overlay = document.getElementById('sentOverlay');
+  overlay.classList.remove('show');
+  overlay.classList.remove('sent-error');
   clearCanvas();
   document.getElementById('nameBox').value = '';
   document.getElementById('messageBox').value = '';
@@ -1216,41 +1276,19 @@ document.querySelectorAll('.nav-links a').forEach(link => {
 //  KEYBOARD SHORTCUTS
 // ═══════════════════════════════════════
 document.addEventListener('keydown', (e) => {
-  // Only when contact section is visible or focused
   const contactSection = document.querySelector('.contact');
   const rect = contactSection.getBoundingClientRect();
   const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
   
   if (!isVisible) return;
-  
-  // Don't interfere with typing in textarea
   if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
   
   const key = e.key.toLowerCase();
   
-  // P = Pen
-  if (key === 'p') {
-    e.preventDefault();
-    setTool('pen');
-  }
-  
-  // E = Eraser
-  if (key === 'e') {
-    e.preventDefault();
-    setTool('eraser');
-  }
-  
-  // Ctrl+Z = Undo
-  if ((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey) {
-    e.preventDefault();
-    undoStroke();
-  }
-  
-  // Ctrl+Shift+Z or Ctrl+Y = Redo
-  if ((e.ctrlKey || e.metaKey) && (key === 'y' || (key === 'z' && e.shiftKey))) {
-    e.preventDefault();
-    redoStroke();
-  }
+  if (key === 'p') { e.preventDefault(); setTool('pen'); }
+  if (key === 'e') { e.preventDefault(); setTool('eraser'); }
+  if ((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey) { e.preventDefault(); undoStroke(); }
+  if ((e.ctrlKey || e.metaKey) && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); redoStroke(); }
 });
 </script>
 </body>
