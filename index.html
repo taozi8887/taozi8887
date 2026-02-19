@@ -1173,7 +1173,7 @@ function sendMessage() {
   );
 
   setTimeout(() => {
-    window.location.href = 'mailto:taozi4887art@gmail.com?subject=' + subject + '&body=' + body;
+    window.location.href = 'mailto:mail@taozi4887.dev?subject=' + subject + '&body=' + body;
   }, 500);
 
   // 3. Show confirmation
@@ -1224,7 +1224,7 @@ document.addEventListener('keydown', (e) => {
   if (!isVisible) return;
   
   // Don't interfere with typing in textarea
-  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')return;
   
   const key = e.key.toLowerCase();
   
