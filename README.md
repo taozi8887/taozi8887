@@ -20,7 +20,7 @@ i make small games and interactive things for the web.
 [![Instagram](https://img.shields.io/badge/instagram-@taozi4887-E4405F?style=flat-square&logo=instagram&logoColor=white)](https://www.instagram.com/taozi4887/)
 &nbsp;
 
-[![Portfolio](https://img.shields.io/badge/portfolio-taozi4887.netlify.app-c8ff4a?style=flat-square&logoColor=black)](https://taozi8887.netlify.app/)
+[![Portfolio](https://img.shields.io/badge/portfolio-taozi4887.dev-c8ff4a?style=flat-square&logoColor=black)](https://taozi4887.dev)
 
 ---
 
