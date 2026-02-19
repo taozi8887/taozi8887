@@ -1224,7 +1224,7 @@ document.addEventListener('keydown', (e) => {
   if (!isVisible) return;
   
   // Don't interfere with typing in textarea
-  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')return;
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
   
   const key = e.key.toLowerCase();
   
