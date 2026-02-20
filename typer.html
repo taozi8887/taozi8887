@@ -339,6 +339,8 @@ function resetTest() {
   renderVisibleLines();
   updateChips();
   document.getElementById('timerVal').textContent = testDuration;
+  document.getElementById('wpmVal').textContent  = '0';
+  document.getElementById('accVal').textContent  = '100%';
   document.getElementById('statusBanner').className = 'status-banner';
   document.getElementById('statusText').innerHTML   = 'Start typing to begin the countdown.';
   document.getElementById('textContainer').classList.remove('show-hint');
@@ -630,7 +632,7 @@ tc.addEventListener('keydown', function(e) {
     if (typedWords[wordIdx].length > 0) {
       typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
       updateWordDisplay(wordIdx);
-      placeCaret();
+      placeCaret(true);
     } else if (wordIdx > 0) {
       // Go back to previous word and remove its last char
       wordIdx--;
@@ -642,7 +644,7 @@ tc.addEventListener('keydown', function(e) {
         renderVisibleLines();
       } else {
         updateWordDisplay(wordIdx);
-        placeCaret();
+        placeCaret(true);
       }
     }
     if (startTime) updateChips();
@@ -675,7 +677,7 @@ tc.addEventListener('keydown', function(e) {
       typedWords[wordIdx] += e.key;
       keystrokeTimes.push(performance.now());
       updateWordDisplay(wordIdx);
-      placeCaret();
+      placeCaret(true);
     }
   }
   updateChips();

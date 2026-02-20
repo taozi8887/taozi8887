@@ -609,6 +609,67 @@
     .mode-select { flex-direction: column; width: 100%; }
     .mode-btn { text-align: center; }
   }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .btn-sm {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 44px;
+    max-width: 480px;
+    width: calc(100% - 48px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .modal-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    letter-spacing: -1px;
+    margin-bottom: 24px;
+  }
+  .how-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--accent);
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-text { font-size: 12px; color: var(--muted); line-height: 1.8; letter-spacing: 0.03em; }
+  .step-text strong { color: var(--text); font-weight: 400; }
 </style>
 </head>
 <body style="cursor:none">
@@ -616,7 +677,10 @@
 
 <header>
   <a href="#" class="logo" onclick="showScreen('home'); return false;">Graded<span>.</span></a>
-  <span class="version">v1.0</span>
+  <div class="header-right">
+    <span class="version">v1.0</span>
+    <button class="btn-sm" onclick="openModal('howto')">How to Play</button>
+  </div>
 </header>
 
 <!-- HOME -->
@@ -730,6 +794,17 @@
   <div class="results-actions">
     <button class="mode-btn" onclick="showScreen('home')">Home</button>
     <button class="mode-btn primary" onclick="startGame()">Play Again</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">How to Play</div>
+    <div class="how-step"><div class="step-num">1</div><div class="step-text">A gradient is shown briefly. <strong>Study it carefully</strong> — then it disappears.</div></div>
+    <div class="how-step"><div class="step-num">2</div><div class="step-text">Use the <strong>HSL sliders</strong> to recreate each colour stop from memory.</div></div>
+    <div class="how-step"><div class="step-num">3</div><div class="step-text">Hit <strong>Submit</strong> to score your attempt. Closer colours earn more points.</div></div>
+    <div class="how-step"><div class="step-num">4</div><div class="step-text">Five rounds per game. Aim for a perfect <strong>500 / 500</strong>.</div></div>
+    <div style="width:100%;margin-top:12px;"><button class="mode-btn primary" onclick="closeModal('howto')" style="width:100%;text-align:center;">Got it</button></div>
   </div>
 </div>
 
@@ -908,6 +983,9 @@ function scoreRound(target, user) {
 }
 
 // ─── UI HELPERS ───
+function openModal(id)  { document.getElementById(id + 'Backdrop').classList.add('open'); }
+function closeModal(id) { document.getElementById(id + 'Backdrop').classList.remove('open'); }
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');

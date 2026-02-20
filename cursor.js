@@ -560,9 +560,9 @@
   const NAV_MAG     = 'nav a, .logo, nav button, .nav-links a';
   const SWATCH_SEL  = '.color-swatch-inner, .stop-swatch, .grad-thumb, .leg-sw, .legend-swatch';
 
-  document.addEventListener('mouseover', e => {
-    if (!_mouseReady) return;
-    const t = e.target;
+  /* ── Shared hover evaluator — called by mouseover AND scroll ── */
+  function evaluateHover(t) {
+    if (!t) { setMode(null, null, null); magTarget = null; return; }
 
     // Color swatch — ring mirrors swatch color
     const sw = t.closest(SWATCH_SEL);
@@ -578,19 +578,47 @@
         const fitTarget  = (entry.mode === '_fit')  ? (t.closest('#_back-btn') || t.closest('.stat-card, .setting-card')) : null;
         const glowTarget = (entry.elFn)             ? entry.elFn(t) : null;
         setMode(entry.mode, lbl, null, fitTarget || glowTarget);
+        // Magnetic pull
+        const navEl = t.closest(NAV_MAG);
+        if (navEl) {
+          const r = navEl.getBoundingClientRect();
+          magTarget = { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+        } else {
+          magTarget = null;
+        }
         return;
       }
     }
 
     // Generic interactive hover
-    if (t.closest(GENERIC_HOV)) { setMode('_hov', null, null); return; }
+    if (t.closest(GENERIC_HOV)) { setMode('_hov', null, null); }
+    else { setMode(null, null, null); }
 
-    setMode(null, null, null);
+    // Magnetic pull
+    const navEl = t.closest(NAV_MAG);
+    if (navEl) {
+      const r = navEl.getBoundingClientRect();
+      magTarget = { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    } else {
+      magTarget = null;
+    }
+  }
+
+  document.addEventListener('mouseover', e => {
+    if (!_mouseReady) return;
+    evaluateHover(e.target);
   });
 
   document.addEventListener('mouseout', e => {
     setMode(null, null, null);
   });
+
+  /* ── Re-evaluate hover when page scrolls (cursor stays still, elements move) ── */
+  window.addEventListener('scroll', () => {
+    if (!_mouseReady || isOut) return;
+    const t = document.elementFromPoint(mx, my);
+    evaluateHover(t);
+  }, { passive: true, capture: true });
 
   /* ── Magnetic pull for nav elements ── */
   document.addEventListener('mouseover', e => {
@@ -695,12 +723,13 @@
     function lerp(a, b, t) { return a + (b - a) * t; }
 
     function tick() {
-      const spd = 0.13;
-      cx = lerp(cx, tx, spd);
-      cy = lerp(cy, ty, spd);
-      cr = lerp(cr, tr, spd);
+      const spdPos = 0.16;
+      const spdRad = 0.22; // radius catches up faster than position
+      cx = lerp(cx, tx, spdPos);
+      cy = lerp(cy, ty, spdPos);
+      cr = lerp(cr, tr, spdRad);
       applyMask();
-      if (Math.hypot(tx - cx, ty - cy) + Math.abs(tr - cr) > 0.4) {
+      if (Math.hypot(tx - cx, ty - cy) + Math.abs(tr - cr) > 0.3) {
         rafId = requestAnimationFrame(tick);
       } else {
         cx = tx; cy = ty; cr = tr;
@@ -726,31 +755,29 @@
       targetFromBtn(btn);
 
       if (!visible) {
-        // First appearance — snap to position, then fade in
-        cx = tx; cy = ty; cr = tr;
-        applyMask();
+        // First (re)appearance — if we have a prior position, lerp from it;
+        // otherwise snap so there's no sweep from 0,0
+        if (cx === 0 && cy === 0) { cx = tx; cy = ty; cr = tr; applyMask(); }
         visible = true;
         ov.classList.add('_active');
-      } else {
-        // Already showing — glide spot to new button
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(tick);
       }
+      // Always start/restart the lerp tick (covers both first appearance and glide)
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
       btn.classList.add('_btn-mag-top');
     }
 
     function endMag(btn) {
       if (!btn || activeMagBtn !== btn) return;
       btn.classList.remove('_btn-mag-top');
-      // Short delay: if cursor enters another button immediately, startMag
-      // will cancel this and glide instead of fade-out/fade-in
+      // Longer delay so a quick cross to an adjacent button glides instead of snapping
       pendingEnd = setTimeout(() => {
         activeMagBtn = null;
         visible      = false;
         ov.classList.remove('_active');
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         pendingEnd = null;
-      }, 40);
+      }, 120);
     }
 
     // Expose cleanup so the page-transition IIFE can kill blur before navigating
@@ -786,40 +813,38 @@
 
     const fsStyle = document.createElement('style');
     fsStyle.textContent = `
+      /* Centre the game title in the header */
+      header {
+        position: relative;
+      }
+      header .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        pointer-events: none;
+        cursor: none;
+      }
+
       #_fs-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 9985;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        border: 1.5px solid rgba(200,255,74,0.35);
-        background: rgba(10,10,11,0.7);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        border: 1px solid rgba(200,255,74,0.3);
+        background: transparent;
         color: #c8ff4a;
         display: flex;
         align-items: center;
         justify-content: center;
-        opacity: 0.5;
-        transition: opacity 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+        opacity: 0.55;
+        transition: opacity 0.2s, border-color 0.2s, transform 0.15s;
       }
       #_fs-btn:hover {
         opacity: 1;
         border-color: #c8ff4a;
-        background: rgba(10,10,11,0.92);
         transform: scale(1.08);
       }
       #_fs-btn svg { display: block; }
-
-      /* hide nav / top-bar when fullscreen */
-      :fullscreen nav,
-      :fullscreen .top-bar,
-      :fullscreen .game-bar { display: none !important; }
-      :-webkit-full-screen nav,
-      :-webkit-full-screen .top-bar,
-      :-webkit-full-screen .game-bar { display: none !important; }
     `;
     document.head.appendChild(fsStyle);
 
@@ -829,23 +854,24 @@
     </svg>`;
 
     const ICON_COMPRESS = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="5,1 5,5 1,5"/><polyline points="11,5 15,5 15,1"/>
+      <polyline points="5,1 5,5 1,5"/><polyline points="11,1 11,5 15,5"/>
       <polyline points="15,11 11,11 11,15"/><polyline points="1,11 5,11 5,15"/>
     </svg>`;
 
     const btn = document.createElement('button');
     btn.id = '_fs-btn';
-    btn.title = 'Toggle fullscreen  [F]';
     btn.innerHTML = ICON_EXPAND;
-    document.body.appendChild(btn);
+    const _fsHeaderRight = document.querySelector('.header-right');
+    if (_fsHeaderRight) _fsHeaderRight.appendChild(btn);
+    else document.body.appendChild(btn);
 
     function isFullscreen() {
-      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      return !!(document.fullscreenElement || document.webkitFullscreenElement)
+          || window.innerHeight === screen.height;
     }
 
     function updateIcon() {
       btn.innerHTML = isFullscreen() ? ICON_COMPRESS : ICON_EXPAND;
-      btn.title = isFullscreen() ? 'Exit fullscreen  [F]' : 'Fullscreen  [F]';
     }
 
     function toggle() {
@@ -860,46 +886,33 @@
     btn.addEventListener('click', toggle);
     document.addEventListener('fullscreenchange', updateIcon);
     document.addEventListener('webkitfullscreenchange', updateIcon);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'f' || e.key === 'F') {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') toggle();
-      }
-    });
+    window.addEventListener('resize', updateIcon);
 
     /* ── Back to index button ── */
     const backStyle = document.createElement('style');
     backStyle.textContent = `
       #_back-btn {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 9985;
-        height: 38px;
-        padding: 0 14px 0 10px;
-        border-radius: 10px;
-        border: 1.5px solid rgba(200,255,74,0.5);
-        background: rgba(10,10,11,0.75);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        flex-shrink: 0;
+        height: 32px;
+        padding: 0 12px 0 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(200,255,74,0.3);
+        background: transparent;
         color: #c8ff4a;
         display: flex;
         align-items: center;
-        gap: 8px;
-        opacity: 0.75;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-        transition: opacity 0.25s, border-color 0.25s, background 0.25s, box-shadow 0.25s, transform 0.25s;
+        gap: 7px;
+        opacity: 0.6;
+        transition: opacity 0.25s, border-color 0.25s, transform 0.25s;
         text-decoration: none;
       }
       #_back-btn:hover {
         opacity: 1;
         border-color: #c8ff4a;
-        background: rgba(10,10,11,0.95);
-        box-shadow: 0 0 0 3px rgba(200,255,74,0.12), 0 4px 24px rgba(200,255,74,0.18);
         transform: translateY(-1px);
       }
       #_back-btn:active {
         transform: translateY(1px) scale(0.97);
-        box-shadow: 0 0 0 2px rgba(200,255,74,0.2);
       }
       #_back-btn svg {
         display: block;
@@ -925,12 +938,13 @@
     const backBtn = document.createElement('a');
     backBtn.id = '_back-btn';
     backBtn.href = 'index.html';
-    backBtn.title = 'Back to home';
     backBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 6.5L8 1l7 5.5V15a1 1 0 01-1 1H5a1 1 0 01-1-1v-4H2v4a1 1 0 01-1 1"/>
       <rect x="5" y="11" width="4" height="5" rx="0.5"/>
     </svg><span id="_back-btn-label">go back</span>`;
-    document.body.appendChild(backBtn);
+    const _backHeader = document.querySelector('header');
+    if (_backHeader) _backHeader.insertBefore(backBtn, _backHeader.firstChild);
+    else document.body.appendChild(backBtn);
   })();
 
   /* ── Page transitions ── */
