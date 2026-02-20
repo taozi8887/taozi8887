@@ -1,0 +1,664 @@
+(function () {
+  'use strict';
+
+  const ACCENT = '#c8ff4a';
+  const ACCENT_GLOW = 'rgba(200,255,74,0.18)';
+
+  /* ── Inject styles ── */
+  const style = document.createElement('style');
+  style.textContent = `
+    *, *::before, *::after { cursor: none !important; }
+
+    /* Prevent accidental text/element selection; allow it in actual input fields */
+    * { user-select: none; -webkit-user-select: none; }
+    input, textarea, [contenteditable="true"] {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
+
+    /* Prevent link/image dragging */
+    a, img { -webkit-user-drag: none; user-drag: none; }
+
+    /* Accent-coloured highlight for the cases where selection is intentional */
+    ::selection      { background: ${ACCENT}; color: #0a0a0b; }
+    ::-moz-selection { background: ${ACCENT}; color: #0a0a0b; }
+
+    #_cur-dot {
+      position: fixed;
+      width: 7px;
+      height: 7px;
+      background: ${ACCENT};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 2147483647;
+      top: 0; left: 0;
+      transform: translate(-50%, -50%);
+      transition: width .12s ease, height .12s ease, background .12s ease, opacity .2s ease;
+      will-change: transform, left, top;
+    }
+
+    #_cur-ring {
+      position: fixed;
+      width: 34px;
+      height: 34px;
+      border: 1.5px solid ${ACCENT};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 2147483646;
+      top: 0; left: 0;
+      transform: translate(-50%, -50%);
+      opacity: 0.65;
+      transition:
+        width .22s cubic-bezier(.23,1,.32,1),
+        height .22s cubic-bezier(.23,1,.32,1),
+        opacity .22s ease,
+        border-color .22s ease,
+        border-width .22s ease,
+        box-shadow .22s ease;
+      will-change: left, top;
+    }
+
+    /* hover */
+    #_cur-dot._hov  { width: 9px; height: 9px; }
+    #_cur-ring._hov {
+      width: 52px; height: 52px;
+      opacity: 0.9;
+      box-shadow: 0 0 12px 1px ${ACCENT_GLOW};
+    }
+
+    /* click */
+    #_cur-dot._clk  { width: 4px; height: 4px; opacity: 0.7; }
+    #_cur-ring._clk { width: 22px; height: 22px; opacity: 1; }
+
+    /* hidden (mouse left window) */
+    #_cur-dot._out, #_cur-ring._out { opacity: 0 !important; }
+
+    /* ripple burst on click */
+    @keyframes _curRipple {
+      0%   { width: 0; height: 0; opacity: 0.55; }
+      100% { width: 90px; height: 90px; opacity: 0; }
+    }
+    ._cur-ripple {
+      position: fixed;
+      border-radius: 50%;
+      background: ${ACCENT_GLOW};
+      pointer-events: none;
+      z-index: 2147483645;
+      top: 0; left: 0;
+      transform: translate(-50%, -50%);
+      animation: _curRipple 0.55s cubic-bezier(.23,1,.32,1) forwards;
+    }
+
+    /* trail particles */
+    @keyframes _curTrail {
+      0%   { transform: translate(-50%,-50%) scale(1); opacity: 0.45; }
+      100% { transform: translate(-50%,-50%) scale(0); opacity: 0; }
+    }
+    ._cur-trail {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: ${ACCENT};
+      pointer-events: none;
+      z-index: 2147483644;
+      top: 0; left: 0;
+      animation: _curTrail 0.5s ease-out forwards;
+    }
+
+    /* ── Cursor label ── */
+    #_cur-label {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2147483648;
+      top: 0; left: 0;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #0a0a0b;
+      background: ${ACCENT};
+      padding: 2px 7px 2px 6px;
+      border-radius: 20px;
+      transform: translate(14px, 14px);
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      white-space: nowrap;
+    }
+    #_cur-label._show { opacity: 1; }
+
+    /* ── View state: hero/project cards ── */
+    #_cur-dot._view { opacity: 0; }
+    #_cur-ring._view {
+      width: 58px; height: 58px;
+      border-radius: 14px;
+      border-width: 2px;
+      opacity: 1;
+      box-shadow: 0 0 22px 4px ${ACCENT_GLOW};
+    }
+
+    /* ── Target state: game grid cells ── */
+    #_cur-dot._target { width: 3px; height: 3px; }
+    #_cur-ring._target {
+      width: 26px; height: 26px;
+      border-radius: 3px;
+      border-width: 2px;
+      opacity: 1;
+    }
+
+    /* ── Drag state: 3D cube / draggable scenes ── */
+    #_cur-dot._drag { opacity: 0; }
+    #_cur-ring._drag {
+      width: 50px; height: 50px;
+      border-style: dashed;
+      border-width: 1.5px;
+      opacity: 0.85;
+      box-shadow: 0 0 16px 2px ${ACCENT_GLOW};
+      animation: _curSpin 2.8s linear infinite;
+    }
+    @keyframes _curSpin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* ── Precision state: canvas / drawing ── */
+    #_cur-dot._precision { width: 2px; height: 2px; }
+    #_cur-ring._precision {
+      width: 16px; height: 16px;
+      border-width: 1px;
+      opacity: 1;
+    }
+
+    /* ── Swipe state: project rows ── */
+    #_cur-dot._swipe { width: 6px; height: 6px; }
+    #_cur-ring._swipe {
+      width: 68px; height: 28px;
+      opacity: 0.65;
+    }
+
+    /* ── Text caret state: text inputs only ── */
+    #_cur-dot._text {
+      width: 2px;
+      height: 20px;
+      border-radius: 1px;
+      /* no blinking — steady bar */
+    }
+    #_cur-ring._text {
+      width: 0; height: 0;
+      opacity: 0;
+    }
+
+    /* ── Fit state: ring traces element bounds (stat-card etc.) ── */
+    #_cur-dot._fit { width: 4px; height: 4px; opacity: 0.7; }
+    #_cur-ring._fit {
+      /* w/h set dynamically via JS */
+      opacity: 0.7;
+      border-width: 1.5px;
+      transition:
+        width .28s cubic-bezier(.23,1,.32,1),
+        height .28s cubic-bezier(.23,1,.32,1),
+        border-radius .28s cubic-bezier(.23,1,.32,1),
+        opacity .22s ease,
+        border-color .22s ease,
+        box-shadow .22s ease;
+    }
+
+    /* ── Accent-button state: inverted dark dot + filled pill ── */
+    #_cur-dot._accent {
+      width: 8px; height: 8px;
+      background: #0a0a0b;
+    }
+    #_cur-ring._accent {
+      width: 56px; height: 34px;
+      border-radius: 20px;
+      background: rgba(10,10,11,0.14);
+      border-color: #0a0a0b;
+      border-width: 1.5px;
+      opacity: 0.7;
+    }
+
+    /* ── Glow / text-reveal state: big display headings ── */
+    #_cur-dot._glow { width: 0; height: 0; opacity: 0; }
+    #_cur-ring._glow {
+      width: 130px; height: 130px;
+      border-width: 1.5px;
+      opacity: 0.55;
+      border-color: ${ACCENT};
+      box-shadow: 0 0 18px 4px ${ACCENT_GLOW};
+    }
+    /* ring collapses when cursor is between glyphs */
+    #_cur-ring._glow._glow-off {
+      width: 34px; height: 34px;
+      opacity: 0.35;
+      box-shadow: none;
+    }
+
+    /* Overlay: cloned heading text in accent color, clipped to a circle */
+    ._cur-reveal-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      color: ${ACCENT};
+      clip-path: circle(65px at var(--_crx, -999px) var(--_cry, -999px));
+      font: inherit;
+      letter-spacing: inherit;
+      line-height: inherit;
+      white-space: inherit;
+      overflow: visible;
+      z-index: 1;
+    }
+    /* accent-coloured child spans inside the overlay show white */
+    ._cur-reveal-overlay .accent { color: #ffffff; }
+    ._cur-reveal-overlay [style*="var(--accent)"] { color: #ffffff !important; }
+    ._cur-reveal-overlay [style*="var(--accent2)"] { color: #ffffff !important; }
+    ._cur-reveal-overlay [style*="var(--accent3)"] { color: #ffffff !important; }
+  `;
+  document.head.appendChild(style);
+
+  /* ── Create elements ── */
+  const dot   = document.createElement('div'); dot.id   = '_cur-dot';
+  const ring  = document.createElement('div'); ring.id  = '_cur-ring';
+  const label = document.createElement('div'); label.id = '_cur-label';
+  document.body.append(dot, ring, label);
+
+  /* ── State ── */
+  let mx = -200, my = -200;
+  let rx = -200, ry = -200;
+  let isOut = true;
+  let magTarget = null; // magnetic pull target {cx, cy}
+  let currentMode = null;
+  let fitEl = null;     // element whose bounds ring should trace (_fit mode)
+  let currentHeading = null; // heading element with active text-reveal
+
+  /* ── Mouse tracking ── */
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    if (isOut) {
+      // Snap ring on first entry to avoid sweeping from off-screen
+      rx = mx; ry = my;
+      dot.classList.remove('_out');
+      ring.classList.remove('_out');
+      isOut = false;
+    }
+    // Magnetic pull toward nav links
+    const px = magTarget ? mx + (magTarget.cx - mx) * 0.28 : mx;
+    const py = magTarget ? my + (magTarget.cy - my) * 0.28 : my;
+    dot.style.left = px + 'px';
+    dot.style.top  = py + 'px';
+    label.style.left = mx + 'px';
+    label.style.top  = my + 'px';
+
+    // Update text-reveal clip position (element-relative coords for clip-path)
+    if (currentHeading) {
+      let overText = false;
+      try {
+        const range = document.caretRangeFromPoint
+          ? document.caretRangeFromPoint(mx, my)
+          : (document.caretPositionFromPoint ? document.caretPositionFromPoint(mx, my) : null);
+        if (range) {
+          const node = range.startContainer || range.offsetNode;
+          overText = !!node && node.nodeType === Node.TEXT_NODE && currentHeading.contains(node);
+        }
+      } catch (_) {}
+      const ov = currentHeading._curOverlay;
+      if (ov) {
+        if (overText) {
+          const r = currentHeading.getBoundingClientRect();
+          ov.style.setProperty('--_crx', (mx - r.left) + 'px');
+          ov.style.setProperty('--_cry', (my - r.top)  + 'px');
+          ring.classList.remove('_glow-off');
+        } else {
+          ov.style.setProperty('--_crx', '-999px');
+          ov.style.setProperty('--_cry', '-999px');
+          ring.classList.add('_glow-off');
+        }
+      }
+    }
+  });
+
+  document.addEventListener('mouseleave', () => {
+    isOut = true;
+    dot.classList.add('_out');
+    ring.classList.add('_out');
+  });
+
+  document.addEventListener('mouseenter', () => {
+    isOut = false;
+    dot.classList.remove('_out');
+    ring.classList.remove('_out');
+  });
+
+  /* ── Smooth ring animation (lerp) ── */
+  let lastTrailTime = 0;
+  function tick(ts) {
+    const lerpSpeed = currentMode === '_precision' ? 0.22
+                    : currentMode === '_glow'      ? 1.0   // snaps exactly to cursor
+                    : 0.11;
+
+    if (fitEl) {
+      // In fit mode: lerp ring to element's center and match its dimensions
+      const r = fitEl.getBoundingClientRect();
+      const cx = r.left + r.width  / 2;
+      const cy = r.top  + r.height / 2;
+      rx += (cx - rx) * 0.14;
+      ry += (cy - ry) * 0.14;
+      ring.style.width        = r.width  + 'px';
+      ring.style.height       = r.height + 'px';
+      const br = parseFloat(getComputedStyle(fitEl).borderRadius) || 8;
+      ring.style.borderRadius = br + 'px';
+    } else {
+      rx += (mx - rx) * lerpSpeed;
+      ry += (my - ry) * lerpSpeed;
+    }
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+
+    // Emit trail particle every ~35ms while moving
+    const dist = Math.hypot(mx - rx, my - ry);
+    if (dist > 4 && ts - lastTrailTime > 35) {
+      lastTrailTime = ts;
+      const t = document.createElement('div');
+      t.className = '_cur-trail';
+      t.style.left = rx + 'px';
+      t.style.top  = ry + 'px';
+      document.body.appendChild(t);
+      t.addEventListener('animationend', () => t.remove(), { once: true });
+    }
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  /* ── Mode system ── */
+  const ALL_MODES = ['_hov','_view','_target','_drag','_precision','_swipe','_text','_fit','_accent','_glow'];
+  const HEADING_SEL = '.hero-title, .about-heading, .contact-heading, .project-name, .modal-heading, .result-heading, .overlay-title, .howto-title';
+
+  function setMode(mode, labelText, colorOverride, el) {
+    ALL_MODES.forEach(c => { dot.classList.remove(c); ring.classList.remove(c); });
+    // Reset dynamic ring sizing unless entering fit mode
+    if (mode !== '_fit') {
+      ring.style.width = '';
+      ring.style.height = '';
+      ring.style.borderRadius = '';
+      fitEl = null;
+    } else {
+      fitEl = el || null;
+    }
+    // Clean up text-reveal overlay on previous heading
+    if (currentHeading) {
+      if (currentHeading._curOverlay) {
+        currentHeading._curOverlay.remove();
+        delete currentHeading._curOverlay;
+      }
+      ring.classList.remove('_glow-off');
+      currentHeading = null;
+    }
+    // Create overlay in glow mode
+    if (mode === '_glow' && el) {
+      currentHeading = el;
+      // ensure the heading is a positioning context
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      const ov = document.createElement('div');
+      ov.className = '_cur-reveal-overlay';
+      ov.innerHTML = el.innerHTML;
+      el.appendChild(ov);
+      el._curOverlay = ov;
+      rx = mx; ry = my; // snap ring so it doesn't sweep in
+      ring.classList.add('_glow-off'); // start collapsed until cursor is over a glyph
+    }
+    currentMode = mode || null;
+    if (mode) { dot.classList.add(mode); ring.classList.add(mode); }
+    label.textContent = labelText || '';
+    labelText ? label.classList.add('_show') : label.classList.remove('_show');
+    ring.style.borderColor = colorOverride || '';
+    ring.style.boxShadow   = colorOverride
+      ? `0 0 14px 2px ${colorOverride}44`
+      : '';
+    dot.style.background   = (mode === '_text' || mode === '_accent') ? ''
+                           : colorOverride ? colorOverride
+                           : '';
+  }
+
+  /* Text input types that warrant a caret cursor */
+  const TEXT_INPUT_TYPES = new Set(['text','email','password','search','url','tel','number','']);
+
+  /* Helper: returns true if an element has an accent-coloured background (computed) */
+  function isAccentBg(el) {
+    if (!el) return false;
+    const bg = getComputedStyle(el).backgroundColor;
+    // accent = rgb(200, 255, 74) — check approximate match
+    const m = bg.match(/rgb\(?(\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return false;
+    const [, r, g, b] = m.map(Number);
+    return r > 150 && g > 200 && b < 120; // matches lime/yellow-green family
+  }
+
+  /* Helper: derive smart label from a button/link element */
+  function smartLabel(el) {
+    if (!el) return null;
+    const cls = el.className || '';
+    const txt = (el.textContent || '').trim().toLowerCase();
+    if (el.closest('.modal-close') || txt.includes('close') || txt === '×' || txt === 'x') return 'CLOSE';
+    if (txt.includes('send') || cls.includes('btn-send'))  return 'SEND';
+    if (txt.includes('start') || txt.includes('play'))     return 'PLAY';
+    if (txt.includes('restart') || txt.includes('retry') || txt.includes('again')) return 'RETRY';
+    if (txt.includes('save') || txt.includes('download'))  return 'SAVE';
+    if (txt.includes('submit'))                            return 'SUBMIT';
+    if (txt.includes('skip'))                              return 'SKIP';
+    if (txt.includes('next'))                              return 'NEXT';
+    if (txt.includes('menu') || txt.includes('home'))      return 'MENU';
+    if (cls.includes('diff-btn') || cls.includes('mode-btn')) return 'SELECT';
+    return null;
+  }
+
+  /* Priority-ordered mode map – first match wins */
+  const MODE_MAP = [
+    // Text inputs only (not range/checkbox/radio/color/etc.)
+    { fn: el => el.matches('textarea') || (el.matches('input') && TEXT_INPUT_TYPES.has((el.type||'').toLowerCase())),
+      mode: '_text', lbl: null },
+
+    // Canvas / drawing precision
+    { fn: el => !!el.closest('.canvas-frame, canvas'), mode: '_precision', lbl: null },
+
+    // 3D / draggable scenes
+    { fn: el => !!el.closest('.cube-scene, .scene-wrap, .hero-cube'), mode: '_drag', lbl: 'DRAG' },
+
+    // game grid cells
+    { fn: el => !!el.closest('.ttt-cell, .mc, .t2048'), mode: '_target', lbl: null },
+
+    // stat-card → ring traces the box
+    { fn: el => !!el.closest('.stat-card'), mode: '_fit', lbl: null },
+
+    // setting-card → ring traces the box, no label
+    { fn: el => !!el.closest('.setting-card'), mode: '_fit', lbl: null },
+
+    // diff-card
+    { fn: el => !!el.closest('.diff-card'), mode: '_view', lbl: 'SELECT' },
+
+    // hero cards / project cards
+    { fn: el => !!el.closest('.hero-card'), mode: '_view', lbl: 'OPEN →' },
+
+    // accent-background buttons — detected by computed background colour
+    { fn: el => {
+        const btn = el.closest('button, [role="button"], a.btn, .submit-btn, .project-cta, .btn-send');
+        return btn ? isAccentBg(btn) : false;
+      }, mode: '_accent', lbl: null },
+
+    // regular buttons — derive label from content
+    { fn: el => !!el.closest('button, [role="button"]'),
+      mode: '_hov',
+      lbl: el => smartLabel(el.closest('button, [role="button"]')) },
+
+    // big display headings — text reveal clip-mask
+    { fn: el => !!el.closest(HEADING_SEL),
+      mode: '_glow',
+      lbl: null,
+      elFn: el => el.closest(HEADING_SEL) },
+
+    // project rows
+    { fn: el => !!el.closest('.project-row'), mode: '_swipe', lbl: 'EXPLORE →' },
+  ];
+
+  const GENERIC_HOV = 'a, label, select, [tabindex]:not([tabindex="-1"])';
+  const NAV_MAG     = 'nav a, .logo, nav button, .nav-links a';
+  const SWATCH_SEL  = '.color-swatch-inner, .stop-swatch, .grad-thumb, .leg-sw, .legend-swatch';
+
+  document.addEventListener('mouseover', e => {
+    const t = e.target;
+
+    // Color swatch — ring mirrors swatch color
+    const sw = t.closest(SWATCH_SEL);
+    if (sw) {
+      const col = getComputedStyle(sw).backgroundColor;
+      if (col && col !== 'rgba(0, 0, 0, 0)') { setMode('_hov', null, col); return; }
+    }
+
+    // Priority mode map
+    for (const entry of MODE_MAP) {
+      if (entry.fn(t)) {
+        const lbl = typeof entry.lbl === 'function' ? entry.lbl(t) : entry.lbl;
+        const fitTarget  = (entry.mode === '_fit')  ? t.closest('.stat-card, .setting-card') : null;
+        const glowTarget = (entry.elFn)             ? entry.elFn(t) : null;
+        setMode(entry.mode, lbl, null, fitTarget || glowTarget);
+        return;
+      }
+    }
+
+    // Generic interactive hover
+    if (t.closest(GENERIC_HOV)) { setMode('_hov', null, null); return; }
+
+    setMode(null, null, null);
+  });
+
+  document.addEventListener('mouseout', e => {
+    setMode(null, null, null);
+  });
+
+  /* ── Magnetic pull for nav elements ── */
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest(NAV_MAG);
+    if (el) {
+      const r = el.getBoundingClientRect();
+      magTarget = { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(NAV_MAG)) magTarget = null;
+  });
+
+  /* ── Prevent drag on links and images ── */
+  document.addEventListener('dragstart', e => {
+    if (e.target.closest('a, img')) e.preventDefault();
+  });
+
+  /* ── Disable context menu globally ── */
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ── Click burst ── */
+  document.addEventListener('mousedown', e => {
+    dot.classList.add('_clk');
+    ring.classList.add('_clk');
+
+    const r = document.createElement('div');
+    r.className = '_cur-ripple';
+    r.style.left = e.clientX + 'px';
+    r.style.top  = e.clientY + 'px';
+    document.body.appendChild(r);
+    r.addEventListener('animationend', () => r.remove(), { once: true });
+  });
+
+  document.addEventListener('mouseup', () => {
+    dot.classList.remove('_clk');
+    ring.classList.remove('_clk');
+  });
+
+  /* ── Fullscreen toggle (game pages only) ── */
+  (function () {
+    const path = location.pathname;
+    const isGame = !path.endsWith('index.html') && !path.endsWith('/') && path !== '';
+    if (!isGame) return;
+
+    const fsStyle = document.createElement('style');
+    fsStyle.textContent = `
+      #_fs-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 99998;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1.5px solid rgba(200,255,74,0.35);
+        background: rgba(10,10,11,0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #c8ff4a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.5;
+        transition: opacity 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+      }
+      #_fs-btn:hover {
+        opacity: 1;
+        border-color: #c8ff4a;
+        background: rgba(10,10,11,0.92);
+        transform: scale(1.08);
+      }
+      #_fs-btn svg { display: block; }
+
+      /* hide nav / top-bar when fullscreen */
+      :fullscreen nav,
+      :fullscreen .top-bar,
+      :fullscreen .game-bar { display: none !important; }
+      :-webkit-full-screen nav,
+      :-webkit-full-screen .top-bar,
+      :-webkit-full-screen .game-bar { display: none !important; }
+    `;
+    document.head.appendChild(fsStyle);
+
+    const ICON_EXPAND = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="1,5 1,1 5,1"/><polyline points="11,1 15,1 15,5"/>
+      <polyline points="15,11 15,15 11,15"/><polyline points="5,15 1,15 1,11"/>
+    </svg>`;
+
+    const ICON_COMPRESS = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="5,1 5,5 1,5"/><polyline points="11,5 15,5 15,1"/>
+      <polyline points="15,11 11,11 11,15"/><polyline points="1,11 5,11 5,15"/>
+    </svg>`;
+
+    const btn = document.createElement('button');
+    btn.id = '_fs-btn';
+    btn.title = 'Toggle fullscreen  [F]';
+    btn.innerHTML = ICON_EXPAND;
+    document.body.appendChild(btn);
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    function updateIcon() {
+      btn.innerHTML = isFullscreen() ? ICON_COMPRESS : ICON_EXPAND;
+      btn.title = isFullscreen() ? 'Exit fullscreen  [F]' : 'Fullscreen  [F]';
+    }
+
+    function toggle() {
+      if (!isFullscreen()) {
+        (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+          .call(document.documentElement);
+      } else {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      }
+    }
+
+    btn.addEventListener('click', toggle);
+    document.addEventListener('fullscreenchange', updateIcon);
+    document.addEventListener('webkitfullscreenchange', updateIcon);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'f' || e.key === 'F') {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') toggle();
+      }
+    });
+  })();
+})();
