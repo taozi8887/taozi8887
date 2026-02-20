@@ -331,6 +331,59 @@
   .ttt-cell.tx { color: rgba(200,255,74,0.7); background: rgba(200,255,74,0.06); border-color: rgba(200,255,74,0.15); }
   .ttt-cell.to { color: rgba(255,107,107,0.7); background: rgba(255,107,107,0.06); border-color: rgba(255,107,107,0.15); }
 
+  /* ─── 2048 preview ─── */
+  .card-2048 .hero-card-bg { background: linear-gradient(150deg, #1a0a00, #3d1f00, #5c2e00); opacity: 0.9; }
+  .preview-2048 {
+    position: absolute; inset: 0; z-index: 0;
+    display: grid; grid-template-columns: repeat(4,1fr); grid-template-rows: repeat(4,1fr);
+    gap: 5px; padding: 24px 28px;
+  }
+  .t2048 {
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; font-family: 'DM Mono', monospace;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    opacity: 0.7;
+  }
+  .t2048.v2    { background: rgba(238,228,218,0.15); color: #ede0c8; border-color: rgba(238,228,218,0.2); }
+  .t2048.v4    { background: rgba(237,224,200,0.18); color: #ede0c8; border-color: rgba(237,224,200,0.25); }
+  .t2048.v8    { background: rgba(242,177,121,0.35); color: #f9a05a; border-color: rgba(242,177,121,0.4); }
+  .t2048.v16   { background: rgba(245,149,99,0.35); color: #f97c44; border-color: rgba(245,149,99,0.4); }
+  .t2048.v32   { background: rgba(246,124,95,0.35); color: #f96040; border-color: rgba(246,124,95,0.4); }
+  .t2048.v64   { background: rgba(246,94,59,0.40); color: #f9512a; border-color: rgba(246,94,59,0.45); }
+  .t2048.v128  { background: rgba(237,207,114,0.35); color: #edcf72; border-color: rgba(237,207,114,0.4); font-size: 9px; }
+  .t2048.v256  { background: rgba(237,204,97,0.38); color: #edcc61; border-color: rgba(237,204,97,0.45); font-size: 9px; }
+  .t2048.v512  { background: rgba(237,200,80,0.40); color: #edc850; border-color: rgba(237,200,80,0.5); font-size: 9px; }
+  .t2048.v1024 { background: rgba(237,197,63,0.45); color: #edc53f; border-color: rgba(237,197,63,0.55); font-size: 7px; }
+  .t2048.v2048 { background: rgba(237,194,46,0.50); color: #edc22e; border-color: rgba(237,194,46,0.6); font-size: 7px;
+    box-shadow: 0 0 18px rgba(237,194,46,0.35); animation: tileGlow 2s ease infinite; }
+  @keyframes tileGlow { 0%,100% { box-shadow: 0 0 14px rgba(237,194,46,0.3); } 50% { box-shadow: 0 0 26px rgba(237,194,46,0.55); } }
+
+  /* ─── Typer preview ─── */
+  .card-typer .hero-card-bg { background: linear-gradient(170deg, #0a0a0b, #111113, #1a1a1d); opacity: 1; }
+  .typer-preview {
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 24px 28px; gap: 10px;
+  }
+  .tp-line {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
+    display: flex; flex-wrap: wrap; gap: 3px; align-items: baseline;
+  }
+  .tp-ok   { color: #4aff8c; opacity: 0.85; }
+  .tp-bad  { color: #ff6b6b; opacity: 0.85; }
+  .tp-un   { color: #666670; opacity: 0.45; }
+  .tp-cur  {
+    color: #e8e8ea; position: relative;
+    border-bottom: 2px solid #c8ff4a;
+    animation: tpBlink 1s ease infinite;
+  }
+  @keyframes tpBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .tp-wpm {
+    font-family: 'DM Mono', monospace; font-size: 9px; color: #c8ff4a;
+    letter-spacing: 0.1em; opacity: 0.6; margin-top: 4px;
+  }
+
 
   .section-divider { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
   .section-divider .line { width: 100%; height: 1px; background: var(--border); }
@@ -666,12 +719,44 @@
         <div class="hero-card-desc">5×5×5 spatial strategy</div>
       </div>
     </a>
+    <a href="2048.html" target="_blank" class="hero-card card-2048">
+      <div class="hero-card-bg"></div>
+      <div class="preview-2048">
+        <div class="t2048"></div><div class="t2048 v2">2</div><div class="t2048 v4">4</div><div class="t2048"></div>
+        <div class="t2048 v8">8</div><div class="t2048 v16">16</div><div class="t2048"></div><div class="t2048 v2">2</div>
+        <div class="t2048 v32">32</div><div class="t2048 v64">64</div><div class="t2048 v128">128</div><div class="t2048 v4">4</div>
+        <div class="t2048 v256">256</div><div class="t2048 v512">512</div><div class="t2048 v1024">1024</div><div class="t2048 v2048">2048</div>
+      </div>
+      <div class="hero-card-overlay"></div>
+      <span class="hero-card-arrow">↗</span>
+      <div class="hero-card-content">
+        <div class="hero-card-title">2048</div>
+        <div class="hero-card-desc">Slide tiles, merge numbers</div>
+      </div>
+    </a>
+    <a href="typer.html" target="_blank" class="hero-card card-typer">
+      <div class="hero-card-bg"></div>
+      <div class="typer-preview">
+        <div class="tp-line">
+          <span class="tp-ok">the</span><span class="tp-ok">quick</span><span class="tp-bad">brwon</span><span class="tp-ok">fox</span><span class="tp-ok">jumps</span>
+        </div>
+        <div class="tp-line">
+          <span class="tp-ok">over</span><span class="tp-ok">the</span><span class="tp-ok">la<span class="tp-cur">z</span></span><span class="tp-un">y</span><span class="tp-un">dog</span><span class="tp-un">and</span><span class="tp-un">then</span>
+        </div>
+        <div class="tp-line">
+          <span class="tp-un">some</span><span class="tp-un">more</span><span class="tp-un">words</span><span class="tp-un">follow</span>
+        </div>
+        <div class="tp-wpm">87 wpm · 96% acc</div>
+      </div>
+      <div class="hero-card-overlay"></div>
+      <span class="hero-card-arrow">↗</span>
+      <div class="hero-card-content">
+        <div class="hero-card-title">Typer</div>
+        <div class="hero-card-desc">Speed typing test</div>
+      </div>
+    </a>
   </div>
 </section>
-
-<div class="section-divider"><div class="line"></div></div>
-
-<!-- ABOUT -->
 <section class="about" id="about">
   <div class="section-tag">About</div>
   <div class="about-grid">
@@ -681,7 +766,7 @@
       <p class="about-text reveal" style="margin-top:16px;transition-delay:0.15s;">I also care a lot about UI and making things look good, which probably has something to do with the fact that I've been drawing basically my whole life. The art and the code end up influencing each other way more than I expected.</p>
     </div>
     <div class="about-stats reveal" style="transition-delay:0.2s;">
-      <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Games</div></div>
+      <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">Games</div></div>
       <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Dependencies</div></div>
       <div class="stat-card"><div class="stat-num">∞</div><div class="stat-label">Replayability</div></div>
       <div class="stat-card"><div class="stat-num">1</div><div class="stat-label">File per game</div></div>
@@ -736,6 +821,28 @@
         <h3 class="project-name">3D Tic-Tac-Toe<span style="color:var(--accent)">.</span></h3>
         <p class="project-desc">A twist on the classic game played on a 5×5×5 cube. Get five in a row across any dimension - horizontal, vertical, diagonal, or through depth. Two players, one screen.</p>
         <div class="project-tags"><span class="tag">Strategy</span><span class="tag">3D</span><span class="tag">Local Multiplayer</span></div>
+        <span class="project-cta">Play now ↗</span>
+      </div>
+    </a>
+    <a href="2048.html" target="_blank" class="project-row reveal">
+      <div class="project-row-bg" style="background:linear-gradient(200deg, #3d1f00, #7a3e00, #c86000); opacity: 0.35;"></div>
+      <div class="project-row-overlay"></div>
+      <div class="project-info">
+        <span class="project-num">05</span>
+        <h3 class="project-name">2048<span style="color:#f5a623">.</span></h3>
+        <p class="project-desc">Slide tiles on a 4×4 grid to combine matching numbers. Reach the 2048 tile - and beyond. Simple rules, surprisingly deep strategy.</p>
+        <div class="project-tags"><span class="tag">Puzzle</span><span class="tag">Sliding</span><span class="tag">Numbers</span></div>
+        <span class="project-cta">Play now ↗</span>
+      </div>
+    </a>
+    <a href="typer.html" target="_blank" class="project-row reveal">
+      <div class="project-row-bg" style="background:linear-gradient(200deg, #0a1a0a, #0d2e14, #133d1b); opacity: 0.5;"></div>
+      <div class="project-row-overlay"></div>
+      <div class="project-info">
+        <span class="project-num">06</span>
+        <h3 class="project-name">Typer<span style="color:var(--accent3)">.</span></h3>
+        <p class="project-desc">A clean, minimal typing speed test inspired by MonkeyType. 30 or 60 seconds, live WPM and accuracy, with a smooth word-by-word interface.</p>
+        <div class="project-tags"><span class="tag">Typing</span><span class="tag">Speed</span><span class="tag">Accuracy</span></div>
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>

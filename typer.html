@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typer — Speed Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1d;
+    --surface3: #222226;
+    --border: #252528;
+    --text: #e8e8ea;
+    --muted: #666670;
+    --accent: #c8ff4a;
+    --accent2: #ff6b6b;
+    --accent3: #4aff8c;
+    --radius: 12px;
+    --font-size: 20px;
+    --line-height: 2.4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.6;
+  }
+
+  body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+  header { width: 100%; max-width: 960px; display: flex; justify-content: space-between; align-items: center; padding: 28px 24px 0; flex-shrink: 0; }
+  .logo { font-family: 'Instrument Serif', serif; font-size: 22px; letter-spacing: -0.5px; color: var(--text); cursor: pointer; user-select: none; }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .version { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+  .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 960px; padding: 0 24px 60px; flex: 1; }
+  .screen.active { display: flex; animation: fadeIn 0.35s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .btn { padding: 12px 28px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); font-weight: 500; }
+  .btn.primary:hover { background: #d4ff6a; }
+  .btn.sm { padding: 7px 16px; font-size: 11px; border-radius: 8px; }
+
+  #home { justify-content: center; padding-bottom: 80px; }
+  .hero-gap { height: 48px; }
+  .hero-eyebrow { font-size: 11px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 20px; text-align: center; }
+  .hero-title { font-family: 'Instrument Serif', serif; font-size: clamp(60px, 11vw, 100px); line-height: 1; letter-spacing: -3px; text-align: center; margin-bottom: 20px; }
+  .hero-sub { font-size: 13px; color: var(--muted); text-align: center; letter-spacing: 0.03em; max-width: 380px; line-height: 1.8; margin-bottom: 48px; }
+
+  .hero-preview { display: flex; gap: 3px; margin-bottom: 48px; font-family: 'DM Mono', monospace; font-size: 15px; letter-spacing: 1px; }
+  .hp-correct { color: var(--accent3); }
+  .hp-incorrect { color: var(--accent2); text-decoration: line-through; }
+  .hp-current { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 1px; }
+  .hp-untyped { color: var(--muted); opacity: 0.4; }
+
+  .difficulty-cards { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+  .diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 28px; cursor: pointer; transition: all 0.2s; text-align: center; min-width: 110px; }
+  .diff-card:hover, .diff-card.selected { border-color: var(--accent); background: rgba(200,255,74,0.04); }
+  .diff-card .d-name { font-family: 'Instrument Serif', serif; font-size: 22px; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .diff-card .d-info { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+  .home-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 28px; }
+  .stat-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 7px 18px; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; display: flex; gap: 8px; align-items: center; }
+  .stat-chip strong { color: var(--text); font-weight: 400; }
+
+  #game { padding-top: 28px; gap: 16px; justify-content: flex-start; }
+  .game-bar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .game-title { font-family: 'Instrument Serif', serif; font-size: 20px; letter-spacing: -0.5px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; display: flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; transition: all 0.3s; }
+  .chip strong { color: var(--text); font-weight: 400; transition: color 0.3s; }
+  .chip.warn strong { color: var(--accent2); }
+
+  .text-container {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    position: relative;
+    cursor: text;
+    outline: none;
+    transition: border-color 0.3s;
+    padding: 24px 28px;
+    overflow: hidden;
+  }
+  .text-container:focus, .text-container.focused { border-color: var(--accent); }
+
+  .text-display {
+    font-family: 'DM Mono', monospace;
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    letter-spacing: 0.3px;
+    white-space: normal;
+    word-break: break-word;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .word { display: inline; white-space: nowrap; }
+  .word-error { border-bottom: 2px solid rgba(255,107,107,0.45); }
+  .char { transition: color 0.06s; }
+  .char-correct { color: var(--accent3); }
+  .char-incorrect { color: var(--accent2); background: rgba(255,107,107,0.12); border-radius: 2px; }
+  .char-extra { color: var(--accent2); background: rgba(255,107,107,0.15); border-radius: 2px; }
+  .char-untyped { color: var(--muted); opacity: 0.35; }
+  /* Inline vertical caret — lives directly in the text flow */
+  .caret {
+    display: inline-block;
+    width: 2.5px;
+    height: 1.18em;
+    background: var(--accent);
+    border-radius: 1px;
+    vertical-align: text-bottom;
+    margin-right: -2.5px;
+    position: relative;
+    z-index: 3;
+    animation: caretBlink 1.05s ease infinite;
+  }
+  @keyframes caretBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+  .caps-warn {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    background: rgba(255,160,40,0.09);
+    border-bottom: 1px solid rgba(255,160,40,0.28);
+    border-radius: 15px 15px 0 0;
+    padding: 6px 18px;
+    font-size: 11px;
+    color: #ffa028;
+    letter-spacing: 0.08em;
+    text-align: center;
+    display: none;
+    z-index: 3;
+  }
+
+  .focus-hint {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10,10,11,0.7);
+    backdrop-filter: blur(3px);
+    border-radius: 15px;
+    font-size: 13px; color: var(--muted);
+    letter-spacing: 0.06em;
+    pointer-events: none;
+    opacity: 0; transition: opacity 0.25s;
+    z-index: 2;
+  }
+  .text-container.show-hint .focus-hint { opacity: 1; }
+
+  .status-banner { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 20px; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); letter-spacing: 0.05em; transition: border-color 0.3s; min-height: 48px; }
+  .status-banner .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; }
+  .status-banner.finished { border-color: var(--accent); } .status-banner.finished .dot { background: var(--accent); }
+  .status-text { flex: 1; } .status-text strong { color: var(--text); font-weight: 400; }
+
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 44px; max-width: 480px; width: calc(100% - 48px); display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+  .modal-icon { font-size: 54px; line-height: 1; }
+  .modal-heading { font-family: 'Instrument Serif', serif; font-size: clamp(38px,8vw,62px); letter-spacing: -2px; line-height: 1; }
+  .modal-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; line-height: 1.8; }
+  .modal-stats { display: flex; gap: 12px; width: 100%; justify-content: center; flex-wrap: wrap; }
+  .modal-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 70px; }
+  .modal-stat .v { font-family: 'Instrument Serif', serif; font-size: 28px; letter-spacing: -1px; display: block; }
+  .modal-stat .l { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; overflow-wrap: break-word; word-break: break-word; }
+  .modal-actions { display: flex; gap: 10px; width: 100%; }
+  .modal-actions .btn { flex: 1; text-align: center; }
+
+  .howto-modal { max-width: 500px; align-items: flex-start; text-align: left; gap: 0; }
+  .howto-title { font-family: 'Instrument Serif', serif; font-size: 28px; letter-spacing: -1px; margin-bottom: 24px; }
+  .how-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+  .step-text { font-size: 12px; color: var(--muted); line-height: 1.8; letter-spacing: 0.03em; }
+  .step-text strong { color: var(--text); font-weight: 400; }
+
+  footer { max-width: 960px; width: 100%; margin: auto auto 0; padding: 32px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); letter-spacing: 0.05em; border-top: 1px solid var(--border); }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; } footer a:hover { color: var(--accent); }
+  ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 540px) {
+    :root { --font-size: 16px; --line-height: 2.2; }
+    .text-container { padding: 18px 20px; }
+    .difficulty-cards { flex-direction: column; align-items: stretch; }
+    .diff-card { text-align: left; display: flex; gap: 16px; align-items: center; }
+    .diff-card .d-name { margin-bottom: 0; min-width: 60px; }
+    .chips { gap: 5px; } .chip { padding: 5px 10px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo" onclick="nav('home')">Typer<span>.</span></span>
+  <div class="header-right">
+    <span class="version">v1.0</span>
+    <button class="btn sm" onclick="openModal('howto')">How to Play</button>
+  </div>
+</header>
+
+<div id="home" class="screen active">
+  <div class="hero-gap"></div>
+  <p class="hero-eyebrow">Test your speed</p>
+  <h1 class="hero-title">Ty<em>per.</em></h1>
+  <p class="hero-sub">Measure your typing speed and accuracy. Start typing and the clock begins. How fast can you go?</p>
+  <div class="hero-preview">
+    <span class="hp-correct">t</span><span class="hp-correct">h</span><span class="hp-correct">e</span><span class="hp-correct">&nbsp;</span><span class="hp-correct">q</span><span class="hp-correct">u</span><span class="hp-correct">i</span><span class="hp-correct">c</span><span class="hp-correct">k</span><span class="hp-correct">&nbsp;</span><span class="hp-incorrect">b</span><span class="hp-current">r</span><span class="hp-untyped">o</span><span class="hp-untyped">w</span><span class="hp-untyped">n</span>
+  </div>
+  <div class="difficulty-cards">
+    <div class="diff-card selected" data-dur="30" onclick="selectDur(this)"><div class="d-name">30s</div><div class="d-info">Quick</div></div>
+    <div class="diff-card" data-dur="60" onclick="selectDur(this)"><div class="d-name">60s</div><div class="d-info">Standard</div></div>
+    <div class="diff-card" data-dur="120" onclick="selectDur(this)"><div class="d-name">120s</div><div class="d-info">Endurance</div></div>
+  </div>
+  <div class="home-actions"><button class="btn primary" onclick="startGame()">Start Typing</button></div>
+  <div class="stats-row"><div class="stat-chip">best wpm <strong id="homeBest">—</strong></div></div>
+</div>
+
+<div id="game" class="screen">
+  <div class="game-bar">
+    <span class="game-title">Typer</span>
+    <div class="chips">
+      <div class="chip" id="timerChip">time <strong id="timerVal">60</strong></div>
+      <div class="chip">wpm <strong id="wpmVal">0</strong></div>
+      <div class="chip">acc <strong id="accVal">100%</strong></div>
+    </div>
+  </div>
+  <div class="text-container" id="textContainer" tabindex="0">
+    <div class="caps-warn" id="capsWarn">⇪ Caps Lock is on</div>
+    <div class="text-display" id="textDisplay"></div>
+    <div class="focus-hint">Click here or press any key to focus</div>
+  </div>
+  <div class="status-banner" id="statusBanner"><div class="dot"></div><div class="status-text" id="statusText">Start typing to begin the countdown.</div></div>
+  <div style="display:flex;gap:10px;margin-top:8px;"><button class="btn sm" onclick="resetTest()">Restart</button><button class="btn sm" onclick="nav('home')">Menu</button></div>
+</div>
+
+<div class="modal-backdrop" id="resultBackdrop" onclick="closeModal('result')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-icon">⌨</div>
+    <div class="modal-heading" id="resultTitle">—</div>
+    <div class="modal-sub" id="resultSub"></div>
+    <div class="modal-stats" id="resultStats"></div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="closeModal('result');resetTest();">Try Again</button>
+      <button class="btn" onclick="closeModal('result');nav('home');">Menu</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
+  <div class="modal howto-modal" onclick="event.stopPropagation()">
+    <div class="howto-title">How to Play</div>
+    <div class="how-step"><div class="step-num">1</div><div class="step-text">Click the text area or just <strong>start typing</strong>. The timer begins on your first keystroke.</div></div>
+    <div class="how-step"><div class="step-num">2</div><div class="step-text">Type the displayed words as <strong>accurately</strong> and <strong>quickly</strong> as possible.</div></div>
+    <div class="how-step"><div class="step-num">3</div><div class="step-text">Use <strong>Backspace</strong> to correct mistakes. Incorrect characters show in red.</div></div>
+    <div class="how-step"><div class="step-num">4</div><div class="step-text">When the timer runs out, you'll see your <strong>WPM</strong> and accuracy.</div></div>
+    <div style="width:100%;margin-top:12px;"><button class="btn primary" onclick="closeModal('howto')" style="width:100%; text-align:center;">Got it</button></div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
+  <span>Made with love · Typer v1.0<span style="color:var(--accent)">.</span></span>
+</footer>
+
+<script>
+const WORDS=["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","great","between","need","large","often","ask","begin","play","run","move","live","believe","help","find","old","long","very","own","much","tell","keep","let","thing","write","become","here","show","house","both","before","high","right","while","last","might","still","should","never","each","under","world","life","hand","real","many","small","turn","again","school","every","place","where","call","group","through","feel","must","start","city","state","earth","being","human","system","program","question","during","point","home","water","room","mother","light","always","music","best","power","learn","change","research","study","head","land","food","story","answer","number","build","close","word","example","paper","open","river","car","table","body","family","young","area","face","child","main","line","side","end","read","door","game","name","plan","list","kind","later","country","father","case","book","part","eye","watch","fire","animal","letter","money","follow","morning","leave","hard","bring","set","talk","lead","problem","idea","stand","public","fact","form","second","center","simple","several","among","above","class","record","tree","cross","nature","field","dog","once","may","order","south","art","mile","rock","cold","star","draw","voice","fall","town","fine","fly","unit","week","month","sleep","north","store","age","note","test","snow","rain","step","force","ocean","mark","near","sit","grow","result","laugh","check","save","dark","require","figure","meet","material","produce","clear","deep","front","island","total","course","remain","effect","matter","love","road","map","science","rule","pull","care","office","early","fast","hold","drive","fish","plant","act","rise","bad","bank","picture","outside","consider","surface","wall","hot","current","ground","east","west","across","modern","cost","bit","stop","short","low","rather","boat","reach","rest","since","quite","fill","press","top","possible","create","contain","cover","market","space","include","continue","direct","enough","pass","support","charge","common","collect","machine","provide","control","interest","measure","walk","teach","oil","half","effort","garden","level","report","able","join","accept","ship","view","physical","spread","supply","certain","iron","red","green","blue","yellow","white","black","brown","method","speed","firm","below","season","wind","trouble","stone","scale","trade","sky","winter","spring","summer","quarter","process","model","basic","safe","alone","pattern","train","clean","block","shape","sudden","square","edge","speak","bread","cloud","quiet","enter","wild","danger","race","thick","plain","quick","sharp","soft","sweet","warm","wide","burn","camp","circle","catch","dance","drink","feed","fight","finish","float","heat","hunt","imagine","jump","kill","mix","paint","score","search","shake","signal","smell","taste","touch","wave","wonder","allow","chair","fruit","guard","dream","exist","metal","nose","ring","smile","suppose","weather","bright","compare","crowd","finger","fresh","middle","noise","perfect","plate","pocket","silent","strange","trip","window","bottom","dozen","receive","operate"];
+
+/* ─── State ─────────────────────────────────────────────────── */
+let testDuration    = 30;
+let words           = [];
+let typedWords      = [];   // typedWords[wi] = string of chars typed for word wi
+let wordIdx         = 0;
+let timerInterval   = null;
+let startTime       = null;
+let finishedFlag    = false;
+let timerRunning    = false;
+let measuredLineH   = 48;
+let keystrokeTimes  = [];
+let wordLineMap     = [];   // wordLineMap[wi] = logical line index
+let lineGroups      = [];   // lineGroups[li]  = [wi, wi, ...]
+let visibleLineStart= 0;
+let isSliding       = false;
+
+/* ─── Navigation ─────────────────────────────────────────────── */
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'game') setTimeout(() => document.getElementById('textContainer').focus(), 100);
+}
+function openModal(id)  { document.getElementById(id + 'Backdrop').classList.add('open'); }
+function closeModal(id) { document.getElementById(id + 'Backdrop').classList.remove('open'); }
+function selectDur(el)  {
+  document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  testDuration = parseInt(el.dataset.dur);
+}
+function startGame() { nav('game'); resetTest(); }
+function genWords(n) {
+  const a = [];
+  for (let i = 0; i < n; i++) a.push(WORDS[Math.floor(Math.random() * WORDS.length)]);
+  return a;
+}
+
+/* ─── Reset / Render ─────────────────────────────────────────── */
+function resetTest() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  words             = genWords(200);
+  typedWords        = words.map(() => '');
+  wordIdx           = 0;
+  startTime         = null;
+  finishedFlag      = false;
+  timerRunning      = false;
+  keystrokeTimes    = [];
+  wordLineMap       = [];
+  lineGroups        = [];
+  visibleLineStart  = 0;
+  isSliding         = false;
+  buildLineGroups();
+  renderVisibleLines();
+  updateChips();
+  document.getElementById('timerVal').textContent = testDuration;
+  document.getElementById('statusBanner').className = 'status-banner';
+  document.getElementById('statusText').innerHTML   = 'Start typing to begin the countdown.';
+  document.getElementById('textContainer').classList.remove('show-hint');
+  document.getElementById('timerChip').classList.remove('warn');
+  document.getElementById('capsWarn').style.display = 'none';
+  setTimeout(() => document.getElementById('textContainer').focus(), 50);
+}
+
+/* ─── Line-group measurement ────────────────────────────────── */
+function buildLineGroups() {
+  const d = document.getElementById('textDisplay');
+  // Render everything unconstrained so we can measure real offsetTops
+  d.style.height   = 'auto';
+  d.style.overflow = 'visible';
+  d.innerHTML      = '';
+
+  for (let wi = 0; wi < words.length; wi++) {
+    const wEl = document.createElement('span');
+    wEl.className = 'word';
+    wEl.id = '_m' + wi; // temp IDs – only for measuring
+    wEl.textContent = words[wi];
+    d.appendChild(wEl);
+    if (wi < words.length - 1) {
+      d.appendChild(document.createTextNode(' '));
+    }
+  }
+
+  // Force layout flush
+  void d.offsetHeight;
+
+  // Map each word to a logical line via offsetTop
+  wordLineMap = [];
+  const topToLine = new Map();
+  let lineCounter = 0;
+  for (let wi = 0; wi < words.length; wi++) {
+    const wEl = document.getElementById('_m' + wi);
+    const top = wEl ? wEl.offsetTop : 0;
+    if (!topToLine.has(top)) topToLine.set(top, lineCounter++);
+    wordLineMap[wi] = topToLine.get(top);
+  }
+
+  lineGroups = [];
+  for (let wi = 0; wi < words.length; wi++) {
+    const li = wordLineMap[wi];
+    if (!lineGroups[li]) lineGroups[li] = [];
+    lineGroups[li].push(wi);
+  }
+
+  // Derive line-height from the gap between the first two distinct tops
+  const tops = [...topToLine.keys()].sort((a, b) => a - b);
+  measuredLineH = tops.length >= 2
+    ? tops[1] - tops[0]
+    : parseFloat(getComputedStyle(d).lineHeight) || 48;
+
+  // Lock the container to exactly 3 lines
+  d.style.height   = Math.round(measuredLineH * 3) + 'px';
+  d.style.overflow = 'hidden';
+  d.innerHTML      = ''; // cleared – renderVisibleLines() fills it
+}
+
+/* ─── Render only the 3 visible lines ────────────────────────── */
+function renderVisibleLines() {
+  const d       = document.getElementById('textDisplay');
+  d.innerHTML   = '';
+
+  const endLine = Math.min(visibleLineStart + 3, lineGroups.length);
+  for (let li = visibleLineStart; li < endLine; li++) {
+    const group = lineGroups[li];
+    for (let k = 0; k < group.length; k++) {
+      const wi    = group[k];
+      const word  = words[wi];
+      const typed = typedWords[wi];
+
+      const wEl = document.createElement('span');
+      wEl.id    = 'w' + wi;
+
+      // Char spans
+      for (let ci = 0; ci < word.length; ci++) {
+        const s = document.createElement('span');
+        s.id    = 'c' + wi + '_' + ci;
+        if (ci < typed.length) {
+          s.className = typed[ci] === word[ci] ? 'char char-correct' : 'char char-incorrect';
+        } else {
+          s.className = 'char char-untyped';
+        }
+        s.textContent = word[ci];
+        wEl.appendChild(s);
+      }
+
+      // Extra chars beyond word length
+      for (let i = word.length; i < typed.length; i++) {
+        const s = document.createElement('span');
+        s.className   = 'char char-extra';
+        s.textContent = typed[i];
+        wEl.appendChild(s);
+      }
+
+      // Word-error underline for already-completed words
+      if (wi < wordIdx) {
+        let hasError = typed.length !== word.length;
+        if (!hasError) for (let ci = 0; ci < word.length; ci++) if (typed[ci] !== word[ci]) { hasError = true; break; }
+        wEl.className = hasError ? 'word word-error' : 'word';
+      } else {
+        wEl.className = 'word';
+      }
+
+      d.appendChild(wEl);
+
+      // Space after word (skip after last word of last visible line)
+      const isLastOfWindow = li === endLine - 1 && k === group.length - 1;
+      if (!isLastOfWindow) {
+        const sp      = document.createElement('span');
+        sp.id         = 'sp' + wi;
+        sp.className  = wi < wordIdx ? 'char char-space char-correct' : 'char char-space char-untyped';
+        sp.textContent= ' ';
+        d.appendChild(sp);
+      }
+    }
+  }
+
+  placeCaret();
+}
+
+/* ─── Advance the visible window when needed ─────────────────── */
+function maybeAdvanceLine(animate) {
+  const curLine = wordLineMap[wordIdx] ?? 0;
+  if (curLine >= visibleLineStart + 2) {
+    if (isSliding) {
+      // Already mid-animation; update target line and let the queued swap handle it
+      visibleLineStart = curLine - 1;
+      return;
+    }
+    isSliding = true;
+    // Slide the display upward by one line, then swap the DOM
+    const d = document.getElementById('textDisplay');
+    d.style.transition = 'transform 0.14s cubic-bezier(0.4,0,0.2,1)';
+    d.style.transform  = 'translateY(-' + measuredLineH + 'px)';
+    setTimeout(function() {
+      d.style.transition = 'none';
+      d.style.transform  = '';
+      visibleLineStart   = curLine - 1;
+      isSliding          = false;
+      renderVisibleLines();
+    }, 145);
+  } else {
+    updateWordDisplay(wordIdx);
+    placeCaret(animate);
+  }
+}
+
+/* ─── Caret (inline DOM element) ────────────────────────────── */
+function getCaret() {
+  let c = document.getElementById('caret');
+  if (!c) { c = document.createElement('span'); c.id = 'caret'; c.className = 'caret'; }
+  return c;
+}
+
+function placeCaret(animate) {
+  const caret   = getCaret();
+  const wEl     = document.getElementById('w' + wordIdx);
+  if (!wEl) return;
+  const word    = words[wordIdx];
+  const typed   = typedWords[wordIdx];
+  const charPos = typed.length;
+
+  // FLIP: snapshot old position before moving
+  let oldRect = null;
+  if (animate && caret.parentNode) {
+    oldRect = caret.getBoundingClientRect();
+  }
+
+  if (caret.parentNode) caret.parentNode.removeChild(caret);
+
+  if (charPos < word.length) {
+    // Before the next untyped char
+    const target = document.getElementById('c' + wordIdx + '_' + charPos);
+    if (target) wEl.insertBefore(caret, target);
+    else wEl.appendChild(caret);
+  } else {
+    // After ALL content in the word (end of word / extra chars)
+    wEl.appendChild(caret);
+  }
+
+  if (animate && oldRect) {
+    const newRect = caret.getBoundingClientRect();
+    const dx = oldRect.left - newRect.left;
+    const dy = oldRect.top  - newRect.top;
+    if (dx !== 0 || dy !== 0) {
+      caret.style.animation  = 'none';
+      caret.style.transition = 'none';
+      caret.style.transform  = 'translate(' + dx + 'px,' + dy + 'px)';
+      void caret.offsetWidth; // force reflow
+      caret.style.transition = 'transform 0.1s cubic-bezier(0.25,0.46,0.45,0.94)';
+      caret.style.transform  = '';
+      setTimeout(function() {
+        caret.style.transition = '';
+        caret.style.animation  = '';
+      }, 110);
+    }
+  }
+}
+
+/* ─── Word display updater ───────────────────────────────────── */
+function updateWordDisplay(wi) {
+  if (wi >= words.length) return;
+  const word  = words[wi];
+  const typed = typedWords[wi];
+  const wEl   = document.getElementById('w' + wi);
+  if (!wEl) return;
+
+  // Remove stale extra-char spans
+  wEl.querySelectorAll('.char-extra').forEach(e => e.remove());
+
+  // Regular chars
+  for (let ci = 0; ci < word.length; ci++) {
+    const s = document.getElementById('c' + wi + '_' + ci);
+    if (!s) continue;
+    if (ci < typed.length) {
+      s.className = typed[ci] === word[ci] ? 'char char-correct' : 'char char-incorrect';
+    } else {
+      s.className = 'char char-untyped';
+    }
+  }
+
+  // Extra chars (typed beyond word length)
+  const caret = getCaret();
+  for (let i = word.length; i < typed.length; i++) {
+    const s = document.createElement('span');
+    s.className = 'char char-extra';
+    s.id = 'c' + wi + '_x' + (i - word.length);
+    s.textContent = typed[i];
+    // Insert before caret if present in this word, else append
+    if (caret.parentNode === wEl) wEl.insertBefore(s, caret);
+    else wEl.appendChild(s);
+  }
+
+  // Word-level error underline for completed words
+  if (wi < wordIdx) {
+    let hasError = typed.length !== word.length;
+    if (!hasError) for (let ci = 0; ci < word.length; ci++) if (typed[ci] !== word[ci]) { hasError = true; break; }
+    wEl.className = hasError ? 'word word-error' : 'word';
+  } else {
+    wEl.className = 'word';
+  }
+
+  // Space char style
+  const sp = document.getElementById('sp' + wi);
+  if (sp && wi < wordIdx) sp.className = 'char char-space char-correct';
+}
+
+
+
+/* ─── Keyboard ───────────────────────────────────────────────── */
+const tc = document.getElementById('textContainer');
+
+tc.addEventListener('keydown', function(e) {
+  if (finishedFlag) return;
+
+  // Tab → instant restart (MonkeyType behaviour)
+  if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
+
+  // Ctrl/Cmd+Backspace → wipe current word
+  if (e.key === 'Backspace' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (typedWords[wordIdx].length > 0) {
+      typedWords[wordIdx] = '';
+      updateWordDisplay(wordIdx);
+      placeCaret();
+    }
+    if (startTime) updateChips();
+    return;
+  }
+
+  // Caps-lock warning — check on every keydown (before early returns)
+  if (e.getModifierState && e.getModifierState('CapsLock')) {
+    document.getElementById('capsWarn').style.display = 'block';
+  } else {
+    document.getElementById('capsWarn').style.display = 'none';
+  }
+
+  if (e.altKey) return;
+  if (['Shift','Control','Alt','Meta','CapsLock','Escape',
+       'ArrowLeft','ArrowRight','ArrowUp','ArrowDown','F1','F2','F3','F4',
+       'F5','F6','F7','F8','F9','F10','F11','F12'].includes(e.key)) return;
+
+  // Backspace
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (typedWords[wordIdx].length > 0) {
+      typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
+      updateWordDisplay(wordIdx);
+      placeCaret();
+    } else if (wordIdx > 0) {
+      // Go back to previous word and remove its last char
+      wordIdx--;
+      typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
+      const prevLine = wordLineMap[wordIdx] ?? 0;
+      if (prevLine < visibleLineStart) {
+        // Word scrolled off the top — re-render with it visible
+        visibleLineStart = Math.max(0, prevLine);
+        renderVisibleLines();
+      } else {
+        updateWordDisplay(wordIdx);
+        placeCaret();
+      }
+    }
+    if (startTime) updateChips();
+    return;
+  }
+
+  if (e.key.length !== 1) return;
+  e.preventDefault();
+
+  // Start timer on first keystroke
+  if (!startTime) {
+    startTime    = performance.now();
+    timerRunning = true;
+    startTimer();
+    document.getElementById('statusText').innerHTML = 'Typing in progress...';
+  }
+
+  if (e.key === ' ') {
+    // Space: skip to next word (MonkeyType behaviour – even mid-word)
+    if (typedWords[wordIdx].length === 0) return; // can't skip empty word
+    if (wordIdx < words.length - 1) {
+      wordIdx++; // increment first so updateWordDisplay sees wi < wordIdx
+      updateWordDisplay(wordIdx - 1); // finalise completed word (shows error underline)
+      maybeAdvanceLine(true); // animate caret jump; re-renders or updates+places
+    }
+  } else {
+    // Regular character – allow up to word-length + 10 extra chars
+    const maxLen = words[wordIdx].length + 10;
+    if (typedWords[wordIdx].length < maxLen) {
+      typedWords[wordIdx] += e.key;
+      keystrokeTimes.push(performance.now());
+      updateWordDisplay(wordIdx);
+      placeCaret();
+    }
+  }
+  updateChips();
+});
+
+  tc.addEventListener('focus', function() { tc.classList.add('focused'); tc.classList.remove('show-hint'); });
+tc.addEventListener('blur',  function() { tc.classList.remove('focused'); if (!finishedFlag) tc.classList.add('show-hint'); });
+tc.addEventListener('click', function() { tc.focus(); });
+
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('game').classList.contains('active') &&
+      document.activeElement !== tc && !finishedFlag &&
+      e.key.length === 1 && !e.ctrlKey && !e.metaKey) tc.focus();
+  // Caps lock badge — detect at all times on game screen
+  if (document.getElementById('game').classList.contains('active') && e.getModifierState) {
+    document.getElementById('capsWarn').style.display = e.getModifierState('CapsLock') ? 'block' : 'none';
+  }
+});
+document.addEventListener('paste', function(e) { e.preventDefault(); });
+
+/* ─── Timer ──────────────────────────────────────────────────── */
+function startTimer() {
+  timerInterval = setInterval(function() {
+    if (!timerRunning) return;
+    const elapsed = (performance.now() - startTime) / 1000;
+    const rem     = Math.max(0, testDuration - elapsed);
+    document.getElementById('timerVal').textContent = Math.ceil(rem);
+    const ch = document.getElementById('timerChip');
+    if (rem <= 10) ch.classList.add('warn'); else ch.classList.remove('warn');
+    if (rem <= 0) finishTest();
+    updateChips();
+  }, 100);
+}
+
+/* ─── Finish ─────────────────────────────────────────────────── */
+function finishTest() {
+  finishedFlag = true;
+  timerRunning = false;
+  const endTime = performance.now();
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  const mins = (endTime - startTime) / 60000;
+
+  // Only count characters that were actually typed
+  let correct = 0, incorrect = 0, correctSpaces = 0;
+  for (let wi = 0; wi <= wordIdx; wi++) {
+    const word  = words[wi];
+    const typed = typedWords[wi];
+    for (let ci = 0; ci < Math.min(typed.length, word.length); ci++) {
+      if (typed[ci] === word[ci]) correct++; else incorrect++;
+    }
+    if (typed.length > word.length) incorrect += typed.length - word.length;
+    if (wi < wordIdx) correctSpaces++; // space keystroke — counts for WPM only
+  }
+  const totalTyped = correct + incorrect;
+  const accuracy   = totalTyped > 0 ? Math.round(correct / totalTyped * 100) : 0;
+
+  const correctForWPM = correct + correctSpaces;
+  const rawWPM = Math.round((keystrokeTimes.length / 5) / mins);
+  const netWPM = Math.max(0, Math.round((correctForWPM / 5) / mins));
+
+  let consistency = 0;
+  if (keystrokeTimes.length > 2) {
+    const iv   = [];
+    for (let i = 1; i < keystrokeTimes.length; i++) iv.push(keystrokeTimes[i] - keystrokeTimes[i - 1]);
+    const mean = iv.reduce((a, b) => a + b, 0) / iv.length;
+    const vari = iv.reduce((a, b) => a + (b - mean) ** 2, 0) / iv.length;
+    consistency = Math.max(0, Math.min(100, Math.round(100 - (Math.sqrt(vari) / mean) * 50)));
+  }
+
+  // MonkeyType-style invalid test: < 75% accuracy or fewer than 5 completed words
+  const wordsCompleted = wordIdx; // words before current
+  const isInvalid = accuracy < 75 || wordsCompleted < 5;
+
+  let best = 0; try { best = parseInt(localStorage.getItem('bestTyperWPM')) || 0; } catch(e) {}
+  if (!isInvalid && netWPM > best) { best = netWPM; try { localStorage.setItem('bestTyperWPM', best); } catch(e) {} }
+  document.getElementById('homeBest').textContent = best || '—';
+
+  document.getElementById('statusBanner').className = 'status-banner finished';
+  document.getElementById('statusText').innerHTML = isInvalid
+    ? 'Test <strong>invalid</strong> — ' + (accuracy < 75 ? 'accuracy too low' : 'not enough words typed') + '.'
+    : 'Test complete! <strong>' + netWPM + ' WPM</strong> at <strong>' + accuracy + '%</strong> accuracy.';
+  document.getElementById('timerVal').textContent = '0';
+  updateChips();
+
+  const icon    = isInvalid ? '🛑' : '⌨';
+  const heading = isInvalid ? 'invalid' : netWPM + ' WPM';
+  const rating  = isInvalid
+    ? (accuracy < 75 ? 'Accuracy below 75% — test not counted.' : 'Too few words typed — test not counted.')
+    : (netWPM >= 100 ? 'Legendary speed!' : netWPM >= 80 ? 'Blazing fast!' : netWPM >= 60 ? 'Above average!' : netWPM >= 40 ? 'Solid typing!' : 'Keep practicing!');
+
+  document.getElementById('resultTitle').textContent = heading;
+  document.getElementById('resultSub').textContent   = rating;
+  document.querySelector('#resultBackdrop .modal-icon').textContent = icon;
+  document.getElementById('resultStats').innerHTML   =
+    '<div class="modal-stat"><span class="v">' + rawWPM      + '</span><span class="l">Raw WPM</span></div>' +
+    '<div class="modal-stat"><span class="v">' + accuracy    + '%</span><span class="l">Accuracy</span></div>' +
+    '<div class="modal-stat"><span class="v">' + consistency + '%</span><span class="l">Consistency</span></div>' +
+    '<div class="modal-stat"><span class="v">' + correct     + '</span><span class="l">Correct</span></div>';
+  setTimeout(function() { openModal('result'); }, 400);
+}
+
+/* ─── Live stats ─────────────────────────────────────────────── */
+function updateChips() {
+  if (startTime && !finishedFlag) {
+    const elapsed = (performance.now() - startTime) / 60000;
+    if (elapsed > 0) {
+      let correct = 0, incorrect = 0, correctSpaces = 0;
+      // Completed words
+      for (let wi = 0; wi < wordIdx; wi++) {
+        const word  = words[wi];
+        const typed = typedWords[wi];
+        for (let ci = 0; ci < Math.min(typed.length, word.length); ci++) {
+          if (typed[ci] === word[ci]) correct++; else incorrect++;
+        }
+        if (typed.length > word.length) incorrect += typed.length - word.length;
+        correctSpaces++; // space — WPM only
+      }
+      // Current word in progress
+      const word  = words[wordIdx];
+      const typed = typedWords[wordIdx];
+      for (let ci = 0; ci < Math.min(typed.length, word.length); ci++) {
+        if (typed[ci] === word[ci]) correct++; else incorrect++;
+      }
+      if (typed.length > word.length) incorrect += typed.length - word.length;
+      const total = correct + incorrect;
+      document.getElementById('wpmVal').textContent = Math.max(0, Math.round(((correct + correctSpaces) / 5) / elapsed));
+      document.getElementById('accVal').textContent = (total > 0 ? Math.round(correct / total * 100) : 100) + '%';
+    }
+  }
+}
+
+/* ─── Resize ─────────────────────────────────────────────────── */
+window.addEventListener('resize', function() {
+  if (document.getElementById('game').classList.contains('active') && !finishedFlag) {
+    buildLineGroups();
+    // Ensure current word is on the 2nd visible line after re-measurement
+    const curLine    = wordLineMap[wordIdx] ?? 0;
+    visibleLineStart = Math.max(0, curLine - 1);
+    renderVisibleLines();
+  }
+});
+
+/* ─── Boot ───────────────────────────────────────────────────── */
+try { const b = parseInt(localStorage.getItem('bestTyperWPM')) || 0; document.getElementById('homeBest').textContent = b || '—'; } catch(e) {}
+</script>
+</body>
+</html>

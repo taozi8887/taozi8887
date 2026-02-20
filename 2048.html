@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 — Slide & Merge</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #1a1a1d;
+    --surface3: #222226;
+    --border: #252528;
+    --text: #e8e8ea;
+    --muted: #666670;
+    --accent: #c8ff4a;
+    --accent2: #ff6b6b;
+    --accent3: #4aff8c;
+    --radius: 12px;
+    --cell-radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.6;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 24px 0;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .version { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 960px;
+    padding: 0 24px 60px;
+    flex: 1;
+  }
+  .screen.active { display: flex; animation: fadeIn 0.35s ease both; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); font-weight: 500; }
+  .btn.primary:hover { background: #d4ff6a; }
+  .btn.sm { padding: 7px 16px; font-size: 11px; border-radius: 8px; }
+
+  /* ── HOME ── */
+  #home { justify-content: center; padding-bottom: 80px; }
+  .hero-gap { height: 48px; }
+  .hero-eyebrow {
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 20px; text-align: center;
+  }
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(60px, 11vw, 100px);
+    line-height: 1; letter-spacing: -3px;
+    text-align: center; margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 13px; color: var(--muted); text-align: center;
+    letter-spacing: 0.03em; max-width: 380px;
+    line-height: 1.8; margin-bottom: 48px;
+  }
+
+  .hero-preview {
+    display: grid;
+    grid-template-columns: repeat(4, 42px);
+    gap: 5px;
+    margin-bottom: 48px;
+  }
+  .hp-cell {
+    width: 42px; height: 42px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.3s;
+  }
+  .hp-empty { background: var(--surface2); border: 1px solid var(--border); }
+  .hp-2  { background: #2a2924; border: 1px solid #3a3930; color: #e8e0d0; }
+  .hp-4  { background: #2d2920; border: 1px solid #3d3930; color: #ede0c8; }
+  .hp-8  { background: #352920; border: 1px solid rgba(242,177,121,0.3); color: #f2b179; }
+  .hp-16 { background: #352520; border: 1px solid rgba(245,149,99,0.3); color: #f59563; }
+  .hp-64 { background: #35201c; border: 1px solid rgba(246,94,59,0.3); color: #f65e3b; }
+  .hp-128 { background: #2d2a18; border: 1px solid rgba(237,207,114,0.3); color: #edcf72; font-size: 10px; }
+  .hp-256 { background: #2e2b15; border: 1px solid rgba(237,204,97,0.3); color: #edcc61; font-size: 10px; }
+  .hp-2048 { background: rgba(200,255,74,0.12); border: 1px solid rgba(200,255,74,0.3); color: var(--accent); font-size: 8px; }
+
+  .home-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  .stats-row {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    justify-content: center; margin-top: 28px;
+  }
+  .stat-chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 7px 18px;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .stat-chip strong { color: var(--text); font-weight: 400; }
+
+  /* ── GAME ── */
+  #game { padding-top: 28px; gap: 16px; justify-content: flex-start; }
+
+  .game-bar {
+    width: 100%; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .game-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px; letter-spacing: -0.5px;
+  }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    display: flex; gap: 6px; align-items: center;
+    font-variant-numeric: tabular-nums; transition: all 0.3s;
+  }
+  .chip strong { color: var(--text); font-weight: 400; transition: color 0.3s; }
+  .chip.pop strong { color: var(--accent); }
+
+  .grid-wrapper {
+    width: 100%;
+    display: flex; justify-content: center;
+    padding: 4px 0;
+  }
+
+  .board-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 10px;
+    position: relative;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 6px;
+    width: min(400px, calc(100vw - 80px));
+    aspect-ratio: 1 / 1;
+  }
+
+  .tile {
+    border-radius: var(--cell-radius);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    user-select: none;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+    position: relative;
+    border: 1px solid transparent;
+  }
+
+  .tile-0    { background: var(--surface2); border-color: var(--border); }
+  .tile-2    { background: #2a2924; border-color: #3a3930; color: #e8e0d0; }
+  .tile-4    { background: #2d2920; border-color: #3d3930; color: #ede0c8; }
+  .tile-8    { background: #352920; border-color: rgba(242,177,121,0.35); color: #f2b179; }
+  .tile-16   { background: #352520; border-color: rgba(245,149,99,0.35); color: #f59563; }
+  .tile-32   { background: #35221e; border-color: rgba(246,124,95,0.35); color: #f67c5f; }
+  .tile-64   { background: #35201c; border-color: rgba(246,94,59,0.35); color: #f65e3b; }
+  .tile-128  { background: #2d2a18; border-color: rgba(237,207,114,0.35); color: #edcf72; box-shadow: 0 0 18px rgba(237,207,114,0.08); }
+  .tile-256  { background: #2e2b15; border-color: rgba(237,204,97,0.35); color: #edcc61; box-shadow: 0 0 22px rgba(237,204,97,0.1); }
+  .tile-512  { background: #2e2a12; border-color: rgba(237,200,80,0.35); color: #edc850; box-shadow: 0 0 26px rgba(237,200,80,0.12); }
+  .tile-1024 { background: #302b0e; border-color: rgba(237,197,63,0.4); color: #edc53f; box-shadow: 0 0 30px rgba(237,197,63,0.14); }
+  .tile-2048 { background: rgba(200,255,74,0.12); border-color: rgba(200,255,74,0.4); color: var(--accent); box-shadow: 0 0 35px rgba(200,255,74,0.18); }
+  .tile-super { background: rgba(96,239,255,0.1); border-color: rgba(96,239,255,0.35); color: #60efff; box-shadow: 0 0 35px rgba(96,239,255,0.15); }
+
+  .tile-font-sm  { font-size: clamp(18px, 4.5vw, 28px); }
+  .tile-font-md  { font-size: clamp(14px, 3.5vw, 22px); }
+  .tile-font-lg  { font-size: clamp(11px, 2.8vw, 16px); }
+  .tile-font-xl  { font-size: clamp(9px, 2.2vw, 13px); }
+
+  @keyframes tileSpawn {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes tileMerge {
+    0%   { transform: scale(0.92); }
+    40%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .tile-spawn { animation: tileSpawn 0.1s ease both; }
+  .tile-merge { animation: tileMerge 0.12s ease both; }
+
+  /* ── OVERLAY ── */
+  .game-overlay {
+    position: absolute; inset: 0;
+    border-radius: 16px;
+    background: rgba(10,10,11,0.84);
+    backdrop-filter: blur(4px);
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; z-index: 10;
+  }
+  .game-overlay.active { display: flex; animation: fadeIn 0.35s ease both; }
+  .overlay-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(36px, 8vw, 56px);
+    letter-spacing: -2px; line-height: 1;
+  }
+  .overlay-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .overlay-score {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px; letter-spacing: -1px;
+    color: var(--accent);
+  }
+
+  /* ── STATUS ── */
+  .status-banner {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 13px 20px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
+    transition: border-color 0.3s; min-height: 48px;
+  }
+  .status-banner .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent3); flex-shrink: 0; transition: background 0.3s;
+  }
+  .status-banner.won { border-color: var(--accent); }
+  .status-banner.won .dot { background: var(--accent); }
+  .status-banner.lost { border-color: var(--accent2); }
+  .status-banner.lost .dot { background: var(--accent2); }
+  .status-text { flex: 1; }
+  .status-text strong { color: var(--text); font-weight: 400; }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78); z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
+
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 44px; max-width: 440px;
+    width: calc(100% - 48px); display: flex; flex-direction: column;
+    align-items: center; gap: 20px; text-align: center;
+  }
+
+  .howto-modal { max-width: 500px; align-items: flex-start; text-align: left; gap: 0; }
+  .howto-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px; letter-spacing: -1px; margin-bottom: 24px;
+  }
+  .how-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--accent); flex-shrink: 0; margin-top: 2px;
+  }
+  .step-text {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.8; letter-spacing: 0.03em;
+  }
+  .step-text strong { color: var(--text); font-weight: 400; }
+
+  footer {
+    max-width: 960px; width: 100%;
+    margin: auto auto 0; padding: 32px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: var(--muted); letter-spacing: 0.05em;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  footer a:hover { color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 480px) {
+    .game-grid { width: calc(100vw - 60px); }
+    .chips { gap: 5px; }
+    .chip { padding: 5px 10px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo" onclick="nav('home')">2048<span>.</span></span>
+  <div class="header-right">
+    <span class="version">v1.0</span>
+    <button class="btn sm" onclick="openModal('howto')">How to Play</button>
+  </div>
+</header>
+
+<!-- ══ HOME ══ -->
+<div id="home" class="screen active">
+  <div class="hero-gap"></div>
+  <p class="hero-eyebrow">Slide & merge</p>
+  <h1 class="hero-title">20<em>48<span style="color:var(--accent)">.</span></em></h1>
+  <p class="hero-sub">Slide tiles on a grid. When two tiles with the same number collide, they merge into one. Reach 2048 to win.</p>
+
+  <div class="hero-preview">
+    <div class="hp-cell hp-2">2</div>
+    <div class="hp-cell hp-empty"></div>
+    <div class="hp-cell hp-8">8</div>
+    <div class="hp-cell hp-4">4</div>
+    <div class="hp-cell hp-empty"></div>
+    <div class="hp-cell hp-64">64</div>
+    <div class="hp-cell hp-empty"></div>
+    <div class="hp-cell hp-16">16</div>
+    <div class="hp-cell hp-128">128</div>
+    <div class="hp-cell hp-4">4</div>
+    <div class="hp-cell hp-empty"></div>
+    <div class="hp-cell hp-256">256</div>
+    <div class="hp-cell hp-2">2</div>
+    <div class="hp-cell hp-empty"></div>
+    <div class="hp-cell hp-2048">2048</div>
+    <div class="hp-cell hp-empty"></div>
+  </div>
+
+  <div class="home-actions">
+    <button class="btn primary" onclick="startGame()">Start Game</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-chip">best <strong id="homeBest">0</strong></div>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="game" class="screen">
+  <div class="game-bar">
+    <span class="game-title">2048</span>
+    <div class="chips">
+      <div class="chip" id="scoreChip">score <strong id="scoreVal">0</strong></div>
+      <div class="chip">best <strong id="bestVal">0</strong></div>
+    </div>
+  </div>
+
+  <div class="grid-wrapper">
+    <div class="board-container">
+      <div class="game-grid" id="grid"></div>
+      <div class="game-overlay" id="overlay">
+        <div class="overlay-title" id="overlayTitle"></div>
+        <div class="overlay-score" id="overlayScore"></div>
+        <div class="overlay-sub" id="overlaySub"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn primary" onclick="initGame()">Play Again</button>
+          <button class="btn" onclick="nav('home')">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-banner" id="statusBanner">
+    <div class="dot"></div>
+    <div class="status-text" id="statusText">Use <strong>arrow keys</strong> or <strong>swipe</strong> to slide tiles.</div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:8px;">
+    <button class="btn sm" onclick="initGame()">New Game</button>
+    <button class="btn sm" onclick="nav('home')">Menu</button>
+  </div>
+</div>
+
+<!-- ══ HOWTO MODAL ══ -->
+<div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
+  <div class="modal howto-modal" onclick="event.stopPropagation()">
+    <div class="howto-title">How to Play</div>
+    <div class="how-step">
+      <div class="step-num">1</div>
+      <div class="step-text">Use <strong>arrow keys</strong> (or WASD) to slide all tiles in a direction. On mobile, <strong>swipe</strong> to move.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">2</div>
+      <div class="step-text">When two tiles with the <strong>same number</strong> collide, they <strong>merge</strong> into one tile with double the value.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">3</div>
+      <div class="step-text">After each move, a new tile (<strong>2</strong> or <strong>4</strong>) spawns on a random empty cell.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">4</div>
+      <div class="step-text">Reach the <strong>2048</strong> tile to win. If no moves remain, the game is over.</div>
+    </div>
+    <div style="width:100%;margin-top:12px;">
+      <button class="btn primary" onclick="closeModal('howto')" style="width:100%; text-align:center;">Got it</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
+  <span>Made with love · 2048 v1.0<span style="color:var(--accent)">.</span></span>
+</footer>
+
+<script>
+const GRID_SIZE = 4;
+const WIN_VALUE = 2048;
+const SPAWN_PROBABILITY_2 = 0.9;
+
+const state = {
+  board: [],
+  score: 0,
+  bestScore: 0,
+  gameStatus: 'idle',
+  hasMoved: false,
+  isAnimating: false,
+  spawnedCell: null,
+  mergedCells: []
+};
+
+/* ── NAV ── */
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function openModal(id) { document.getElementById(id + 'Backdrop').classList.add('open'); }
+function closeModal(id) { document.getElementById(id + 'Backdrop').classList.remove('open'); }
+
+function startGame() {
+  nav('game');
+  initGame();
+}
+
+/* ── BOARD UTILS ── */
+function createEmptyBoard() {
+  return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+}
+function cloneBoard(b) { return b.map(r => [...r]); }
+function boardsEqual(a, b) {
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (a[r][c] !== b[r][c]) return false;
+  return true;
+}
+
+/* ── INIT ── */
+function initGame() {
+  state.board = createEmptyBoard();
+  state.score = 0;
+  state.gameStatus = 'playing';
+  state.isAnimating = false;
+  state.spawnedCell = null;
+  state.mergedCells = [];
+  try { state.bestScore = parseInt(localStorage.getItem('best2048')) || 0; } catch(e) { state.bestScore = 0; }
+  spawnTile();
+  spawnTile();
+  render();
+  updateStatus('playing');
+  document.getElementById('overlay').classList.remove('active');
+}
+
+/* ── SPAWN ── */
+function spawnTile() {
+  const empty = [];
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (state.board[r][c] === 0) empty.push([r, c]);
+  if (!empty.length) return false;
+  const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+  state.board[r][c] = Math.random() < SPAWN_PROBABILITY_2 ? 2 : 4;
+  state.spawnedCell = [r, c];
+  return true;
+}
+
+/* ── COMPRESS & MERGE ── */
+function compress(arr) {
+  const f = arr.filter(v => v !== 0);
+  while (f.length < GRID_SIZE) f.push(0);
+  return f;
+}
+
+function merge(arr) {
+  for (let i = 0; i < GRID_SIZE - 1; i++) {
+    if (arr[i] !== 0 && arr[i] === arr[i + 1]) {
+      arr[i] *= 2;
+      state.score += arr[i];
+      arr[i + 1] = 0;
+      i++;
+    }
+  }
+  return arr;
+}
+
+/* ── TRANSFORM ── */
+function transpose(board) {
+  const t = createEmptyBoard();
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      t[c][r] = board[r][c];
+  return t;
+}
+
+function processRows(board, reverse) {
+  for (let r = 0; r < GRID_SIZE; r++) {
+    let row = [...board[r]];
+    if (reverse) row.reverse();
+    row = compress(row);
+    row = merge(row);
+    row = compress(row);
+    if (reverse) row.reverse();
+    board[r] = row;
+  }
+}
+
+function transformBoard(direction) {
+  switch (direction) {
+    case 'left':
+      processRows(state.board, false);
+      break;
+    case 'right':
+      processRows(state.board, true);
+      break;
+    case 'up':
+      state.board = transpose(state.board);
+      processRows(state.board, false);
+      state.board = transpose(state.board);
+      break;
+    case 'down':
+      state.board = transpose(state.board);
+      processRows(state.board, true);
+      state.board = transpose(state.board);
+      break;
+  }
+}
+
+/* ── MOVE ── */
+function handleMove(direction) {
+  if (state.gameStatus !== 'playing') return;
+
+  state.mergedCells = [];
+  state.spawnedCell = null;
+  const original = cloneBoard(state.board);
+  const prevScore = state.score;
+
+  transformBoard(direction);
+
+  if (!boardsEqual(original, state.board)) {
+    // Detect merged cells by comparing
+    for (let r = 0; r < GRID_SIZE; r++)
+      for (let c = 0; c < GRID_SIZE; c++)
+        if (state.board[r][c] > original[r][c] && state.board[r][c] !== 0 && original[r][c] !== 0)
+          state.mergedCells.push([r, c]);
+
+    spawnTile();
+    updateBest();
+    render();
+
+    // Flash score chip if points gained
+    if (state.score > prevScore) {
+      const chip = document.getElementById('scoreChip');
+      chip.classList.remove('pop');
+      void chip.offsetWidth;
+      chip.classList.add('pop');
+      setTimeout(() => chip.classList.remove('pop'), 300);
+    }
+
+    checkWin();
+    if (state.gameStatus === 'playing') checkLoss();
+
+    if (state.gameStatus !== 'playing') render();
+  }
+}
+
+/* ── CHECKS ── */
+function checkWin() {
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (state.board[r][c] === WIN_VALUE) {
+        state.gameStatus = 'won';
+        showOverlay('You Win!', state.score, 'You reached 2048!');
+        updateStatus('won');
+      }
+}
+
+function checkLoss() {
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (state.board[r][c] === 0) return;
+      if (c < GRID_SIZE - 1 && state.board[r][c] === state.board[r][c + 1]) return;
+      if (r < GRID_SIZE - 1 && state.board[r][c] === state.board[r + 1][c]) return;
+    }
+  state.gameStatus = 'lost';
+  showOverlay('Game Over', state.score, 'No moves remaining.');
+  updateStatus('lost');
+}
+
+function updateBest() {
+  if (state.score > state.bestScore) {
+    state.bestScore = state.score;
+    try { localStorage.setItem('best2048', state.bestScore); } catch(e) {}
+  }
+}
+
+/* ── RENDER ── */
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const v = state.board[r][c];
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+
+      if (v === 0) tile.classList.add('tile-0');
+      else if (v <= 2048) tile.classList.add('tile-' + v);
+      else tile.classList.add('tile-super');
+
+      if (v < 100) tile.classList.add('tile-font-sm');
+      else if (v < 1000) tile.classList.add('tile-font-md');
+      else if (v < 10000) tile.classList.add('tile-font-lg');
+      else tile.classList.add('tile-font-xl');
+
+      if (v !== 0) tile.textContent = v;
+
+      if (state.spawnedCell && state.spawnedCell[0] === r && state.spawnedCell[1] === c) {
+        tile.classList.add('tile-spawn');
+      }
+      if (state.mergedCells.some(m => m[0] === r && m[1] === c)) {
+        tile.classList.add('tile-merge');
+      }
+
+      grid.appendChild(tile);
+    }
+  }
+
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('bestVal').textContent = state.bestScore;
+  document.getElementById('homeBest').textContent = state.bestScore;
+}
+
+function showOverlay(title, score, sub) {
+  const ol = document.getElementById('overlay');
+  document.getElementById('overlayTitle').textContent = title;
+  document.getElementById('overlayScore').textContent = score;
+  document.getElementById('overlaySub').textContent = sub;
+  ol.classList.add('active');
+}
+
+function updateStatus(status) {
+  const banner = document.getElementById('statusBanner');
+  const text = document.getElementById('statusText');
+  banner.className = 'status-banner';
+  if (status === 'playing') {
+    text.innerHTML = 'Use <strong>arrow keys</strong> or <strong>swipe</strong> to slide tiles.';
+  } else if (status === 'won') {
+    banner.classList.add('won');
+    text.innerHTML = 'You reached <strong>2048</strong>! Score: <strong>' + state.score + '</strong>';
+  } else if (status === 'lost') {
+    banner.classList.add('lost');
+    text.innerHTML = 'No moves left. Final score: <strong>' + state.score + '</strong>';
+  }
+}
+
+/* ── KEYBOARD INPUT ── */
+document.addEventListener('keydown', e => {
+  const map = {
+    'ArrowLeft': 'left', 'ArrowRight': 'right', 'ArrowUp': 'up', 'ArrowDown': 'down',
+    'a': 'left', 'd': 'right', 'w': 'up', 's': 'down'
+  };
+  const dir = map[e.key];
+  if (dir) { e.preventDefault(); handleMove(dir); }
+});
+
+/* ── TOUCH INPUT ── */
+let touchSX = 0, touchSY = 0;
+document.addEventListener('touchstart', e => {
+  touchSX = e.changedTouches[0].screenX;
+  touchSY = e.changedTouches[0].screenY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].screenX - touchSX;
+  const dy = e.changedTouches[0].screenY - touchSY;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+  if (Math.abs(dx) > Math.abs(dy)) handleMove(dx > 0 ? 'right' : 'left');
+  else handleMove(dy > 0 ? 'down' : 'up');
+}, { passive: true });
+
+/* ── BOOT ── */
+try { state.bestScore = parseInt(localStorage.getItem('best2048')) || 0; } catch(e) {}
+document.getElementById('homeBest').textContent = state.bestScore;
+</script>
+</body>
+</html>
