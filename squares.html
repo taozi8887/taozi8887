@@ -1138,6 +1138,8 @@ function onCellClick(e) {
   const totalClicks = clickedCells.size;
 
   if (totalClicks === cfg.targets) {
+    // Lock input immediately so extra clicks during the reveal delay don't count
+    phase = 'done';
     // Player has clicked N tiles — reveal results and end
     revealClickedCells();
     setTimeout(() => endLevel(), 600);

@@ -168,6 +168,14 @@
   }
   .text-container.show-hint .focus-hint { opacity: 1; }
 
+  #mobileInput {
+    position: fixed; top: 0; left: 0;
+    width: 1px; height: 1px; padding: 0; margin: 0;
+    opacity: 0; border: none; resize: none; overflow: hidden;
+    z-index: -1; background: transparent; color: transparent;
+    caret-color: transparent;
+  }
+
   .status-banner { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 20px; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); letter-spacing: 0.05em; transition: border-color 0.3s; min-height: 48px; }
   .status-banner .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; }
   .status-banner.finished { border-color: var(--accent); } .status-banner.finished .dot { background: var(--accent); }
@@ -250,7 +258,8 @@
       <div class="chip">acc <strong id="accVal">100%</strong></div>
     </div>
   </div>
-  <div class="text-container" id="textContainer" tabindex="0">
+  <textarea id="mobileInput" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" tabindex="-1"></textarea>
+  <div class="text-container" id="textContainer">
     <div class="caps-warn" id="capsWarn">⇪ Caps Lock is on</div>
     <div class="text-display" id="textDisplay"></div>
     <div class="focus-hint">Click here or press any key to focus</div>
@@ -311,7 +320,7 @@ let isSliding       = false;
 function nav(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'game') setTimeout(() => document.getElementById('textContainer').focus(), 100);
+  if (id === 'game') setTimeout(() => document.getElementById('mobileInput').focus(), 100);
 }
 function openModal(id)  { document.getElementById(id + 'Backdrop').classList.add('open'); }
 function closeModal(id) { document.getElementById(id + 'Backdrop').classList.remove('open'); }
@@ -352,7 +361,7 @@ function resetTest() {
   document.getElementById('textContainer').classList.remove('show-hint');
   document.getElementById('timerChip').classList.remove('warn');
   document.getElementById('capsWarn').style.display = 'none';
-  setTimeout(() => document.getElementById('textContainer').focus(), 50);
+  setTimeout(() => document.getElementById('mobileInput').focus(), 50);
 }
 
 /* ─── Line-group measurement ────────────────────────────────── */
@@ -601,8 +610,55 @@ function updateWordDisplay(wi) {
 
 /* ─── Keyboard ───────────────────────────────────────────────── */
 const tc = document.getElementById('textContainer');
+const mi = document.getElementById('mobileInput');
 
-tc.addEventListener('keydown', function(e) {
+function handleBackspace() {
+  if (typedWords[wordIdx].length > 0) {
+    typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
+    updateWordDisplay(wordIdx);
+    placeCaret(true);
+  } else if (wordIdx > 0) {
+    wordIdx--;
+    typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
+    const prevLine = wordLineMap[wordIdx] ?? 0;
+    if (prevLine < visibleLineStart) {
+      visibleLineStart = Math.max(0, prevLine);
+      renderVisibleLines();
+    } else {
+      updateWordDisplay(wordIdx);
+      placeCaret(true);
+    }
+  }
+  if (startTime) updateChips();
+}
+
+function handleChar(ch) {
+  if (!startTime) {
+    startTime    = performance.now();
+    timerRunning = true;
+    startTimer();
+    document.getElementById('statusText').innerHTML = 'Typing in progress...';
+  }
+  if (ch === ' ') {
+    if (typedWords[wordIdx].length === 0) return;
+    if (wordIdx < words.length - 1) {
+      wordIdx++;
+      updateWordDisplay(wordIdx - 1);
+      maybeAdvanceLine(true);
+    }
+  } else {
+    const maxLen = words[wordIdx].length + 10;
+    if (typedWords[wordIdx].length < maxLen) {
+      typedWords[wordIdx] += ch;
+      keystrokeTimes.push(performance.now());
+      updateWordDisplay(wordIdx);
+      placeCaret(true);
+    }
+  }
+  updateChips();
+}
+
+mi.addEventListener('keydown', function(e) {
   if (finishedFlag) return;
 
   // Tab → instant restart (MonkeyType behaviour)
@@ -620,84 +676,54 @@ tc.addEventListener('keydown', function(e) {
     return;
   }
 
-  // Caps-lock warning — check on every keydown (before early returns)
+  // Caps-lock warning
   if (e.getModifierState && e.getModifierState('CapsLock')) {
     document.getElementById('capsWarn').style.display = 'block';
   } else {
     document.getElementById('capsWarn').style.display = 'none';
   }
 
+  // Mobile IME keys arrive as 'Unidentified' — let the input event handle them
+  if (e.key === 'Unidentified') return;
+
   if (e.altKey) return;
   if (['Shift','Control','Alt','Meta','CapsLock','Escape',
        'ArrowLeft','ArrowRight','ArrowUp','ArrowDown','F1','F2','F3','F4',
        'F5','F6','F7','F8','F9','F10','F11','F12'].includes(e.key)) return;
 
-  // Backspace
   if (e.key === 'Backspace') {
     e.preventDefault();
-    if (typedWords[wordIdx].length > 0) {
-      typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
-      updateWordDisplay(wordIdx);
-      placeCaret(true);
-    } else if (wordIdx > 0) {
-      // Go back to previous word and remove its last char
-      wordIdx--;
-      typedWords[wordIdx] = typedWords[wordIdx].slice(0, -1);
-      const prevLine = wordLineMap[wordIdx] ?? 0;
-      if (prevLine < visibleLineStart) {
-        // Word scrolled off the top — re-render with it visible
-        visibleLineStart = Math.max(0, prevLine);
-        renderVisibleLines();
-      } else {
-        updateWordDisplay(wordIdx);
-        placeCaret(true);
-      }
-    }
-    if (startTime) updateChips();
+    handleBackspace();
     return;
   }
 
   if (e.key.length !== 1) return;
-  e.preventDefault();
-
-  // Start timer on first keystroke
-  if (!startTime) {
-    startTime    = performance.now();
-    timerRunning = true;
-    startTimer();
-    document.getElementById('statusText').innerHTML = 'Typing in progress...';
-  }
-
-  if (e.key === ' ') {
-    // Space: skip to next word (MonkeyType behaviour – even mid-word)
-    if (typedWords[wordIdx].length === 0) return; // can't skip empty word
-    if (wordIdx < words.length - 1) {
-      wordIdx++; // increment first so updateWordDisplay sees wi < wordIdx
-      updateWordDisplay(wordIdx - 1); // finalise completed word (shows error underline)
-      maybeAdvanceLine(true); // animate caret jump; re-renders or updates+places
-    }
-  } else {
-    // Regular character – allow up to word-length + 10 extra chars
-    const maxLen = words[wordIdx].length + 10;
-    if (typedWords[wordIdx].length < maxLen) {
-      typedWords[wordIdx] += e.key;
-      keystrokeTimes.push(performance.now());
-      updateWordDisplay(wordIdx);
-      placeCaret(true);
-    }
-  }
-  updateChips();
+  e.preventDefault(); // prevents character from entering the textarea on desktop
+  handleChar(e.key);
 });
 
-  tc.addEventListener('focus', function() { tc.classList.add('focused'); tc.classList.remove('show-hint'); });
-tc.addEventListener('blur',  function() { tc.classList.remove('focused'); if (!finishedFlag) tc.classList.add('show-hint'); });
-tc.addEventListener('click', function() { tc.focus(); });
+// Mobile input: fires when keydown gave key='Unidentified' (so no preventDefault was called)
+mi.addEventListener('input', function(e) {
+  if (finishedFlag) { mi.value = ''; return; }
+  const type = e.inputType;
+  if (type === 'insertText' && e.data) {
+    for (const ch of e.data) handleChar(ch);
+  } else if (type === 'deleteContentBackward') {
+    handleBackspace();
+  }
+  // Always clear so the textarea never accumulates content
+  mi.value = '';
+});
+
+mi.addEventListener('focus', function() { tc.classList.add('focused'); tc.classList.remove('show-hint'); });
+mi.addEventListener('blur',  function() { tc.classList.remove('focused'); if (!finishedFlag) tc.classList.add('show-hint'); });
+tc.addEventListener('click', function() { mi.focus(); });
+tc.addEventListener('touchend', function(e) { e.preventDefault(); mi.focus(); });
 
 document.addEventListener('keydown', function(e) {
   if (document.getElementById('game').classList.contains('active') &&
-      document.activeElement !== tc && !finishedFlag &&
-      e.key.length === 1 && !e.ctrlKey && !e.metaKey) tc.focus();
-  // Caps lock badge — detect at all times on game screen
+      document.activeElement !== mi && !finishedFlag &&
+      e.key.length === 1 && !e.ctrlKey && !e.metaKey) mi.focus();
   if (document.getElementById('game').classList.contains('active') && e.getModifierState) {
     document.getElementById('capsWarn').style.display = e.getModifierState('CapsLock') ? 'block' : 'none';
   }
