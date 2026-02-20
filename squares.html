@@ -976,7 +976,12 @@ function levelConfig(lvl) {
 
 function cellPx() {
   const map = { small: 56, medium: 72, large: 90 };
-  return map[S.cellSize];
+  const base = map[S.cellSize];
+  const padding = window.innerWidth <= 600 ? 32 : 48;
+  const gap = 8;
+  const size = cfg ? cfg.size : 4;
+  const maxFromViewport = Math.floor((window.innerWidth - padding - (size - 1) * gap) / size);
+  return Math.min(base, Math.max(44, maxFromViewport));
 }
 
 // ══ HERO PREVIEW ANIMATION ══
@@ -1286,6 +1291,31 @@ function startTimerBar(seconds, onDone) {
     }
   }, interval);
 }
+
+let _sqResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_sqResizeTimer);
+  _sqResizeTimer = setTimeout(() => {
+    if (!document.getElementById('play').classList.contains('active')) return;
+    if (phase === 'idle') return;
+    buildGrid();
+    // Re-apply visual state after grid rebuild
+    const cells = document.getElementById('grid').querySelectorAll('.cell');
+    if (phase === 'recall') {
+      cells.forEach((c, i) => {
+        c.classList.add('clickable');
+        c.removeEventListener('click', onCellClick);
+        c.addEventListener('click', onCellClick);
+        if (clickedCells.has(i)) {
+          c.classList.remove('clickable');
+          c.classList.add('clicked-pending');
+        }
+      });
+    } else if (phase === 'memorize') {
+      showTargets(true);
+    }
+  }, 150);
+});
 </script>
 <script src="cursor.js" defer></script>
 </body>
