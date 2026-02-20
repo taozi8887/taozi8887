@@ -2,7 +2,7 @@
   'use strict';
 
   /* ── Disable everything on touch / mobile devices ── */
-  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 1;
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
   if (isTouch) {
     // Undo the hardcoded cursor:none baked into each HTML file
     const fix = document.createElement('style');
@@ -901,8 +901,16 @@
     document.addEventListener('fullscreenchange', updateIcon);
     document.addEventListener('webkitfullscreenchange', updateIcon);
     window.addEventListener('resize', updateIcon);
+  })();
 
-    /* ── Back to index button ── */
+  } // end if (!isTouch)
+
+  /* ── Back button (all devices, game pages only) ── */
+  (function () {
+    const path = location.pathname;
+    const isGame = !path.endsWith('index.html') && !path.endsWith('/') && path !== '';
+    if (!isGame) return;
+
     const backStyle = document.createElement('style');
     backStyle.textContent = `
       #_back-btn {
@@ -946,8 +954,8 @@
       #_back-btn:hover #_back-btn-label {
         letter-spacing: 0.18em;
       }
-
-      @media (max-width: 540px) {
+      /* Touch / small-screen overrides */
+      @media (pointer: coarse), (max-width: 540px) {
         header {
           padding-top: 14px !important;
           padding-left: 14px !important;
@@ -964,7 +972,7 @@
         }
         .version { display: none !important; }
         #_fs-btn { display: none !important; }
-        #_back-btn-label { display: none; }
+        #_back-btn-label { display: none !important; }
         #_back-btn { padding: 0 8px; height: 30px; }
         .header-right { gap: 8px; }
         .btn.sm { padding: 6px 12px; font-size: 11px; }
@@ -990,8 +998,6 @@
     if (_backHeader) _backHeader.insertBefore(backBtn, _backHeader.firstChild);
     else document.body.appendChild(backBtn);
   })();
-
-  } // end if (!isTouch)
 
   /* ── Page transitions ── */
   (function () {
