@@ -1066,8 +1066,8 @@
           ringBr:  ring.style.borderRadius,
         }));
       } catch(_) {}
-      try { sessionStorage.setItem('_curPos', JSON.stringify({x: mx, y: my})); } catch(_){}
-      clearMag();
+      try { if (typeof mx !== 'undefined') sessionStorage.setItem('_curPos', JSON.stringify({x: mx, y: my})); } catch(_){}
+      if (typeof clearMag === 'function') clearMag();
       // Match curtain to current page bg before fading out
       curtain.style.opacity = '';
       curtain.style.background = getComputedStyle(document.body).backgroundColor || '#0a0a0b';
