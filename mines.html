@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="cursor:none">
 <head>
+<style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mines — Minesweeper</title>
@@ -316,7 +317,8 @@
   }
 </style>
 </head>
-<body>
+<body style="cursor:none">
+<div id="_pg-curtain" style="position:fixed;inset:0;z-index:99995;background:#0a0a0b;pointer-events:none"></div>
 
 <header>
   <span class="logo" onclick="nav('home')">Mines<span>.</span></span>

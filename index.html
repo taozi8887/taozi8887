@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="cursor:none">
 <head>
+<style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>taozi4887 - games & things</title>
@@ -635,7 +636,8 @@
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 </style>
 </head>
-<body>
+<body style="cursor:none">
+<div id="_pg-curtain" style="position:fixed;inset:0;z-index:99995;background:#0a0a0b;pointer-events:none"></div>
 
 <div class="cursor-preview" id="cursorPreview"></div>
 
@@ -658,7 +660,7 @@
   <h1 class="hero-title">I make small<br><em>games<span class="accent">.</span></em></h1>
   <p class="hero-sub">Browser-based experiments in color, memory, and logic. No installs, no accounts - just play<span class="blink">_</span></p>
   <div class="hero-cards">
-    <a href="graded.html" target="_blank" class="hero-card card-graded">
+    <a href="graded.html" class="hero-card card-graded">
       <div class="hero-card-bg"></div>
       <div class="graded-preview">
         <div class="gp-panel gp-target"><span class="gp-label">target</span></div>
@@ -671,7 +673,7 @@
         <div class="hero-card-desc">Recreate gradients from memory</div>
       </div>
     </a>
-    <a href="mines.html" target="_blank" class="hero-card card-mines">
+    <a href="mines.html" class="hero-card card-mines">
       <div class="hero-card-bg"></div>
       <div class="mines-preview">
         <div class="mc open n1">1</div><div class="mc"></div><div class="mc open n2">2</div><div class="mc"></div><div class="mc flag">🚩</div>
@@ -686,7 +688,7 @@
         <div class="hero-card-desc">Classic minesweeper</div>
       </div>
     </a>
-    <a href="squares.html" target="_blank" class="hero-card card-squares">
+    <a href="squares.html" class="hero-card card-squares">
       <div class="hero-card-bg"></div>
       <div class="squares-preview">
         <div class="sp"></div><div class="sp lit"></div><div class="sp"></div><div class="sp"></div>
@@ -700,7 +702,7 @@
         <div class="hero-card-desc">Memory grid challenge</div>
       </div>
     </a>
-    <a href="3dtictactoe.html" target="_blank" class="hero-card card-3dttt">
+    <a href="3dtictactoe.html" class="hero-card card-3dttt">
       <div class="hero-card-bg"></div>
       <div class="ttt-preview">
         <div class="ttt-cube">
@@ -719,7 +721,7 @@
         <div class="hero-card-desc">5×5×5 spatial strategy</div>
       </div>
     </a>
-    <a href="2048.html" target="_blank" class="hero-card card-2048">
+    <a href="2048.html" class="hero-card card-2048">
       <div class="hero-card-bg"></div>
       <div class="preview-2048">
         <div class="t2048"></div><div class="t2048 v2">2</div><div class="t2048 v4">4</div><div class="t2048"></div>
@@ -734,7 +736,7 @@
         <div class="hero-card-desc">Slide tiles, merge numbers</div>
       </div>
     </a>
-    <a href="typer.html" target="_blank" class="hero-card card-typer">
+    <a href="typer.html" class="hero-card card-typer">
       <div class="hero-card-bg"></div>
       <div class="typer-preview">
         <div class="tp-line">
@@ -780,7 +782,7 @@
 <section class="projects" id="projects">
   <div class="section-tag">Projects</div>
   <div class="projects-grid">
-    <a href="graded.html" target="_blank" class="project-row reveal">
+    <a href="graded.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #c8ff4a 100%); opacity: 0.25;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">
@@ -791,7 +793,7 @@
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
-    <a href="mines.html" target="_blank" class="project-row reveal">
+    <a href="mines.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(160deg, #1a1a2e, #16213e, #0f3460); opacity: 0.4;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">
@@ -802,7 +804,7 @@
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
-    <a href="squares.html" target="_blank" class="project-row reveal">
+    <a href="squares.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(200deg, #2d1b69, #11998e); opacity: 0.35;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">
@@ -813,7 +815,7 @@
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
-    <a href="3dtictactoe.html" target="_blank" class="project-row reveal">
+    <a href="3dtictactoe.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(220deg, #667eea 0%, #764ba2 50%, #f093fb 100%); opacity: 0.3;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">
@@ -824,7 +826,7 @@
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
-    <a href="2048.html" target="_blank" class="project-row reveal">
+    <a href="2048.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(200deg, #3d1f00, #7a3e00, #c86000); opacity: 0.35;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">
@@ -835,7 +837,7 @@
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
-    <a href="typer.html" target="_blank" class="project-row reveal">
+    <a href="typer.html" class="project-row reveal">
       <div class="project-row-bg" style="background:linear-gradient(200deg, #0a1a0a, #0d2e14, #133d1b); opacity: 0.5;"></div>
       <div class="project-row-overlay"></div>
       <div class="project-info">

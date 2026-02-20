@@ -259,21 +259,71 @@
   const dot   = document.createElement('div'); dot.id   = '_cur-dot';
   const ring  = document.createElement('div'); ring.id  = '_cur-ring';
   const label = document.createElement('div'); label.id = '_cur-label';
+
+  /* Restore last known position from sessionStorage so cursor
+     doesn't flash at 0,0 or jump in from off-screen between pages */
+  let _savedPos = null;
+  try { _savedPos = JSON.parse(sessionStorage.getItem('_curPos')); } catch (_) {}
+
+  if (_savedPos) {
+    // Place cursor at saved position and show immediately —
+    // first mousemove will snap to real position within one frame anyway
+    dot.style.left  = _savedPos.x + 'px';
+    dot.style.top   = _savedPos.y + 'px';
+    ring.style.left = _savedPos.x + 'px';
+    ring.style.top  = _savedPos.y + 'px';
+    // No _out — visible straight away
+
+    // Restore the previous page's cursor visual state (mode classes + ring size)
+    // so the cursor shape doesn't reset during the inter-page curtain fade.
+    let _savedState = null;
+    try { _savedState = JSON.parse(sessionStorage.getItem('_curState')); } catch (_) {}
+    if (_savedState) {
+      // Suppress CSS transition during snapshot restore — ring should snap
+      // immediately to the previous shape, not sweep in from default size.
+      ring.style.transition = 'none';
+      dot.style.transition  = 'none';
+      if (_savedState.dotCls)  _savedState.dotCls.split(' ').filter(Boolean).forEach(c => dot.classList.add(c));
+      if (_savedState.ringCls) _savedState.ringCls.split(' ').filter(Boolean).forEach(c => ring.classList.add(c));
+      if (_savedState.ringW)   ring.style.width        = _savedState.ringW;
+      if (_savedState.ringH)   ring.style.height       = _savedState.ringH;
+      if (_savedState.ringBr)  ring.style.borderRadius = _savedState.ringBr;
+    }
+  } else {
+    dot.classList.add('_out');
+    ring.classList.add('_out');
+  }
   document.body.append(dot, ring, label);
+  // Re-enable transitions (was suppressed during state snapshot restore above)
+  requestAnimationFrame(() => { dot.style.transition = ''; ring.style.transition = ''; });
+
+  /* Block any hover-triggered cursor effects until the first real mousemove.
+     Prevents glow / blur from firing on whatever element happens to sit
+     under the saved cursor position as the new page renders. */
+  let _mouseReady = false;
 
   /* ── State ── */
-  let mx = -200, my = -200;
-  let rx = -200, ry = -200;
-  let isOut = true;
+  let mx = _savedPos ? _savedPos.x : -200;
+  let my = _savedPos ? _savedPos.y : -200;
+  let rx = mx, ry = my;
+  let isOut = !_savedPos; // already visible if we had a saved position
   let magTarget = null; // magnetic pull target {cx, cy}
   let currentMode = null;
   let fitEl = null;     // element whose bounds ring should trace (_fit mode)
   let currentHeading = null; // heading element with active text-reveal
 
   /* ── Mouse tracking ── */
+  let _posSaveTimer = null;
   document.addEventListener('mousemove', e => {
     mx = e.clientX;
     my = e.clientY;
+    // Persist position (throttled to ~10/s) so the next page can pick it up
+    if (!_posSaveTimer) {
+      _posSaveTimer = setTimeout(() => {
+        try { sessionStorage.setItem('_curPos', JSON.stringify({x: mx, y: my})); } catch(_){}
+        _posSaveTimer = null;
+      }, 100);
+    }
     if (isOut) {
       // Snap ring on first entry to avoid sweeping from off-screen
       rx = mx; ry = my;
@@ -281,6 +331,7 @@
       ring.classList.remove('_out');
       isOut = false;
     }
+    _mouseReady = true;
     // Magnetic pull toward nav links
     const px = magTarget ? mx + (magTarget.cx - mx) * 0.28 : mx;
     const py = magTarget ? my + (magTarget.cy - my) * 0.28 : my;
@@ -505,6 +556,7 @@
   const SWATCH_SEL  = '.color-swatch-inner, .stop-swatch, .grad-thumb, .leg-sw, .legend-swatch';
 
   document.addEventListener('mouseover', e => {
+    if (!_mouseReady) return;
     const t = e.target;
 
     // Color swatch — ring mirrors swatch color
@@ -573,6 +625,154 @@
     ring.classList.remove('_clk');
   });
 
+  /* ── Shared transition helper (set by blur IIFE, used by transition IIFE) ── */
+  let clearMag = () => {};
+
+  /* ── Button / Link focus: blur surround with animated spot ── */
+  (function () {
+    const magCSS = document.createElement('style');
+    magCSS.textContent = `
+      #_btn-mag-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9990;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.22s ease;
+        backdrop-filter: blur(7px) brightness(0.72);
+        -webkit-backdrop-filter: blur(7px) brightness(0.72);
+        background: rgba(0,0,0,0.08);
+      }
+      #_btn-mag-overlay._active { opacity: 1; }
+
+      /* Hovered element scales up very slightly — zoom feel, no layout shift */
+      ._btn-mag-top {
+        transform: scale(1.055) !important;
+        transition: transform 0.25s cubic-bezier(.23,1,.32,1) !important;
+      }
+    `;
+    document.head.appendChild(magCSS);
+
+    const ov = document.createElement('div');
+    ov.id = '_btn-mag-overlay';
+    document.body.appendChild(ov);
+
+    const SEL = 'button, [role="button"], a, .btn, .lci, .lm';
+
+    // Animated spot state
+    let cx = 0, cy = 0, cr = 0;   // current (lerped) position + radius
+    let tx = 0, ty = 0, tr = 0;   // target
+    let rafId      = null;
+    let visible    = false;
+    let activeMagBtn = null;
+    let pendingEnd = null;
+
+    function buildMask(x, y, r) {
+      // Many soft stops so the ring edge is invisible — gradient disperses over a wide band
+      return `radial-gradient(circle ${r.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px,
+        transparent   0%,
+        transparent  42%,
+        rgba(0,0,0,0.04) 52%,
+        rgba(0,0,0,0.13) 60%,
+        rgba(0,0,0,0.28) 68%,
+        rgba(0,0,0,0.48) 76%,
+        rgba(0,0,0,0.68) 84%,
+        rgba(0,0,0,0.85) 91%,
+        black           100%)`;
+    }
+
+    function applyMask() {
+      const m = buildMask(cx, cy, cr);
+      ov.style.webkitMaskImage = m;
+      ov.style.maskImage       = m;
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function tick() {
+      const spd = 0.13;
+      cx = lerp(cx, tx, spd);
+      cy = lerp(cy, ty, spd);
+      cr = lerp(cr, tr, spd);
+      applyMask();
+      if (Math.hypot(tx - cx, ty - cy) + Math.abs(tr - cr) > 0.4) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        cx = tx; cy = ty; cr = tr;
+        applyMask();
+        rafId = null;
+      }
+    }
+
+    function targetFromBtn(btn) {
+      const r = btn.getBoundingClientRect();
+      tx = r.left + r.width  / 2;
+      ty = r.top  + r.height / 2;
+      tr = Math.max(r.width, r.height) * 0.78 + 32;
+    }
+
+    function startMag(btn) {
+      // Don't activate blur before first real mousemove
+      if (!_mouseReady) return;
+      // Cancel any pending hide
+      if (pendingEnd) { clearTimeout(pendingEnd); pendingEnd = null; }
+      if (activeMagBtn === btn) return;
+      activeMagBtn = btn;
+      targetFromBtn(btn);
+
+      if (!visible) {
+        // First appearance — snap to position, then fade in
+        cx = tx; cy = ty; cr = tr;
+        applyMask();
+        visible = true;
+        ov.classList.add('_active');
+      } else {
+        // Already showing — glide spot to new button
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(tick);
+      }
+      btn.classList.add('_btn-mag-top');
+    }
+
+    function endMag(btn) {
+      if (!btn || activeMagBtn !== btn) return;
+      btn.classList.remove('_btn-mag-top');
+      // Short delay: if cursor enters another button immediately, startMag
+      // will cancel this and glide instead of fade-out/fade-in
+      pendingEnd = setTimeout(() => {
+        activeMagBtn = null;
+        visible      = false;
+        ov.classList.remove('_active');
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        pendingEnd = null;
+      }, 40);
+    }
+
+    // Expose cleanup so the page-transition IIFE can kill blur before navigating
+    clearMag = function () {
+      if (activeMagBtn) activeMagBtn.classList.remove('_btn-mag-top');
+      activeMagBtn = null;
+      visible = false;
+      ov.classList.remove('_active');
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      if (pendingEnd) { clearTimeout(pendingEnd); pendingEnd = null; }
+    };
+
+    document.addEventListener('mouseover', e => {
+      const btn = e.target.closest(SEL);
+      if (btn) startMag(btn);
+    });
+    document.addEventListener('mouseout', e => {
+      const btn = e.target.closest(SEL);
+      if (btn && !btn.contains(e.relatedTarget)) endMag(btn);
+    });
+    // When a click triggers a navigation/action the button leaves the DOM
+    // and mouseout never fires — force-clear the blur immediately on click.
+    document.addEventListener('click', () => {
+      clearMag();
+    }, true);
+  })();
+
   /* ── Fullscreen toggle (game pages only) ── */
   (function () {
     const path = location.pathname;
@@ -585,7 +785,7 @@
         position: fixed;
         bottom: 20px;
         right: 20px;
-        z-index: 99998;
+        z-index: 9985;
         width: 36px;
         height: 36px;
         border-radius: 10px;
@@ -659,6 +859,124 @@
       if (e.key === 'f' || e.key === 'F') {
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') toggle();
       }
+    });
+
+    /* ── Back to index button ── */
+    const backStyle = document.createElement('style');
+    backStyle.textContent = `
+      #_back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 9985;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1.5px solid rgba(200,255,74,0.35);
+        background: rgba(10,10,11,0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #c8ff4a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.5;
+        transition: opacity 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+        text-decoration: none;
+      }
+      #_back-btn:hover {
+        opacity: 1;
+        border-color: #c8ff4a;
+        background: rgba(10,10,11,0.92);
+        transform: scale(1.08);
+      }
+      #_back-btn svg { display: block; }
+    `;
+    document.head.appendChild(backStyle);
+
+    const backBtn = document.createElement('a');
+    backBtn.id = '_back-btn';
+    backBtn.href = 'index.html';
+    backBtn.title = 'Back to home';
+    backBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 6.5L8 1l7 5.5V15a1 1 0 01-1 1H5a1 1 0 01-1-1v-4H2v4a1 1 0 01-1 1"/>
+      <rect x="5" y="11" width="4" height="5" rx="0.5"/>
+    </svg>`;
+    document.body.appendChild(backBtn);
+  })();
+
+  /* ── Page transitions ── */
+  (function () {
+    /* The curtain <div id="_pg-curtain"> is hard-coded in every HTML file as the
+       first child of <body> with inline style="...background:#0a0a0b".
+       It's opaque from first paint, so the page content (including logo animations)
+       is hidden until we explicitly fade it out.  The custom cursor has a higher
+       z-index, so it's visible above the curtain the whole time — giving the
+       illusion that the cursor persists continuously between pages. */
+    const pgStyle = document.createElement('style');
+    pgStyle.textContent = `
+      @keyframes _curtainIn  { from { opacity:1; } to { opacity:0; } }
+      @keyframes _curtainOut { from { opacity:0; } to { opacity:1; } }
+      #_pg-curtain {
+        position: fixed;
+        inset: 0;
+        z-index: 99995;
+        pointer-events: none;
+      }
+      /* Block pointer events while fading out (prevents double-clicks during exit) */
+      #_pg-curtain._out { animation: _curtainOut 0.18s ease both; pointer-events: all; }
+      /* Reveal animation — starts opaque, fades to clear */
+      #_pg-curtain._in  { animation: _curtainIn  0.32s cubic-bezier(.23,1,.32,1) both; }
+    `;
+    document.head.appendChild(pgStyle);
+
+    /* Reuse the hard-coded static curtain from HTML; fall back to creating one */
+    let curtain = document.getElementById('_pg-curtain');
+    if (!curtain) {
+      curtain = document.createElement('div');
+      curtain.id = '_pg-curtain';
+      curtain.style.cssText = 'position:fixed;inset:0;z-index:99995;pointer-events:none;background:#0a0a0b';
+      document.body.insertBefore(curtain, document.body.firstChild);
+    }
+
+    /* Fade-in reveal — curtain was opaque on first paint, now animate to transparent */
+    document.addEventListener('DOMContentLoaded', () => {
+      curtain.classList.add('_in');
+      curtain.addEventListener('animationend', () => {
+        curtain.classList.remove('_in');
+        curtain.style.opacity = '0'; // hold transparent once animation is done
+      }, { once: true });
+    });
+
+    /* Intercept internal same-origin link clicks → fade out first */
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href) return;
+      if (a.target === '_blank') return;
+      if (href.startsWith('http') && !href.startsWith(location.origin)) return;
+      if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+      e.preventDefault();
+      // Save cursor visual state so the next page can restore it seamlessly
+      try {
+        sessionStorage.setItem('_curState', JSON.stringify({
+          dotCls:  dot.className.replace('_cur-dot', '').trim(),
+          ringCls: ring.className.replace('_cur-ring', '').trim(),
+          ringW:   ring.style.width,
+          ringH:   ring.style.height,
+          ringBr:  ring.style.borderRadius,
+        }));
+      } catch(_) {}
+      try { sessionStorage.setItem('_curPos', JSON.stringify({x: mx, y: my})); } catch(_){}
+      clearMag();
+      // Match curtain to current page bg before fading out
+      curtain.style.opacity = '';
+      curtain.style.background = getComputedStyle(document.body).backgroundColor || '#0a0a0b';
+      curtain.classList.remove('_in');
+      curtain.classList.add('_out');
+      setTimeout(() => { location.href = href; }, 195);
     });
   })();
 })();

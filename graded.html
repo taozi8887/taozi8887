@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="cursor:none">
 <head>
+<style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Graded — How Well Can You Recreate Gradients?</title>
@@ -107,24 +108,21 @@
     line-height: 1.7;
   }
 
-  /* Preview gradient preview on home */
+  /* Hero gradient crossfade */
   .hero-gradient {
     width: 100%;
     max-width: 520px;
     height: 200px;
     border-radius: var(--radius);
     margin-bottom: 48px;
-    animation: morphGradient 6s ease infinite alternate;
     border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
   }
-
-  @keyframes morphGradient {
-    0% { background: linear-gradient(135deg, #ff6b6b, #4ecdc4); }
-    20% { background: linear-gradient(200deg, #a18cd1, #fbc2eb); }
-    40% { background: linear-gradient(60deg, #f7971e, #ffd200); }
-    60% { background: linear-gradient(160deg, #0061ff, #60efff); }
-    80% { background: linear-gradient(90deg, #f953c6, #b91d73); }
-    100% { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  .hero-gradient-layer {
+    position: absolute;
+    inset: 0;
+    transition: opacity 1.5s cubic-bezier(.4,0,.2,1);
   }
 
   .mode-select {
@@ -613,7 +611,8 @@
   }
 </style>
 </head>
-<body>
+<body style="cursor:none">
+<div id="_pg-curtain" style="position:fixed;inset:0;z-index:99995;background:#0a0a0b;pointer-events:none"></div>
 
 <header>
   <a href="#" class="logo" onclick="showScreen('home'); return false;">Graded<span>.</span></a>
@@ -623,7 +622,10 @@
 <!-- HOME -->
 <div id="home" class="screen active fade-in">
   <div style="height: 64px;"></div>
-  <div class="hero-gradient" id="heroGradient"></div>
+  <div class="hero-gradient" id="heroGradient">
+    <div class="hero-gradient-layer" id="_hgl_a"></div>
+    <div class="hero-gradient-layer" id="_hgl_b"></div>
+  </div>
   <h1 class="hero-title">Recreate<br><em>the gradient.</em></h1>
   <p class="hero-sub">We show you a gradient. Then you rebuild it from memory using hue, saturation, and lightness controls. How close can you get?</p>
 
@@ -737,6 +739,48 @@
 </footer>
 
 <script>
+// ─── HERO GRADIENT CROSSFADE ───
+(function () {
+  const GRADS = [
+    'linear-gradient(135deg, #ff6b6b, #4ecdc4)',
+    'linear-gradient(200deg, #a18cd1, #fbc2eb)',
+    'linear-gradient(60deg,  #f7971e, #ffd200)',
+    'linear-gradient(160deg, #0061ff, #60efff)',
+    'linear-gradient(90deg,  #f953c6, #b91d73)',
+    'linear-gradient(135deg, #43e97b, #38f9d7)',
+  ];
+  let idx = 0;
+  // Layer A sits at z-index 1, Layer B (the incoming layer) sits at z-index 2.
+  // Crossfade: set B = next gradient, fade B to opacity 1, then snap-copy to A
+  // and instantly hide B. This way A always holds the current gradient.
+  const layerA = document.getElementById('_hgl_a');
+  const layerB = document.getElementById('_hgl_b');
+  layerA.style.zIndex  = '1';
+  layerB.style.zIndex  = '2';
+  layerA.style.opacity = '1';
+  layerB.style.opacity = '0';
+  layerA.style.background = GRADS[0];
+
+  function nextGrad() {
+    idx = (idx + 1) % GRADS.length;
+    // Prepare incoming layer and fade it in on top
+    layerB.style.background = GRADS[idx];
+    layerB.style.opacity    = '1';
+    // After the crossfade completes, move gradient to base layer and hide top
+    setTimeout(() => {
+      layerA.style.background = GRADS[idx];
+      // Suppress transition so the hide is instant (no fade-out flicker)
+      layerB.style.transition = 'none';
+      layerB.style.opacity = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        layerB.style.transition = '';
+      }));
+    }, 1600); // slightly longer than the 1.5s CSS transition
+  }
+
+  setInterval(nextGrad, 3200);
+})();
+
 // ─── STATE ───
 const ROUNDS = 5;
 const MEMORIZE_EASY = 6;
