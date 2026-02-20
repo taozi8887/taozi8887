@@ -505,6 +505,11 @@
 
   /* Priority-ordered mode map – first match wins */
   const MODE_MAP = [
+    // Back-to-home button — ring fits the button pill
+    { fn: el => !!el.closest('#_back-btn'),
+      mode: '_fit', lbl: 'HOME',
+      elFn: el => el.closest('#_back-btn') },
+
     // Text inputs only (not range/checkbox/radio/color/etc.)
     { fn: el => el.matches('textarea') || (el.matches('input') && TEXT_INPUT_TYPES.has((el.type||'').toLowerCase())),
       mode: '_text', lbl: null },
@@ -570,7 +575,7 @@
     for (const entry of MODE_MAP) {
       if (entry.fn(t)) {
         const lbl = typeof entry.lbl === 'function' ? entry.lbl(t) : entry.lbl;
-        const fitTarget  = (entry.mode === '_fit')  ? t.closest('.stat-card, .setting-card') : null;
+        const fitTarget  = (entry.mode === '_fit')  ? (t.closest('#_back-btn') || t.closest('.stat-card, .setting-card')) : null;
         const glowTarget = (entry.elFn)             ? entry.elFn(t) : null;
         setMode(entry.mode, lbl, null, fitTarget || glowTarget);
         return;
@@ -869,28 +874,51 @@
         top: 20px;
         left: 20px;
         z-index: 9985;
-        width: 36px;
-        height: 36px;
+        height: 38px;
+        padding: 0 14px 0 10px;
         border-radius: 10px;
-        border: 1.5px solid rgba(200,255,74,0.35);
-        background: rgba(10,10,11,0.7);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        border: 1.5px solid rgba(200,255,74,0.5);
+        background: rgba(10,10,11,0.75);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         color: #c8ff4a;
         display: flex;
         align-items: center;
-        justify-content: center;
-        opacity: 0.5;
-        transition: opacity 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+        gap: 8px;
+        opacity: 0.75;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        transition: opacity 0.25s, border-color 0.25s, background 0.25s, box-shadow 0.25s, transform 0.25s;
         text-decoration: none;
       }
       #_back-btn:hover {
         opacity: 1;
         border-color: #c8ff4a;
-        background: rgba(10,10,11,0.92);
-        transform: scale(1.08);
+        background: rgba(10,10,11,0.95);
+        box-shadow: 0 0 0 3px rgba(200,255,74,0.12), 0 4px 24px rgba(200,255,74,0.18);
+        transform: translateY(-1px);
       }
-      #_back-btn svg { display: block; }
+      #_back-btn:active {
+        transform: translateY(1px) scale(0.97);
+        box-shadow: 0 0 0 2px rgba(200,255,74,0.2);
+      }
+      #_back-btn svg {
+        display: block;
+        flex-shrink: 0;
+        transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      #_back-btn:hover svg {
+        transform: scale(1.2) rotate(-8deg);
+      }
+      #_back-btn-label {
+        font-family: 'DM Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transition: letter-spacing 0.25s ease;
+      }
+      #_back-btn:hover #_back-btn-label {
+        letter-spacing: 0.18em;
+      }
     `;
     document.head.appendChild(backStyle);
 
@@ -898,10 +926,10 @@
     backBtn.id = '_back-btn';
     backBtn.href = 'index.html';
     backBtn.title = 'Back to home';
-    backBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    backBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 6.5L8 1l7 5.5V15a1 1 0 01-1 1H5a1 1 0 01-1-1v-4H2v4a1 1 0 01-1 1"/>
       <rect x="5" y="11" width="4" height="5" rx="0.5"/>
-    </svg>`;
+    </svg><span id="_back-btn-label">go back</span>`;
     document.body.appendChild(backBtn);
   })();
 
