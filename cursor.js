@@ -1,6 +1,20 @@
 (function () {
   'use strict';
 
+  /* ── Disable everything on touch / mobile devices ── */
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 1;
+  if (isTouch) {
+    // Undo the hardcoded cursor:none baked into each HTML file
+    const fix = document.createElement('style');
+    fix.textContent = 'html, *, *::before, *::after { cursor: auto !important; }';
+    document.head.appendChild(fix);
+    document.documentElement.style.cursor = '';
+    // Still run page-transition reveal so bfcache / back-button works
+    // (defined below — skip to the page-transitions IIFE only)
+  }
+
+  if (!isTouch) {
+
   const ACCENT = '#c8ff4a';
   const ACCENT_GLOW = 'rgba(200,255,74,0.18)';
 
@@ -932,6 +946,36 @@
       #_back-btn:hover #_back-btn-label {
         letter-spacing: 0.18em;
       }
+
+      @media (max-width: 540px) {
+        header {
+          padding-top: 14px !important;
+          padding-left: 14px !important;
+          padding-right: 14px !important;
+          gap: 8px;
+        }
+        header .logo {
+          position: static !important;
+          transform: none !important;
+          left: auto !important;
+          pointer-events: auto !important;
+          flex: 1;
+          text-align: center;
+        }
+        .version { display: none !important; }
+        #_fs-btn { display: none !important; }
+        #_back-btn-label { display: none; }
+        #_back-btn { padding: 0 8px; height: 30px; }
+        .header-right { gap: 8px; }
+        .btn.sm { padding: 6px 12px; font-size: 11px; }
+        footer {
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 6px !important;
+          text-align: center !important;
+          padding: 20px 16px !important;
+        }
+      }
     `;
     document.head.appendChild(backStyle);
 
@@ -946,6 +990,8 @@
     if (_backHeader) _backHeader.insertBefore(backBtn, _backHeader.firstChild);
     else document.body.appendChild(backBtn);
   })();
+
+  } // end if (!isTouch)
 
   /* ── Page transitions ── */
   (function () {
@@ -982,12 +1028,21 @@
     }
 
     /* Fade-in reveal — curtain was opaque on first paint, now animate to transparent */
-    document.addEventListener('DOMContentLoaded', () => {
+    function revealPage() {
       curtain.classList.add('_in');
       curtain.addEventListener('animationend', () => {
         curtain.classList.remove('_in');
         curtain.style.opacity = '0'; // hold transparent once animation is done
       }, { once: true });
+    }
+    document.addEventListener('DOMContentLoaded', revealPage);
+    /* bfcache restore (mobile browser back/forward): DOMContentLoaded never fires,
+       so we must listen for pageshow with persisted=true and instantly clear curtain */
+    window.addEventListener('pageshow', e => {
+      if (e.persisted) {
+        curtain.classList.remove('_in', '_out');
+        curtain.style.opacity = '0';
+      }
     });
 
     /* Intercept internal same-origin link clicks → fade out first */

@@ -327,6 +327,9 @@
     flex-wrap: wrap;
     gap: 12px;
   }
+  /* Prevent score chip from changing width and causing layout shift */
+  #chipScore { min-width: 96px; }
+  #chipScore strong { display: inline-block; min-width: 3.5ch; text-align: right; font-variant-numeric: tabular-nums; }
 
   .level-badge {
     font-family: 'Instrument Serif', serif;
@@ -396,13 +399,14 @@
   }
 
   .cell.clicked-pending {
-    background: var(--surface3);
-    border-color: var(--muted);
+    background: rgba(200,255,74,0.18);
+    border-color: var(--accent);
     cursor: pointer;
+    box-shadow: 0 0 0 2px rgba(200,255,74,0.25);
   }
   .cell.clicked-pending:hover {
-    background: var(--surface2);
-    border-color: var(--border);
+    background: rgba(200,255,74,0.12);
+    border-color: var(--accent);
     transform: scale(1.04);
   }
 
@@ -586,7 +590,16 @@
     margin-bottom: 20px;
   }
 
-  @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .chip { padding: 5px 10px; font-size: 10px; }
+    .game-chips { gap: 5px; }
+    .hero-sub { font-size: 12px; max-width: 100%; margin-bottom: 32px; }
+    .home-actions { flex-direction: column; align-items: stretch; }
+    .home-actions .btn { text-align: center; }
+    .modal { padding: 28px 20px; margin: 0 16px; }
+    .screen { padding: 0 16px 48px; }
+  }
 
   .setting-card {
     background: var(--surface);

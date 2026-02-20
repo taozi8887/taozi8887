@@ -372,6 +372,16 @@
     .game-grid { width: calc(100vw - 60px); }
     .chips { gap: 5px; }
     .chip { padding: 5px 10px; font-size: 10px; }
+    .difficulty-cards { flex-direction: column; align-items: stretch; }
+    .diff-card { text-align: left; display: flex; gap: 16px; align-items: center; }
+    .diff-card .d-name { margin-bottom: 0; min-width: 50px; }
+    .hero-sub { font-size: 12px; }
+    .hero-preview { gap: 4px; }
+    .hp-cell { width: 44px; height: 44px; font-size: 16px; }
+    .home-actions { flex-direction: column; align-items: stretch; }
+    .home-actions .btn { text-align: center; }
+    .modal { padding: 28px 20px; margin: 0 16px; }
+    .screen { padding: 0 16px 48px; }
   }
 </style>
 </head>
@@ -885,18 +895,27 @@ document.addEventListener('keydown', e => {
   if (dir) { e.preventDefault(); handleMove(dir); }
 });
 
-let touchSX = 0, touchSY = 0;
-document.addEventListener('touchstart', e => {
+let touchSX = 0, touchSY = 0, touchActive = false;
+const gridEl = document.getElementById('grid');
+gridEl.addEventListener('touchstart', e => {
   touchSX = e.changedTouches[0].screenX;
   touchSY = e.changedTouches[0].screenY;
-}, { passive: true });
-document.addEventListener('touchend', e => {
+  touchActive = true;
+}, { passive: false });
+gridEl.addEventListener('touchmove', e => {
+  /* Prevent page scroll AND browser back/forward swipe while over the board */
+  if (touchActive) e.preventDefault();
+}, { passive: false });
+gridEl.addEventListener('touchend', e => {
+  if (!touchActive) return;
+  touchActive = false;
   const dx = e.changedTouches[0].screenX - touchSX;
   const dy = e.changedTouches[0].screenY - touchSY;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
   if (Math.abs(dx) > Math.abs(dy)) handleMove(dx > 0 ? 'right' : 'left');
   else handleMove(dy > 0 ? 'down' : 'up');
-}, { passive: true });
+}, { passive: false });
+gridEl.addEventListener('touchcancel', () => { touchActive = false; }, { passive: true });
 
 /* ── BOOT ── */
 try { state.bestScore = parseInt(localStorage.getItem('best2048')) || 0; } catch(e) {}
