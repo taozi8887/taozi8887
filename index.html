@@ -7,8 +7,8 @@
 <title>taozi4887.dev</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="taozi4887 - I make small games and interactive things for the web. Projects include Graded, Mines, Squares, 3D Tic-Tac-Toe, and more.">
-<meta name="keywords" content="taozi4887, web games, interactive, portfolio, Graded, Minesweeper, Squares, 3D Tic-Tac-Toe, browser games, creative developer">
+<meta name="description" content="taozi4887 - I make small games and interactive things for the web. Projects include Graded, Mines, Squares, 3D Tic-Tac-Toe, Snake, Tetris, and more.">
+<meta name="keywords" content="taozi4887, web games, interactive, portfolio, Graded, Minesweeper, Squares, 3D Tic-Tac-Toe, Snake, Tetris, browser games, creative developer">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://taozi4887.dev/">
@@ -19,7 +19,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/">
 <meta property="og:title" content="taozi4887.dev">
-<meta property="og:description" content="Small games and interactive things for the web - Graded, Mines, Squares, 3D Tic-Tac-Toe, and more.">
+<meta property="og:description" content="Small games and interactive things for the web - Graded, Mines, Squares, 3D Tic-Tac-Toe, Snake, Tetris, and more.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -28,7 +28,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/">
 <meta name="twitter:title" content="taozi4887.dev">
-<meta name="twitter:description" content="Small games and interactive things for the web - Graded, Mines, Squares, 3D Tic-Tac-Toe, and more.">
+<meta name="twitter:description" content="Small games and interactive things for the web - Graded, Mines, Squares, 3D Tic-Tac-Toe, Snake, Tetris, and more.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -75,6 +75,20 @@
       "name": "3D Tic-Tac-Toe",
       "url": "https://taozi4887.dev/3dtictactoe.html",
       "description": "Tic-tac-toe on a 3D board.",
+      "applicationCategory": "Game"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Snake",
+      "url": "https://taozi4887.dev/snake.html",
+      "description": "Classic Snake — eat food, grow longer, don't hit the walls.",
+      "applicationCategory": "Game"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Tetris",
+      "url": "https://taozi4887.dev/tetris.html",
+      "description": "Tetris — stack tetrominoes, clear lines, chase high scores.",
       "applicationCategory": "Game"
     }
   ]
@@ -328,11 +342,17 @@
   }
   .card-mines .hero-card-bg { background: linear-gradient(160deg, #1a1a2e, #16213e, #0f3460); opacity: 0.7; }
   .mines-preview {
-    position: absolute; inset: 0; z-index: 0; display: grid;
-    grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr);
-    gap: 3px; padding: 24px 28px;
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mines-preview-inner {
+    display: grid;
+    grid-template-columns: repeat(5, 34px);
+    grid-template-rows: repeat(4, 34px);
+    gap: 3px;
   }
   .mines-preview .mc {
+    width: 34px; height: 34px;
     border-radius: 4px; background: #1a1a1d; border: 1px solid #252528;
     display: flex; align-items: center; justify-content: center;
     font-size: 9px; font-weight: 600; font-family: 'DM Mono', monospace;
@@ -346,11 +366,17 @@
   .mines-preview .mc.mine { background: rgba(255,107,107,0.15); color: #ff6b6b; font-size: 10px; }
   .card-squares .hero-card-bg { background: linear-gradient(200deg, #2d1b69, #11998e); opacity: 0.5; }
   .squares-preview {
-    position: absolute; inset: 0; z-index: 0; display: grid;
-    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
-    gap: 5px; padding: 24px 28px;
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .squares-preview-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 38px);
+    grid-template-rows: repeat(3, 38px);
+    gap: 5px;
   }
   .squares-preview .sp {
+    width: 38px; height: 38px;
     border-radius: 5px; background: #1a1a1d; border: 1px solid #252528;
     opacity: 0.5; transition: all 0.3s;
   }
@@ -413,10 +439,16 @@
   .card-2048 .hero-card-bg { background: linear-gradient(150deg, #1a0a00, #3d1f00, #5c2e00); opacity: 0.9; }
   .preview-2048 {
     position: absolute; inset: 0; z-index: 0;
-    display: grid; grid-template-columns: repeat(4,1fr); grid-template-rows: repeat(4,1fr);
-    gap: 5px; padding: 24px 28px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .preview-2048-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 38px);
+    grid-template-rows: repeat(4, 38px);
+    gap: 5px;
   }
   .t2048 {
+    width: 38px; height: 38px;
     border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 600; font-family: 'DM Mono', monospace;
@@ -461,6 +493,50 @@
     font-family: 'DM Mono', monospace; font-size: 9px; color: #c8ff4a;
     letter-spacing: 0.1em; opacity: 0.6; margin-top: 4px;
   }
+
+  /* ─── Snake preview ─── */
+  .card-snake .hero-card-bg { background: linear-gradient(170deg, #0a1a0a, #0d2e14, #1a3d1b); opacity: 0.8; }
+  .snake-preview {
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .snake-preview-inner {
+    display: grid;
+    grid-template-columns: repeat(8, 26px);
+    grid-template-rows: repeat(5, 26px);
+    gap: 3px;
+  }
+  .snake-preview .sc {
+    width: 26px; height: 26px;
+    border-radius: 4px; background: #1a1a1d; border: 1px solid #252528; opacity: 0.5;
+  }
+  .snake-preview .sc.head { background: rgba(200,255,74,0.25); border-color: rgba(200,255,74,0.55); opacity: 0.9; }
+  .snake-preview .sc.body { background: rgba(200,255,74,0.1); border-color: rgba(200,255,74,0.28); opacity: 0.8; }
+  .snake-preview .sc.food { background: rgba(255,107,107,0.22); border-color: rgba(255,107,107,0.5); opacity: 0.9; animation: spGlow 2.5s ease infinite; }
+
+  /* ─── Tetris preview ─── */
+  .card-tetris .hero-card-bg { background: linear-gradient(160deg, #0a0a1e, #141428, #0d1a30); opacity: 0.8; }
+  .tetris-preview {
+    position: absolute; inset: 0; z-index: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tetris-preview-inner {
+    display: grid;
+    grid-template-columns: repeat(10, 22px);
+    grid-template-rows: repeat(8, 22px);
+    gap: 2px;
+  }
+  .tetris-preview .tc {
+    width: 22px; height: 22px;
+    border-radius: 3px; background: rgba(26,26,29,0.6); border: 1px solid rgba(37,37,40,0.5); opacity: 0.3;
+  }
+  .tetris-preview .tc.ti { background: rgba(50,220,255,0.5); border-color: rgba(50,220,255,0.6); opacity: 0.85; }
+  .tetris-preview .tc.to { background: rgba(255,220,50,0.5); border-color: rgba(255,220,50,0.6); opacity: 0.85; }
+  .tetris-preview .tc.tt { background: rgba(180,100,255,0.5); border-color: rgba(180,100,255,0.6); opacity: 0.85; }
+  .tetris-preview .tc.ts { background: rgba(50,230,120,0.5); border-color: rgba(50,230,120,0.6); opacity: 0.85; }
+  .tetris-preview .tc.tz { background: rgba(255,80,80,0.5); border-color: rgba(255,80,80,0.6); opacity: 0.85; }
+  .tetris-preview .tc.tj { background: rgba(70,120,255,0.5); border-color: rgba(70,120,255,0.6); opacity: 0.85; }
+  .tetris-preview .tc.tl { background: rgba(255,160,40,0.5); border-color: rgba(255,160,40,0.6); opacity: 0.85; }
 
 
   .section-divider { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
@@ -752,12 +828,12 @@
     </a>
     <a href="mines.html" class="hero-card card-mines">
       <div class="hero-card-bg"></div>
-      <div class="mines-preview">
-        <div class="mc open n1">1</div><div class="mc"></div><div class="mc open n2">2</div><div class="mc"></div><div class="mc flag">🚩</div>
-        <div class="mc open"></div><div class="mc open n1">1</div><div class="mc"></div><div class="mc open n3">3</div><div class="mc"></div>
-        <div class="mc"></div><div class="mc open n2">2</div><div class="mc mine">💣</div><div class="mc"></div><div class="mc open n1">1</div>
-        <div class="mc open"></div><div class="mc"></div><div class="mc open n1">1</div><div class="mc open"></div><div class="mc"></div>
-      </div>
+      <div class="mines-preview"><div class="mines-preview-inner">
+        <div class="mc open n1">1</div><div class="mc open n1">1</div><div class="mc open n2">2</div><div class="mc flag">🚩</div><div class="mc"></div>
+        <div class="mc open"></div><div class="mc open n2">2</div><div class="mc mine">💣</div><div class="mc open n3">3</div><div class="mc"></div>
+        <div class="mc"></div><div class="mc open n1">1</div><div class="mc open"></div><div class="mc open n1">1</div><div class="mc"></div>
+        <div class="mc"></div><div class="mc flag">🚩</div><div class="mc"></div><div class="mc open"></div><div class="mc"></div>
+      </div></div>
       <div class="hero-card-overlay"></div>
       <span class="hero-card-arrow">↗</span>
       <div class="hero-card-content">
@@ -767,11 +843,11 @@
     </a>
     <a href="squares.html" class="hero-card card-squares">
       <div class="hero-card-bg"></div>
-      <div class="squares-preview">
+      <div class="squares-preview"><div class="squares-preview-inner">
         <div class="sp"></div><div class="sp lit"></div><div class="sp"></div><div class="sp"></div>
         <div class="sp correct"></div><div class="sp"></div><div class="sp lit"></div><div class="sp wrong"></div>
         <div class="sp"></div><div class="sp"></div><div class="sp correct"></div><div class="sp lit"></div>
-      </div>
+      </div></div>
       <div class="hero-card-overlay"></div>
       <span class="hero-card-arrow">↗</span>
       <div class="hero-card-content">
@@ -800,12 +876,12 @@
     </a>
     <a href="2048.html" class="hero-card card-2048">
       <div class="hero-card-bg"></div>
-      <div class="preview-2048">
+      <div class="preview-2048"><div class="preview-2048-inner">
         <div class="t2048"></div><div class="t2048 v2">2</div><div class="t2048 v4">4</div><div class="t2048"></div>
         <div class="t2048 v8">8</div><div class="t2048 v16">16</div><div class="t2048"></div><div class="t2048 v2">2</div>
         <div class="t2048 v32">32</div><div class="t2048 v64">64</div><div class="t2048 v128">128</div><div class="t2048 v4">4</div>
         <div class="t2048 v256">256</div><div class="t2048 v512">512</div><div class="t2048 v1024">1024</div><div class="t2048 v2048">2048</div>
-      </div>
+      </div></div>
       <div class="hero-card-overlay"></div>
       <span class="hero-card-arrow">↗</span>
       <div class="hero-card-content">
@@ -834,6 +910,41 @@
         <div class="hero-card-desc">Speed typing test</div>
       </div>
     </a>
+    <a href="snake.html" class="hero-card card-snake">
+      <div class="hero-card-bg"></div>
+      <div class="snake-preview"><div class="snake-preview-inner">
+        <div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc food"></div><div class="sc"></div><div class="sc"></div>
+        <div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div>
+        <div class="sc"></div><div class="sc body"></div><div class="sc body"></div><div class="sc body"></div><div class="sc head"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div>
+        <div class="sc"></div><div class="sc body"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div>
+        <div class="sc"></div><div class="sc body"></div><div class="sc body"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc food"></div><div class="sc"></div>
+      </div></div>
+      <div class="hero-card-overlay"></div>
+      <span class="hero-card-arrow">↗</span>
+      <div class="hero-card-content">
+        <div class="hero-card-title">Snake</div>
+        <div class="hero-card-desc">Eat, grow, don't crash</div>
+      </div>
+    </a>
+    <a href="tetris.html" class="hero-card card-tetris">
+      <div class="hero-card-bg"></div>
+      <div class="tetris-preview"><div class="tetris-preview-inner">
+        <div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc tt"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div>
+        <div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc tt"></div><div class="tc tt"></div><div class="tc tt"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div>
+        <div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div>
+        <div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div>
+        <div class="tc tz"></div><div class="tc tz"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div>
+        <div class="tc"></div><div class="tc tz"></div><div class="tc tz"></div><div class="tc"></div><div class="tc ts"></div><div class="tc ts"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc tl"></div>
+        <div class="tc to"></div><div class="tc to"></div><div class="tc"></div><div class="tc ts"></div><div class="tc ts"></div><div class="tc"></div><div class="tc tj"></div><div class="tc tl"></div><div class="tc tl"></div><div class="tc tl"></div>
+        <div class="tc to"></div><div class="tc to"></div><div class="tc ti"></div><div class="tc ti"></div><div class="tc ti"></div><div class="tc ti"></div><div class="tc tj"></div><div class="tc tj"></div><div class="tc tj"></div><div class="tc"></div>
+      </div></div>
+      <div class="hero-card-overlay"></div>
+      <span class="hero-card-arrow">↗</span>
+      <div class="hero-card-content">
+        <div class="hero-card-title">Tetris</div>
+        <div class="hero-card-desc">Stack & clear tetrominoes</div>
+      </div>
+    </a>
   </div>
 </section>
 <section class="about" id="about">
@@ -845,7 +956,7 @@
       <p class="about-text reveal" style="margin-top:16px;transition-delay:0.15s;">I also care a lot about UI and making things look good, which probably has something to do with the fact that I've been drawing basically my whole life. The art and the code end up influencing each other way more than I expected.</p>
     </div>
     <div class="about-stats reveal" style="transition-delay:0.2s;">
-      <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">Games</div></div>
+      <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">Games</div></div>
       <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Dependencies</div></div>
       <div class="stat-card"><div class="stat-num">∞</div><div class="stat-label">Replayability</div></div>
       <div class="stat-card"><div class="stat-num">1</div><div class="stat-label">File per game</div></div>
@@ -922,6 +1033,28 @@
         <h3 class="project-name">Typer<span style="color:var(--accent3)">.</span></h3>
         <p class="project-desc">A clean, minimal typing speed test inspired by MonkeyType. 30 or 60 seconds, live WPM and accuracy, with a smooth word-by-word interface.</p>
         <div class="project-tags"><span class="tag">Typing</span><span class="tag">Speed</span><span class="tag">Accuracy</span></div>
+        <span class="project-cta">Play now ↗</span>
+      </div>
+    </a>
+    <a href="snake.html" class="project-row reveal">
+      <div class="project-row-bg" style="background:linear-gradient(170deg, #0a1a0a, #0d2e14, #1a3d1b); opacity: 0.45;"></div>
+      <div class="project-row-overlay"></div>
+      <div class="project-info">
+        <span class="project-num">07</span>
+        <h3 class="project-name">Snake<span style="color:var(--accent)">.</span></h3>
+        <p class="project-desc">The classic snake game with three difficulty levels, smooth canvas rendering, particle effects, and synthesized sound. Eat food, grow longer, avoid the walls and yourself.</p>
+        <div class="project-tags"><span class="tag">Arcade</span><span class="tag">Classic</span><span class="tag">Canvas</span></div>
+        <span class="project-cta">Play now ↗</span>
+      </div>
+    </a>
+    <a href="tetris.html" class="project-row reveal">
+      <div class="project-row-bg" style="background:linear-gradient(160deg, #0a0a1e, #141428, #1a1040); opacity: 0.45;"></div>
+      <div class="project-row-overlay"></div>
+      <div class="project-info">
+        <span class="project-num">08</span>
+        <h3 class="project-name">Tetris<span style="color:var(--accent3)">.</span></h3>
+        <p class="project-desc">Guideline-compliant Tetris with SRS rotation, T-spin detection, back-to-back bonuses, 5-piece next queue, hold system, ghost piece, and proper lock delay. Full keyboard and touch controls.</p>
+        <div class="project-tags"><span class="tag">Stacking</span><span class="tag">Puzzle</span><span class="tag">Guideline</span></div>
         <span class="project-cta">Play now ↗</span>
       </div>
     </a>
