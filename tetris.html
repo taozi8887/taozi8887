@@ -786,6 +786,10 @@
     </div>
     <div class="how-step">
       <div class="step-num">4</div>
+      <div class="step-text"><strong>T-Spins</strong>, <strong>S/Z-Spins</strong> and wall kicks let you rotate pieces into tight gaps. SRS kick tables enable advanced techniques like TSDs and DT Cannons.</div>
+    </div>
+    <div class="how-step">
+      <div class="step-num">5</div>
       <div class="step-text">The game speeds up every 10 lines. Survive as long as you can!</div>
     </div>
 
@@ -796,7 +800,7 @@
       <span class="key-tag"><strong>← →</strong> move</span>
       <span class="key-tag"><strong>↓</strong> soft drop</span>
       <span class="key-tag"><strong>↑ / X</strong> rotate CW</span>
-      <span class="key-tag"><strong>Z / Ctrl</strong> rotate CCW</span>
+      <span class="key-tag"><strong>Z / Ctrl / Alt</strong> rotate CCW</span>
       <span class="key-tag"><strong>Space</strong> hard drop</span>
       <span class="key-tag"><strong>C / Shift</strong> hold</span>
       <span class="key-tag"><strong>Esc / P</strong> pause</span>
@@ -1200,30 +1204,52 @@ function getGhostY() {
 
 function tryRotate(dir) {
   if (currentType === 'O') return false;
+  const type = currentType;
   const newRot = (currentRotation + dir + 4) % 4;
   const key = currentRotation + '>' + newRot;
-  const table = currentType === 'I' ? KICK_I_TABLE : KICK_JLSTZ;
+  const table = type === 'I' ? KICK_I_TABLE : KICK_JLSTZ;
   const kicks = table[key];
-  if (!kicks) return false;
+  if (!kicks) { console.log('SRS: no kicks for key', key); return false; }
 
+  console.log(`SRS rotate ${type}: ${key} at (${currentX},${currentY}) rot ${currentRotation}->${newRot}`);
   for (let i = 0; i < kicks.length; i++) {
     const [kx, ky] = kicks[i];
-    if (isValid(currentType, newRot, currentX + kx, currentY - ky)) {
-      currentX += kx;
-      currentY -= ky;
+    const testX = currentX + kx;
+    const testY = currentY - ky;
+    const valid = isValid(type, newRot, testX, testY);
+    if (!valid) {
+      // Log WHY it failed
+      const shape = getShape(type, newRot);
+      let reason = '';
+      for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape[r].length; c++) {
+          if (!shape[r][c]) continue;
+          const nx = testX + c, ny = testY + r;
+          if (nx < 0) reason += `col${nx}<0 `;
+          else if (nx >= COLS) reason += `col${nx}>=10 `;
+          else if (ny >= TOTAL) reason += `row${ny}>=24 `;
+          else if (ny >= 0 && board[ny][nx] !== EMPTY) reason += `(${nx},${ny})=${board[ny][nx]} `;
+        }
+      }
+      console.log(`  kick ${i}: [${kx},${ky}] -> (${testX},${testY}) FAIL: ${reason}`);
+    }
+    if (valid) {
+      console.log(`  kick ${i}: [${kx},${ky}] -> (${testX},${testY}) SUCCESS`);
+      currentX = testX;
+      currentY = testY;
       currentRotation = newRot;
       lastWasSpin = true;
       lastKickIdx = i;
-      // Update lowestY if kick moved piece lower (prevents infinite lock reset exploit)
       if (currentY > lowestY) {
         lowestY = currentY;
         lockMoves = 0;
       }
       onPieceMoved();
-      sfx.rotate();
+      if (currentType === type) sfx.rotate();
       return true;
     }
   }
+  console.log('  ALL KICKS FAILED');
   return false;
 }
 
@@ -1236,7 +1262,7 @@ function moveLeft() {
     currentX--;
     lastWasSpin = false;
     onPieceMoved();
-    sfx.move();
+    if (gameStatus === 'playing') sfx.move();
     return true;
   }
   return false;
@@ -1247,7 +1273,7 @@ function moveRight() {
     currentX++;
     lastWasSpin = false;
     onPieceMoved();
-    sfx.move();
+    if (gameStatus === 'playing') sfx.move();
     return true;
   }
   return false;
@@ -1928,7 +1954,7 @@ function clearDAS() {
 
 document.addEventListener('keydown', (e) => {
   // Block repeat for instant actions
-  if (e.repeat && ['ArrowUp','x','X','z','Z','Control',' ','c','C','Shift'].includes(e.key)) {
+  if (e.repeat && ['ArrowUp','x','X','z','Z','Control','Alt',' ','c','C','Shift'].includes(e.key)) {
     e.preventDefault(); return;
   }
 
@@ -1973,7 +1999,9 @@ document.addEventListener('keydown', (e) => {
     case 'z':
     case 'Z':
     case 'Control':
+    case 'Alt':
       e.preventDefault();
+      e.stopPropagation();
       tryRotate(-1); render();
       break;
     case ' ':
