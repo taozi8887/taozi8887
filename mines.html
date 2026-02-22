@@ -4,7 +4,7 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mines — Minesweeper</title>
+<title>Mines - Minesweeper</title>
 
 <!-- ─── SEO ─── -->
 <meta name="description" content="Minesweeper, but make it look good. Classic mine-clearing gameplay with a clean, modern style. A browser game by taozi4887.">
@@ -18,7 +18,7 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/mines.html">
-<meta property="og:title" content="Mines — Minesweeper">
+<meta property="og:title" content="Mines - Minesweeper">
 <meta property="og:description" content="Minesweeper, but make it look good. Classic mine-clearing gameplay with a clean, modern style.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
@@ -27,7 +27,7 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/mines.html">
-<meta name="twitter:title" content="Mines — Minesweeper">
+<meta name="twitter:title" content="Mines - Minesweeper">
 <meta name="twitter:description" content="Minesweeper, but make it look good. Classic mine-clearing gameplay with a clean, modern style.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
@@ -453,9 +453,9 @@
   </div>
 
   <div class="stats-row">
-    <div class="stat-chip">Best Easy <strong id="statEasy">—</strong></div>
-    <div class="stat-chip">Best Med <strong id="statMed">—</strong></div>
-    <div class="stat-chip">Best Hard <strong id="statHard">—</strong></div>
+    <div class="stat-chip">Best Easy <strong id="statEasy">-</strong></div>
+    <div class="stat-chip">Best Med <strong id="statMed">-</strong></div>
+    <div class="stat-chip">Best Hard <strong id="statHard">-</strong></div>
   </div>
 </div>
 
@@ -477,7 +477,7 @@
 
   <div class="status-banner" id="statusBanner">
     <div class="dot"></div>
-    <span class="status-text" id="statusText">Click any square to begin — first click is always safe.</span>
+    <span class="status-text" id="statusText">Click any square to begin - first click is always safe.</span>
   </div>
 
   <div class="grid-wrapper">
@@ -492,9 +492,9 @@
     <div class="modal-heading" id="endHeading">Boom.</div>
     <div class="modal-sub" id="endSub">You hit a mine.</div>
     <div class="modal-stats">
-      <div class="modal-stat"><span class="v" id="endTime">—</span><span class="l">Time</span></div>
-      <div class="modal-stat"><span class="v" id="endMines">—</span><span class="l">Mines</span></div>
-      <div class="modal-stat"><span class="v" id="endSafe">—</span><span class="l">Safe opened</span></div>
+      <div class="modal-stat"><span class="v" id="endTime">-</span><span class="l">Time</span></div>
+      <div class="modal-stat"><span class="v" id="endMines">-</span><span class="l">Mines</span></div>
+      <div class="modal-stat"><span class="v" id="endSafe">-</span><span class="l">Safe opened</span></div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('end'); nav('home')">Home</button>
@@ -512,7 +512,7 @@
     </div>
     <div class="how-step">
       <div class="step-num">1</div>
-      <div class="step-text"><strong>Click</strong> any square to start. Your first click is always safe — mines are placed after.</div>
+      <div class="step-text"><strong>Click</strong> any square to start. Your first click is always safe - mines are placed after.</div>
     </div>
     <div class="how-step">
       <div class="step-num">2</div>
@@ -524,7 +524,7 @@
     </div>
     <div class="how-step">
       <div class="step-num">4</div>
-      <div class="step-text"><strong>Chord:</strong> Clicking an open numbered cell — when its flag count matches its number — auto-reveals all its safe neighbors.</div>
+      <div class="step-text"><strong>Chord:</strong> Clicking an open numbered cell - when its flag count matches its number - auto-reveals all its safe neighbors.</div>
     </div>
     <div class="how-step">
       <div class="step-num">5</div>
@@ -566,9 +566,9 @@ let stats = {};
 try { stats = JSON.parse(localStorage.getItem('mines_v1_stats') || '{}'); } catch(e) {}
 function saveStats() { try { localStorage.setItem('mines_v1_stats', JSON.stringify(stats)); } catch(e) {} }
 function updateStatsDisplay() {
-  document.getElementById('statEasy').textContent = stats.easy  != null ? fmtTime(stats.easy)   : '—';
-  document.getElementById('statMed') .textContent = stats.medium!= null ? fmtTime(stats.medium) : '—';
-  document.getElementById('statHard').textContent = stats.hard  != null ? fmtTime(stats.hard)   : '—';
+  document.getElementById('statEasy').textContent = stats.easy  != null ? fmtTime(stats.easy)   : '-';
+  document.getElementById('statMed') .textContent = stats.medium!= null ? fmtTime(stats.medium) : '-';
+  document.getElementById('statHard').textContent = stats.hard  != null ? fmtTime(stats.hard)   : '-';
 }
 updateStatsDisplay();
 
@@ -736,8 +736,8 @@ function toggleFlagMode() {
   flagMode = !flagMode;
   document.getElementById('flagToggle').classList.toggle('active', flagMode);
   document.getElementById('statusText').textContent = flagMode
-    ? '🚩 Flag mode on — tap a hidden square to flag it.'
-    : 'Dig mode — tap a square to reveal it.';
+    ? '🚩 Flag mode on - tap a hidden square to flag it.'
+    : 'Dig mode - tap a square to reveal it.';
 }
 
 // Show flag toggle only on touch devices
@@ -926,7 +926,7 @@ function beginGame() {
   const isTouchDev = 'ontouchstart' in window || navigator.maxTouchPoints > 1;
   setStatus('', isTouchDev
     ? 'Tap any square to begin. Use 🚩 Flag button to mark mines.'
-    : 'Click any square to begin — first click is always safe. Right-click to flag a mine.');
+    : 'Click any square to begin - first click is always safe. Right-click to flag a mine.');
   nav('game');
 }
 

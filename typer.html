@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Typer — Speed Test</title>
+<title>Typer - Speed Test</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="A typing speed test — how fast can you type? Track your WPM and accuracy. A browser game by taozi4887.">
+<meta name="description" content="A typing speed test - how fast can you type? Track your WPM and accuracy. A browser game by taozi4887.">
 <meta name="keywords" content="Typer, typing speed test, WPM, words per minute, taozi4887, browser game, typing game">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/typer.html">
-<meta property="og:title" content="Typer — Speed Test">
-<meta property="og:description" content="A typing speed test — how fast can you type? Track your WPM and accuracy.">
+<meta property="og:title" content="Typer - Speed Test">
+<meta property="og:description" content="A typing speed test - how fast can you type? Track your WPM and accuracy.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/typer.html">
-<meta name="twitter:title" content="Typer — Speed Test">
-<meta name="twitter:description" content="A typing speed test — how fast can you type? Track your WPM and accuracy.">
+<meta name="twitter:title" content="Typer - Speed Test">
+<meta name="twitter:description" content="A typing speed test - how fast can you type? Track your WPM and accuracy.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -168,7 +168,7 @@
   .char-incorrect { color: var(--accent2); background: rgba(255,107,107,0.12); border-radius: 2px; }
   .char-extra { color: var(--accent2); background: rgba(255,107,107,0.15); border-radius: 2px; }
   .char-untyped { color: var(--muted); opacity: 0.75; }
-  /* Inline vertical caret — lives directly in the text flow */
+  /* Inline vertical caret - lives directly in the text flow */
   .caret {
     display: inline-block;
     width: 2.5px;
@@ -289,7 +289,7 @@
     <div class="diff-card" data-dur="120" onclick="selectDur(this)"><div class="d-name">120s</div><div class="d-info">Endurance</div></div>
   </div>
   <div class="home-actions"><button class="btn primary" onclick="startGame()">Start Typing</button></div>
-  <div class="stats-row"><div class="stat-chip">best wpm <strong id="homeBest">—</strong></div></div>
+  <div class="stats-row"><div class="stat-chip">best wpm <strong id="homeBest">-</strong></div></div>
 </div>
 
 <div id="game" class="screen">
@@ -314,7 +314,7 @@
 <div class="modal-backdrop" id="resultBackdrop" onclick="closeModal('result')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-icon">⌨</div>
-    <div class="modal-heading" id="resultTitle">—</div>
+    <div class="modal-heading" id="resultTitle">-</div>
     <div class="modal-sub" id="resultSub"></div>
     <div class="modal-stats" id="resultStats"></div>
     <div class="modal-actions">
@@ -726,7 +726,7 @@ mi.addEventListener('keydown', function(e) {
     document.getElementById('capsWarn').style.display = 'none';
   }
 
-  // Mobile IME keys arrive as 'Unidentified' — let the input event handle them
+  // Mobile IME keys arrive as 'Unidentified' - let the input event handle them
   if (e.key === 'Unidentified') return;
 
   if (e.altKey) return;
@@ -805,7 +805,7 @@ function finishTest() {
       if (typed[ci] === word[ci]) correct++; else incorrect++;
     }
     if (typed.length > word.length) incorrect += typed.length - word.length;
-    if (wi < wordIdx) correctSpaces++; // space keystroke — counts for WPM only
+    if (wi < wordIdx) correctSpaces++; // space keystroke - counts for WPM only
   }
   const totalTyped = correct + incorrect;
   const accuracy   = totalTyped > 0 ? Math.round(correct / totalTyped * 100) : 0;
@@ -829,11 +829,11 @@ function finishTest() {
 
   let best = 0; try { best = parseInt(localStorage.getItem('bestTyperWPM')) || 0; } catch(e) {}
   if (!isInvalid && netWPM > best) { best = netWPM; try { localStorage.setItem('bestTyperWPM', best); } catch(e) {} }
-  document.getElementById('homeBest').textContent = best || '—';
+  document.getElementById('homeBest').textContent = best || '-';
 
   document.getElementById('statusBanner').className = 'status-banner finished';
   document.getElementById('statusText').innerHTML = isInvalid
-    ? 'Test <strong>invalid</strong> — ' + (accuracy < 75 ? 'accuracy too low' : 'not enough words typed') + '.'
+    ? 'Test <strong>invalid</strong> - ' + (accuracy < 75 ? 'accuracy too low' : 'not enough words typed') + '.'
     : 'Test complete! <strong>' + netWPM + ' WPM</strong> at <strong>' + accuracy + '%</strong> accuracy.';
   document.getElementById('timerVal').textContent = '0';
   updateChips();
@@ -841,7 +841,7 @@ function finishTest() {
   const icon    = isInvalid ? '🛑' : '⌨';
   const heading = isInvalid ? 'invalid' : netWPM + ' WPM';
   const rating  = isInvalid
-    ? (accuracy < 75 ? 'Accuracy below 75% — test not counted.' : 'Too few words typed — test not counted.')
+    ? (accuracy < 75 ? 'Accuracy below 75% - test not counted.' : 'Too few words typed - test not counted.')
     : (netWPM >= 100 ? 'Legendary speed!' : netWPM >= 80 ? 'Blazing fast!' : netWPM >= 60 ? 'Above average!' : netWPM >= 40 ? 'Solid typing!' : 'Keep practicing!');
 
   document.getElementById('resultTitle').textContent = heading;
@@ -869,7 +869,7 @@ function updateChips() {
           if (typed[ci] === word[ci]) correct++; else incorrect++;
         }
         if (typed.length > word.length) incorrect += typed.length - word.length;
-        correctSpaces++; // space — WPM only
+        correctSpaces++; // space - WPM only
       }
       // Current word in progress
       const word  = words[wordIdx];
@@ -897,7 +897,7 @@ window.addEventListener('resize', function() {
 });
 
 /* ─── Boot ───────────────────────────────────────────────────── */
-try { const b = parseInt(localStorage.getItem('bestTyperWPM')) || 0; document.getElementById('homeBest').textContent = b || '—'; } catch(e) {}
+try { const b = parseInt(localStorage.getItem('bestTyperWPM')) || 0; document.getElementById('homeBest').textContent = b || '-'; } catch(e) {}
 </script>
 <script src="cursor.js" defer></script>
 </body>

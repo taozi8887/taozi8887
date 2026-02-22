@@ -8,7 +8,7 @@ i make small games and interactive things for the web.
 
 | project | what it is |
 |---|---|
-| **Graded.** | recreate gradients from memory — scored by pixel-level comparison |
+| **Graded.** | recreate gradients from memory - scored by pixel-level comparison |
 | **Mines.** | minesweeper, but make it look good |
 | **Squares.** | a squares game |
 | **3D Tic-Tac-Toe.** | tic-tac-toe on a 3D board |

@@ -10,7 +10,7 @@
     document.head.appendChild(fix);
     document.documentElement.style.cursor = '';
     // Still run page-transition reveal so bfcache / back-button works
-    // (defined below — skip to the page-transitions IIFE only)
+    // (defined below - skip to the page-transitions IIFE only)
   }
 
   if (!isTouch) {
@@ -195,7 +195,7 @@
       width: 2px;
       height: 20px;
       border-radius: 1px;
-      /* no blinking — steady bar */
+      /* no blinking - steady bar */
     }
     #_cur-ring._text {
       width: 0; height: 0;
@@ -280,20 +280,20 @@
   try { _savedPos = JSON.parse(sessionStorage.getItem('_curPos')); } catch (_) {}
 
   if (_savedPos) {
-    // Place cursor at saved position and show immediately —
+    // Place cursor at saved position and show immediately -
     // first mousemove will snap to real position within one frame anyway
     dot.style.left  = _savedPos.x + 'px';
     dot.style.top   = _savedPos.y + 'px';
     ring.style.left = _savedPos.x + 'px';
     ring.style.top  = _savedPos.y + 'px';
-    // No _out — visible straight away
+    // No _out - visible straight away
 
     // Restore the previous page's cursor visual state (mode classes + ring size)
     // so the cursor shape doesn't reset during the inter-page curtain fade.
     let _savedState = null;
     try { _savedState = JSON.parse(sessionStorage.getItem('_curState')); } catch (_) {}
     if (_savedState) {
-      // Suppress CSS transition during snapshot restore — ring should snap
+      // Suppress CSS transition during snapshot restore - ring should snap
       // immediately to the previous shape, not sweep in from default size.
       ring.style.transition = 'none';
       dot.style.transition  = 'none';
@@ -492,7 +492,7 @@
   function isAccentBg(el) {
     if (!el) return false;
     const bg = getComputedStyle(el).backgroundColor;
-    // accent = rgb(200, 255, 74) — check approximate match
+    // accent = rgb(200, 255, 74) - check approximate match
     const m = bg.match(/rgb\(?(\d+),\s*(\d+),\s*(\d+)/);
     if (!m) return false;
     const [, r, g, b] = m.map(Number);
@@ -519,7 +519,7 @@
 
   /* Priority-ordered mode map – first match wins */
   const MODE_MAP = [
-    // Back-to-home button — ring fits the button pill
+    // Back-to-home button - ring fits the button pill
     { fn: el => !!el.closest('#_back-btn'),
       mode: '_fit', lbl: 'HOME',
       elFn: el => el.closest('#_back-btn') },
@@ -549,18 +549,18 @@
     // hero cards / project cards
     { fn: el => !!el.closest('.hero-card'), mode: '_view', lbl: 'OPEN →' },
 
-    // accent-background buttons — detected by computed background colour
+    // accent-background buttons - detected by computed background colour
     { fn: el => {
         const btn = el.closest('button, [role="button"], a.btn, .submit-btn, .project-cta, .btn-send');
         return btn ? isAccentBg(btn) : false;
       }, mode: '_accent', lbl: null },
 
-    // regular buttons — derive label from content
+    // regular buttons - derive label from content
     { fn: el => !!el.closest('button, [role="button"]'),
       mode: '_hov',
       lbl: el => smartLabel(el.closest('button, [role="button"]')) },
 
-    // big display headings — text reveal clip-mask
+    // big display headings - text reveal clip-mask
     { fn: el => !!el.closest(HEADING_SEL),
       mode: '_glow',
       lbl: null,
@@ -574,11 +574,11 @@
   const NAV_MAG     = 'nav a, .logo, nav button, .nav-links a';
   const SWATCH_SEL  = '.color-swatch-inner, .stop-swatch, .grad-thumb, .leg-sw, .legend-swatch';
 
-  /* ── Shared hover evaluator — called by mouseover AND scroll ── */
+  /* ── Shared hover evaluator - called by mouseover AND scroll ── */
   function evaluateHover(t) {
     if (!t) { setMode(null, null, null); magTarget = null; return; }
 
-    // Color swatch — ring mirrors swatch color
+    // Color swatch - ring mirrors swatch color
     const sw = t.closest(SWATCH_SEL);
     if (sw) {
       const col = getComputedStyle(sw).backgroundColor;
@@ -692,7 +692,7 @@
       }
       #_btn-mag-overlay._active { opacity: 1; }
 
-      /* Hovered element scales up very slightly — zoom feel, no layout shift */
+      /* Hovered element scales up very slightly - zoom feel, no layout shift */
       ._btn-mag-top {
         transform: scale(1.055) !important;
         transition: transform 0.25s cubic-bezier(.23,1,.32,1) !important;
@@ -715,7 +715,7 @@
     let pendingEnd = null;
 
     function buildMask(x, y, r) {
-      // Many soft stops so the ring edge is invisible — gradient disperses over a wide band
+      // Many soft stops so the ring edge is invisible - gradient disperses over a wide band
       return `radial-gradient(circle ${r.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px,
         transparent   0%,
         transparent  42%,
@@ -769,7 +769,7 @@
       targetFromBtn(btn);
 
       if (!visible) {
-        // First (re)appearance — if we have a prior position, lerp from it;
+        // First (re)appearance - if we have a prior position, lerp from it;
         // otherwise snap so there's no sweep from 0,0
         if (cx === 0 && cy === 0) { cx = tx; cy = ty; cr = tr; applyMask(); }
         visible = true;
@@ -813,7 +813,7 @@
       if (btn && !btn.contains(e.relatedTarget)) endMag(btn);
     });
     // When a click triggers a navigation/action the button leaves the DOM
-    // and mouseout never fires — force-clear the blur immediately on click.
+    // and mouseout never fires - force-clear the blur immediately on click.
     document.addEventListener('click', () => {
       clearMag();
     }, true);
@@ -1005,7 +1005,7 @@
        first child of <body> with inline style="...background:#0a0a0b".
        It's opaque from first paint, so the page content (including logo animations)
        is hidden until we explicitly fade it out.  The custom cursor has a higher
-       z-index, so it's visible above the curtain the whole time — giving the
+       z-index, so it's visible above the curtain the whole time - giving the
        illusion that the cursor persists continuously between pages. */
     const pgStyle = document.createElement('style');
     pgStyle.textContent = `
@@ -1019,7 +1019,7 @@
       }
       /* Block pointer events while fading out (prevents double-clicks during exit) */
       #_pg-curtain._out { animation: _curtainOut 0.18s ease both; pointer-events: all; }
-      /* Reveal animation — starts opaque, fades to clear */
+      /* Reveal animation - starts opaque, fades to clear */
       #_pg-curtain._in  { animation: _curtainIn  0.32s cubic-bezier(.23,1,.32,1) both; }
     `;
     document.head.appendChild(pgStyle);
@@ -1033,7 +1033,7 @@
       document.body.insertBefore(curtain, document.body.firstChild);
     }
 
-    /* Fade-in reveal — curtain was opaque on first paint, now animate to transparent */
+    /* Fade-in reveal - curtain was opaque on first paint, now animate to transparent */
     function revealPage() {
       curtain.classList.add('_in');
       curtain.addEventListener('animationend', () => {

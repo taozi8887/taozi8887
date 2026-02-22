@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Graded — How Well Can You Recreate Gradients?</title>
+<title>Graded - How Well Can You Recreate Gradients?</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="Test your eye for color — recreate gradients from memory and get scored by pixel-level comparison. A creative browser game by taozi4887.">
+<meta name="description" content="Test your eye for color - recreate gradients from memory and get scored by pixel-level comparison. A creative browser game by taozi4887.">
 <meta name="keywords" content="Graded, gradient game, color memory game, taozi4887, browser game, CSS gradients">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/graded.html">
-<meta property="og:title" content="Graded — How Well Can You Recreate Gradients?">
-<meta property="og:description" content="Test your eye for color — recreate gradients from memory and get scored by pixel-level comparison.">
+<meta property="og:title" content="Graded - How Well Can You Recreate Gradients?">
+<meta property="og:description" content="Test your eye for color - recreate gradients from memory and get scored by pixel-level comparison.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/graded.html">
-<meta name="twitter:title" content="Graded — How Well Can You Recreate Gradients?">
-<meta name="twitter:description" content="Test your eye for color — recreate gradients from memory and get scored by pixel-level comparison.">
+<meta name="twitter:title" content="Graded - How Well Can You Recreate Gradients?">
+<meta name="twitter:description" content="Test your eye for color - recreate gradients from memory and get scored by pixel-level comparison.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -774,7 +774,7 @@
     <div class="info-chip" id="infoAngle">angle hidden</div>
   </div>
 
-  <p style="font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-align: center;">Study this gradient — it disappears in <span id="countdownLabel">5</span>s<span class="blink">_</span></p>
+  <p style="font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-align: center;">Study this gradient - it disappears in <span id="countdownLabel">5</span>s<span class="blink">_</span></p>
 </div>
 
 <!-- RECREATE -->
@@ -830,7 +830,7 @@
 <!-- RESULTS -->
 <div id="results" class="screen fade-in">
   <div class="score-hero">
-    <div class="score-big" id="finalScore">—</div>
+    <div class="score-big" id="finalScore">-</div>
     <div class="score-label">/ 500 POINTS</div>
   </div>
 
@@ -847,7 +847,7 @@
 <div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-title">How to Play</div>
-    <div class="how-step"><div class="step-num">1</div><div class="step-text">A gradient is shown briefly. <strong>Study it carefully</strong> — then it disappears.</div></div>
+    <div class="how-step"><div class="step-num">1</div><div class="step-text">A gradient is shown briefly. <strong>Study it carefully</strong> - then it disappears.</div></div>
     <div class="how-step"><div class="step-num">2</div><div class="step-text">Use the <strong>HSL sliders</strong> to recreate each colour stop from memory.</div></div>
     <div class="how-step"><div class="step-num">3</div><div class="step-text">Hit <strong>Submit</strong> to score your attempt. Closer colours earn more points.</div></div>
     <div class="how-step"><div class="step-num">4</div><div class="step-text">Five rounds per game. Aim for a perfect <strong>500 / 500</strong>.</div></div>
@@ -1021,7 +1021,7 @@ function scoreRound(target, user) {
     wTotal   += w;
   }
 
-  if (wTotal < EPS) return 50; // both completely flat — no signal, neutral score
+  if (wTotal < EPS) return 50; // both completely flat - no signal, neutral score
 
   const scoreDir = 50 * (wCosSum / wTotal + 1); // [-1,1] → [0,100]
   const scoreMag = 100 * (wMagSum / wTotal);     // [0,1]  → [0,100]

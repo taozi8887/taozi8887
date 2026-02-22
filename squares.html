@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Memory Squares — How Sharp Is Your Memory?</title>
+<title>Memory Squares - How Sharp Is Your Memory?</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="A memory pattern game — watch the sequence, repeat it back. How far can you go? A browser game by taozi4887.">
+<meta name="description" content="A memory pattern game - watch the sequence, repeat it back. How far can you go? A browser game by taozi4887.">
 <meta name="keywords" content="Memory Squares, memory game, pattern game, taozi4887, browser game, sequence memory">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/squares.html">
-<meta property="og:title" content="Memory Squares — How Sharp Is Your Memory?">
-<meta property="og:description" content="A memory pattern game — watch the sequence, repeat it back. How far can you go?">
+<meta property="og:title" content="Memory Squares - How Sharp Is Your Memory?">
+<meta property="og:description" content="A memory pattern game - watch the sequence, repeat it back. How far can you go?">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/squares.html">
-<meta name="twitter:title" content="Memory Squares — How Sharp Is Your Memory?">
-<meta name="twitter:description" content="A memory pattern game — watch the sequence, repeat it back. How far can you go?">
+<meta name="twitter:title" content="Memory Squares - How Sharp Is Your Memory?">
+<meta name="twitter:description" content="A memory pattern game - watch the sequence, repeat it back. How far can you go?">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -38,7 +38,7 @@
   "@type": "SoftwareApplication",
   "name": "Memory Squares",
   "url": "https://taozi4887.dev/squares.html",
-  "description": "A memory pattern game — watch the sequence, repeat it back.",
+  "description": "A memory pattern game - watch the sequence, repeat it back.",
   "applicationCategory": "Game",
   "author": {
     "@type": "Person",
@@ -762,9 +762,9 @@
   </div>
 
   <div class="stats-row" id="statsRow">
-    <div class="stat-chip">Highest Level <strong id="statLevel">—</strong></div>
-    <div class="stat-chip">Best Score <strong id="statBest">—</strong></div>
-    <div class="stat-chip">Last Score <strong id="statLast">—</strong></div>
+    <div class="stat-chip">Highest Level <strong id="statLevel">-</strong></div>
+    <div class="stat-chip">Best Score <strong id="statBest">-</strong></div>
+    <div class="stat-chip">Last Score <strong id="statLast">-</strong></div>
   </div>
 </div>
 
@@ -782,7 +782,7 @@
     <div class="game-chips">
       <div class="chip">Grid <strong id="chipGrid">3×3</strong></div>
       <div class="chip" id="chipFound">Found <strong id="chipFoundVal">0/3</strong></div>
-      <div class="chip" id="chipScore">Score <strong id="chipScoreVal">—</strong></div>
+      <div class="chip" id="chipScore">Score <strong id="chipScoreVal">-</strong></div>
     </div>
   </div>
 
@@ -807,19 +807,19 @@
 
   <div class="result-stats">
     <div class="result-stat">
-      <span class="val" id="resScore">—</span>
+      <span class="val" id="resScore">-</span>
       <span class="lbl">Score</span>
     </div>
     <div class="result-stat">
-      <span class="val" id="resCorrect">—</span>
+      <span class="val" id="resCorrect">-</span>
       <span class="lbl">Correct</span>
     </div>
     <div class="result-stat">
-      <span class="val" id="resWrong">—</span>
+      <span class="val" id="resWrong">-</span>
       <span class="lbl">Wrong</span>
     </div>
     <div class="result-stat">
-      <span class="val" id="resLevel">—</span>
+      <span class="val" id="resLevel">-</span>
       <span class="lbl">Level</span>
     </div>
   </div>
@@ -898,7 +898,7 @@
     <h2>How to Play</h2>
     <div class="how-to-step">
       <div class="step-num">1</div>
-      <div class="step-text">A grid appears with <strong>highlighted squares</strong>. Memorize their positions — they'll disappear after a few seconds.</div>
+      <div class="step-text">A grid appears with <strong>highlighted squares</strong>. Memorize their positions - they'll disappear after a few seconds.</div>
     </div>
     <div class="how-to-step">
       <div class="step-num">2</div>
@@ -981,9 +981,9 @@ function setActiveToggle(group, btn) {
 let stats = JSON.parse(localStorage.getItem('msq_stats') || '{"level":0,"best":null,"last":null}');
 function saveStats() { localStorage.setItem('msq_stats', JSON.stringify(stats)); }
 function updateStatsDisplay() {
-  document.getElementById('statLevel').textContent = stats.level || '—';
-  document.getElementById('statBest').textContent = stats.best != null ? stats.best + '%' : '—';
-  document.getElementById('statLast').textContent = stats.last != null ? stats.last + '%' : '—';
+  document.getElementById('statLevel').textContent = stats.level || '-';
+  document.getElementById('statBest').textContent = stats.best != null ? stats.best + '%' : '-';
+  document.getElementById('statLast').textContent = stats.last != null ? stats.last + '%' : '-';
 }
 updateStatsDisplay();
 
@@ -1116,7 +1116,7 @@ function beginLevel() {
   document.getElementById('levelNum').textContent = level;
   document.getElementById('chipGrid').textContent = cfg.size + '×' + cfg.size;
   document.getElementById('chipFoundVal').textContent = `0/${cfg.targets}`;
-  document.getElementById('chipScoreVal').textContent = '—';
+  document.getElementById('chipScoreVal').textContent = '-';
   document.getElementById('chipFound').classList.remove('highlight');
   document.getElementById('chipScore').classList.remove('highlight');
 
@@ -1188,7 +1188,7 @@ function onCellClick(e) {
   if (totalClicks === cfg.targets) {
     // Lock input immediately so extra clicks during the reveal delay don't count
     phase = 'done';
-    // Player has clicked N tiles — reveal results and end
+    // Player has clicked N tiles - reveal results and end
     revealClickedCells();
     setTimeout(() => endLevel(), 600);
   }
@@ -1207,7 +1207,7 @@ function updateRecallChips() {
   if (correct > 0) document.getElementById('chipFound').classList.add('highlight');
 
   const scoreEl = document.getElementById('chipScoreVal');
-  scoreEl.textContent = totalClicks > 0 ? pct + '%' : '—';
+  scoreEl.textContent = totalClicks > 0 ? pct + '%' : '-';
   document.getElementById('chipScore').classList.toggle('highlight', totalClicks > 0);
 }
 

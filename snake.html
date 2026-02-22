@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Snake — Classic</title>
+<title>Snake - Classic</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="Classic Snake — eat food, grow longer, don't hit the walls. A browser game by taozi4887.">
+<meta name="description" content="Classic Snake - eat food, grow longer, don't hit the walls. A browser game by taozi4887.">
 <meta name="keywords" content="snake, snake game, classic snake, taozi4887, browser game, arcade game">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/snake.html">
-<meta property="og:title" content="Snake — Classic">
-<meta property="og:description" content="Classic Snake — eat food, grow longer, don't hit the walls.">
+<meta property="og:title" content="Snake - Classic">
+<meta property="og:description" content="Classic Snake - eat food, grow longer, don't hit the walls.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/snake.html">
-<meta name="twitter:title" content="Snake — Classic">
-<meta name="twitter:description" content="Classic Snake — eat food, grow longer, don't hit the walls.">
+<meta name="twitter:title" content="Snake - Classic">
+<meta name="twitter:description" content="Classic Snake - eat food, grow longer, don't hit the walls.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -38,7 +38,7 @@
   "@type": "SoftwareApplication",
   "name": "Snake",
   "url": "https://taozi4887.dev/snake.html",
-  "description": "Classic Snake — eat food, grow longer, don't hit the walls.",
+  "description": "Classic Snake - eat food, grow longer, don't hit the walls.",
   "applicationCategory": "Game",
   "author": {
     "@type": "Person",
@@ -385,9 +385,9 @@
   </div>
 
   <div class="stats-row">
-    <div class="stat-chip">Best Easy <strong id="statEasy">—</strong></div>
-    <div class="stat-chip">Best Med <strong id="statMed">—</strong></div>
-    <div class="stat-chip">Best Hard <strong id="statHard">—</strong></div>
+    <div class="stat-chip">Best Easy <strong id="statEasy">-</strong></div>
+    <div class="stat-chip">Best Med <strong id="statMed">-</strong></div>
+    <div class="stat-chip">Best Hard <strong id="statHard">-</strong></div>
   </div>
 </div>
 
@@ -471,7 +471,7 @@
     </div>
     <div class="how-step">
       <div class="step-num">3</div>
-      <div class="step-text">Don't <strong>hit the walls</strong> or run into your own tail — that's game over.</div>
+      <div class="step-text">Don't <strong>hit the walls</strong> or run into your own tail - that's game over.</div>
     </div>
     <div class="how-step">
       <div class="step-num">4</div>
@@ -661,9 +661,9 @@ let stats = {};
 try { stats = JSON.parse(localStorage.getItem('snake_v1_stats') || '{}'); } catch(e) {}
 function saveStats() { try { localStorage.setItem('snake_v1_stats', JSON.stringify(stats)); } catch(e) {} }
 function updateStatsDisplay() {
-  document.getElementById('statEasy').textContent = stats.easy   != null ? stats.easy   : '—';
-  document.getElementById('statMed') .textContent = stats.medium != null ? stats.medium : '—';
-  document.getElementById('statHard').textContent = stats.hard   != null ? stats.hard   : '—';
+  document.getElementById('statEasy').textContent = stats.easy   != null ? stats.easy   : '-';
+  document.getElementById('statMed') .textContent = stats.medium != null ? stats.medium : '-';
+  document.getElementById('statHard').textContent = stats.hard   != null ? stats.hard   : '-';
 }
 updateStatsDisplay();
 
@@ -775,7 +775,7 @@ function frame(now) {
     }
   }
 
-  // Death animation — keep RAF alive until it finishes
+  // Death animation - keep RAF alive until it finishes
   if (G.status === 'dead') {
     draw(1, now);
     if (now - G.deathStart < DEATH_ANIM_MS + 80) {
@@ -880,7 +880,7 @@ function draw(t, now) {
     roundRect(ctx, px, py, sz, sz, r); ctx.fill();
   }
 
-  // Body segments — snapped to grid, no lerp
+  // Body segments - snapped to grid, no lerp
   for (let i = G.snake.length - 1; i >= 1; i--) {
     const seg = G.snake[i];
     const px = seg.x * cellPx + GAP, py = seg.y * cellPx + GAP, sz = cellPx - GAP * 2;
@@ -894,7 +894,7 @@ function draw(t, now) {
     }
   }
 
-  // Head — snapped to grid, immediate
+  // Head - snapped to grid, immediate
   {
     const seg = G.snake[0];
     const px = seg.x * cellPx + GAP, py = seg.y * cellPx + GAP, sz = cellPx - GAP * 2;
@@ -1094,7 +1094,7 @@ function showOverlay(title, score, sub) {
 function hideOverlay() { document.getElementById('overlay').classList.remove('active'); }
 
 // ══════════════════════════
-// INPUT — KEYBOARD
+// INPUT - KEYBOARD
 // ══════════════════════════
 const DIR_MAP = {
   ArrowUp:    {x: 0, y:-1}, ArrowDown:  {x: 0, y: 1},

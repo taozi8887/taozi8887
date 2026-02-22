@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>2048 — Slide & Merge</title>
+<title>2048 - Slide & Merge</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="Classic 2048 — slide tiles, merge numbers, reach 2048. A browser game by taozi4887.">
+<meta name="description" content="Classic 2048 - slide tiles, merge numbers, reach 2048. A browser game by taozi4887.">
 <meta name="keywords" content="2048, slide and merge, number puzzle, taozi4887, browser game, tile game">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/2048.html">
-<meta property="og:title" content="2048 — Slide & Merge">
-<meta property="og:description" content="Classic 2048 — slide tiles, merge numbers, reach 2048.">
+<meta property="og:title" content="2048 - Slide & Merge">
+<meta property="og:description" content="Classic 2048 - slide tiles, merge numbers, reach 2048.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/2048.html">
-<meta name="twitter:title" content="2048 — Slide & Merge">
-<meta name="twitter:description" content="Classic 2048 — slide tiles, merge numbers, reach 2048.">
+<meta name="twitter:title" content="2048 - Slide & Merge">
+<meta name="twitter:description" content="Classic 2048 - slide tiles, merge numbers, reach 2048.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -38,7 +38,7 @@
   "@type": "SoftwareApplication",
   "name": "2048",
   "url": "https://taozi4887.dev/2048.html",
-  "description": "Classic 2048 — slide tiles, merge numbers, reach 2048.",
+  "description": "Classic 2048 - slide tiles, merge numbers, reach 2048.",
   "applicationCategory": "Game",
   "author": {
     "@type": "Person",
@@ -264,7 +264,7 @@
     border-radius: var(--cell-radius);
   }
 
-  /* Animated tile layer — same grid layout */
+  /* Animated tile layer - same grid layout */
   .grid-tiles {
     position: absolute;
     inset: 0;
@@ -694,7 +694,7 @@ function handleMove(direction) {
 }
 
 function _execMove(direction) {
-  // If moves are already queued, the player is going fast — snap, no animation
+  // If moves are already queued, the player is going fast - snap, no animation
   const skipAnim = moveQueue.length > 0;
 
   const prevScore    = state.score;
@@ -736,7 +736,7 @@ function _execMove(direction) {
         if (state.tileGrid[r][c] !== newTileGrid[r][c]) changed = true;
   }
   if (!changed) {
-    // move had no effect — drain queue immediately
+    // move had no effect - drain queue immediately
     if (moveQueue.length) _execMove(moveQueue.shift());
     return;
   }
@@ -846,7 +846,7 @@ function _execMove(direction) {
   // 4. Force reflow
   void document.getElementById('tilesLayer').offsetWidth;
 
-  // 5. Release — tiles fly
+  // 5. Release - tiles fly
   state.tiles.forEach(tile => {
     tile.el.style.transition = `transform ${ANIM_MS}ms cubic-bezier(.2,.8,.4,1)`;
     tile.el.style.transform  = '';

@@ -4,7 +4,7 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Tic-Tac-Toe — 5×5×5</title>
+<title>3D Tic-Tac-Toe - 5×5×5</title>
 
 <!-- ─── SEO ─── -->
 <meta name="description" content="Tic-tac-toe on a 3D 5×5×5 board. Two players, three dimensions. A browser game by taozi4887.">
@@ -18,7 +18,7 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/3dtictactoe.html">
-<meta property="og:title" content="3D Tic-Tac-Toe — 5×5×5">
+<meta property="og:title" content="3D Tic-Tac-Toe - 5×5×5">
 <meta property="og:description" content="Tic-tac-toe on a 3D 5×5×5 board. Two players, three dimensions.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
@@ -27,7 +27,7 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/3dtictactoe.html">
-<meta name="twitter:title" content="3D Tic-Tac-Toe — 5×5×5">
+<meta name="twitter:title" content="3D Tic-Tac-Toe - 5×5×5">
 <meta name="twitter:description" content="Tic-tac-toe on a 3D 5×5×5 board. Two players, three dimensions.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
@@ -584,7 +584,7 @@
   <div class="hero-gap"></div>
   <p class="hero-eyebrow">Two players · One cube</p>
   <h1 class="hero-title">Tic-Tac-<br><em>Toe<span style="color:var(--accent)">.</span></em></h1>
-  <p class="hero-sub">5×5×5 three-dimensional grid. Get five in a row — in any direction, on any axis — to win.</p>
+  <p class="hero-sub">5×5×5 three-dimensional grid. Get five in a row - in any direction, on any axis - to win.</p>
 
   <!-- Rotating 3D cube preview -->
   <div class="hero-scene">
@@ -631,7 +631,7 @@
 
   <div class="status-bar" id="statusBar">
     <div class="sd" id="statusDot" style="background:var(--p1);"></div>
-    <span id="statusText">Player 1 (X) to move — All layers</span>
+    <span id="statusText">Player 1 (X) to move - All layers</span>
   </div>
 
   <div class="game-actions">
@@ -661,7 +661,7 @@
     </div>
     <div class="how-step">
       <div class="step-num">4</div>
-      <div class="step-text">Get <strong>5 in a row</strong> to win — horizontal, vertical, diagonal, through depth, or any 3D diagonal.</div>
+      <div class="step-text">Get <strong>5 in a row</strong> to win - horizontal, vertical, diagonal, through depth, or any 3D diagonal.</div>
     </div>
     <div class="how-step">
       <div class="step-num">5</div>
@@ -683,8 +683,8 @@
     <h2 class="modal-heading" id="winHeading">Player 1 Wins!</h2>
     <p class="modal-sub" id="winSub">Five in a row</p>
     <div class="modal-stats">
-      <div class="modal-stat"><span class="v" id="winMoves">—</span><span class="l">Moves</span></div>
-      <div class="modal-stat"><span class="v" id="winType">—</span><span class="l">Line type</span></div>
+      <div class="modal-stat"><span class="v" id="winMoves">-</span><span class="l">Moves</span></div>
+      <div class="modal-stat"><span class="v" id="winType">-</span><span class="l">Line type</span></div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('win'); nav('home')">Home</button>
@@ -698,7 +698,7 @@
   <div class="modal">
     <div class="modal-icon">🤝</div>
     <h2 class="modal-heading">Draw<span style="color:var(--accent)">.</span></h2>
-    <p class="modal-sub">All 125 cells filled — nobody wins this round.</p>
+    <p class="modal-sub">All 125 cells filled - nobody wins this round.</p>
     <div class="modal-stats">
       <div class="modal-stat"><span class="v">125</span><span class="l">Moves</span></div>
     </div>
@@ -1281,7 +1281,7 @@ function updateStatus() {
   if (over) {
     dot.style.background = 'var(--muted)';
     dot.style.animation = 'none';
-    text.textContent = winResult ? 'Game over — we have a winner!' : 'Game over — draw.';
+    text.textContent = winResult ? 'Game over - we have a winner!' : 'Game over - draw.';
     return;
   }
 
@@ -1289,7 +1289,7 @@ function updateStatus() {
   dot.style.animation = '';
   const pName = player === 1 ? 'Player 1 (X)' : 'Player 2 (O)';
   const lText = focusLayer === -1 ? 'All layers' : `Layer ${focusLayer + 1}`;
-  text.textContent = `${pName} to move — ${lText}`;
+  text.textContent = `${pName} to move - ${lText}`;
 }
 
 // ═══════════════════════════════════════
