@@ -1125,6 +1125,7 @@
       <span class="lobby-code-label">Room code</span>
       <span class="lobby-code-val" id="lobbyCodeDisplay">______</span>
       <button class="btn sm" id="copyCodeBtn" onclick="copyRoomCode()">Copy</button>
+      <button class="btn sm" id="copyInviteBtn" onclick="copyInviteLink()">Invite Link</button>
     </div>
 
     <div class="player-slots">
@@ -2996,6 +2997,13 @@ function mpDisconnect() {
 function handleMPMessage(msg) {
   switch (msg.type) {
 
+    case 'serverRestart':
+      // DO was evicted from memory mid-game and couldn't recover board state
+      mpFullReset();
+      nav('lobby');
+      setTimeout(() => mpUpdateLobbyStatus('Server restarted — please create a new room.', 'error'), 50);
+      break;
+
     case 'pong': break;  // keepalive response, no-op
 
     case 'joined':
@@ -3304,6 +3312,18 @@ function copyRoomCode() {
   });
 }
 
+function copyInviteLink() {
+  if (!mpRoomCode) return;
+  const base = location.origin + location.pathname;
+  const link = base + '?join=' + mpRoomCode;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copyInviteBtn');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────
 //  MP game start  (called when server sends 'start')
 // ─────────────────────────────────────────────────────────────────
@@ -3530,6 +3550,16 @@ window.addEventListener('load', () => {
   curtain.style.transition = 'opacity 0.4s ease';
   curtain.style.opacity = '0';
   setTimeout(() => curtain.remove(), 450);
+
+  // Auto-fill room code from invite link (?join=CODE)
+  const joinCode = new URLSearchParams(location.search).get('join');
+  if (joinCode) {
+    history.replaceState(null, '', location.pathname); // clean URL
+    nav('lobby');
+    const input = document.getElementById('lobbyCodeInput');
+    if (input) input.value = joinCode.toUpperCase();
+    mpUpdateLobbyStatus('Enter your name and click Join Room to connect.');
+  }
 });
 </script>
 <script src="cursor.js" defer></script>
