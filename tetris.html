@@ -730,6 +730,9 @@
   .mode-card-name { font-size: 13px; color: var(--text); margin-bottom: 5px; }
   .mode-card-desc { font-size: 10px; color: var(--muted); line-height: 1.55; letter-spacing: 0.02em; }
   #lobbyStatus { font-size: 12px; color: var(--muted); min-height: 18px; letter-spacing: 0.03em; }
+  #lobbyExpiry { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.04em; margin-top: 5px; min-height: 15px; transition: color 0.3s; }
+  #lobbyExpiry.warn   { color: var(--accent3); }
+  #lobbyExpiry.urgent { color: var(--accent2); }
 
   /* Garbage locked piece color */
   .cell.locked-G {
@@ -794,6 +797,25 @@
     padding: 4px 12px; border-radius: 20px;
     opacity: 0; pointer-events: none; z-index: 20;
     transition: opacity 0.5s ease; white-space: nowrap;
+  }
+
+  /* Attack sent flash */
+  #attackSentFlash {
+    position: absolute; right: -48px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; pointer-events: none; z-index: 20;
+  }
+  .atk-bubble {
+    background: rgba(80,220,120,0.92); color: #0a0a0b;
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
+    padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+    animation: atkFly 1.4s ease forwards;
+  }
+  @keyframes atkFly {
+    0%   { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(-24px); }
+    100% { opacity: 0; transform: translateY(-36px); }
   }
 
   /* MP mode banner row */
@@ -924,6 +946,8 @@
       <div class="garbage-bar-wrap"><div id="garbageBar"></div></div>
       <!-- Incoming garbage warning flash -->
       <div class="garbage-warn" id="garbageWarn"></div>
+      <!-- Attack sent flash (versus) -->
+      <div id="attackSentFlash"></div>
       <div class="game-board" id="board"></div>
       <canvas id="particleCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
       <div class="game-overlay" id="overlay">
@@ -1119,6 +1143,7 @@
       <button class="btn primary" id="lobbyReadyBtn" onclick="lobbyReady()" disabled>Ready</button>
       <span id="lobbyStatus">Enter your name and create or join a room.</span>
     </div>
+    <div id="lobbyExpiry"></div>
   </div>
 </div>
 <div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
@@ -2851,6 +2876,16 @@ function flashGarbageWarning(amount, fromName) {
   mpGarbageAnimTimer = setTimeout(() => { warn.style.opacity = '0'; }, 1800);
 }
 
+function flashAttackSent(atk) {
+  const container = document.getElementById('attackSentFlash');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'atk-bubble';
+  el.textContent = '\u25b2' + atk;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
 // Apply pending garbage from the server's authoritative queue (called in spawnNext via hook).
 // Hole positions come from the server - the client never picks them, preventing exploit.
 function applyPendingGarbage() {
@@ -2941,7 +2976,7 @@ let _mpPingInterval = null;
 function mpStartKeepalive() {
   _mpPingInterval = setInterval(() => {
     if (mpWs && mpWs.readyState === WebSocket.OPEN) mpSend({ type: 'ping' });
-  }, 15_000);
+  }, 8_000);
 }
 
 function mpStopKeepalive() {
@@ -3012,6 +3047,7 @@ function handleMPMessage(msg) {
       mpCoopTarget   = msg.coopTarget   || 150;
       mpCoopLines    = 0;
       mpSprintStart  = Date.now();
+      lobbyStopExpiryCountdown();
       startMPGame();
       break;
 
@@ -3035,6 +3071,7 @@ function handleMPMessage(msg) {
         else if (msg.lines > 1)          ptxt = '<strong>' + msg.lines + ' lines</strong> cleared!';
         if (ptxt) { const el = document.getElementById('statusText'); if (el) el.innerHTML = ptxt; }
       }
+      if (msg.atk > 0) flashAttackSent(msg.atk);
       break;
 
     case 'opponentUpdate':
@@ -3046,12 +3083,16 @@ function handleMPMessage(msg) {
 
     case 'playerOver':
       if (msg.playerId !== mpPlayerId) {
-        // Send our final score to the server before it calls endGame
-        mpSend({ type: 'event', kind: 'scoreSync', score });
-        // We (the winner) can stop playing immediately — gameEnd will follow within ms
-        showMPStatus('Opponent topped out!', 'win');
-        clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
-        gameStatus = 'over';
+        if (mpMode === 'coop') {
+          // Teammate topped out — we keep playing
+          showMPStatus(msg.name + ' topped out! Keep going!', 'error');
+        } else {
+          // Versus: we won — send score and stop
+          mpSend({ type: 'event', kind: 'scoreSync', score });
+          showMPStatus('Opponent topped out!', 'win');
+          clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+          gameStatus = 'over';
+        }
       }
       break;
 
@@ -3097,6 +3138,7 @@ function lobbyCreateRoom() {
     .then(() => {
       document.getElementById('lobbyReadyBtn').disabled = false;
       mpUpdateLobbyStatus('Connected \u2014 share the code, then press Ready.');
+      lobbyStartExpiryCountdown();
     })
     .catch(err => {
       const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
@@ -3122,6 +3164,7 @@ function lobbyJoinRoom() {
     .then(() => {
       document.getElementById('lobbyReadyBtn').disabled = false;
       mpUpdateLobbyStatus('Connected \u2014 press Ready to start.');
+      lobbyStartExpiryCountdown();
     })
     .catch(err => {
       const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
@@ -3179,6 +3222,36 @@ function mpUpdateLobbyStatus(text, t) {
   if (!el) return;
   el.textContent = text;
   el.style.color = t === 'error' ? 'var(--accent2)' : 'var(--muted)';
+}
+
+let _lobbyExpiryInterval = null;
+function lobbyStartExpiryCountdown(totalSecs = 300) {
+  lobbyStopExpiryCountdown();
+  const el = document.getElementById('lobbyExpiry');
+  if (!el) return;
+  let rem = totalSecs;
+  function tick() {
+    if (rem <= 0) {
+      el.textContent = 'Room expired — disconnected.';
+      el.className = 'urgent';
+      lobbyStopExpiryCountdown();
+      lobbyLeave();
+      return;
+    }
+    const m = Math.floor(rem / 60);
+    const s = String(rem % 60).padStart(2, '0');
+    el.textContent = 'Room closes in ' + m + ':' + s;
+    el.className = rem <= 20 ? 'urgent' : rem <= 60 ? 'warn' : '';
+    rem--;
+  }
+  tick();
+  _lobbyExpiryInterval = setInterval(tick, 1000);
+}
+function lobbyStopExpiryCountdown() {
+  clearInterval(_lobbyExpiryInterval);
+  _lobbyExpiryInterval = null;
+  const el = document.getElementById('lobbyExpiry');
+  if (el) { el.textContent = ''; el.className = ''; }
 }
 
 function mpUpdateLobbyMode(mode) {
@@ -3323,6 +3396,10 @@ function handleMPGameEnd(msg) {
     title  = 'Mission Clear!';
     accent = 'var(--accent)';
     sub    = msg.lines + ' lines cleared together!';
+  } else if (gt === 'coopLoss') {
+    title  = 'Game Over';
+    accent = 'var(--accent2)';
+    sub    = 'Your team topped out.';
   }
 
   // Stop local game
@@ -3439,6 +3516,7 @@ function mpFullReset() {
   updateLobbyPlayers([]);
   // Re-enable mode cards
   document.querySelectorAll('.mode-card').forEach(c => { c.style.pointerEvents = ''; c.style.opacity = ''; });
+  lobbyStopExpiryCountdown();
   mpUpdateLobbyStatus('Enter your name and create or join a room.');
 }
 
