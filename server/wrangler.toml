@@ -1,0 +1,13 @@
+name            = "tetris-mp"
+main            = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Durable Object binding - one instance per room code
+[[durable_objects.bindings]]
+name       = "TETRIS_ROOM"
+class_name = "TetrisRoom"
+
+# Required: declare migration so CF creates the DO namespace
+[[migrations]]
+tag              = "v1"
+new_sqlite_classes = ["TetrisRoom"]
