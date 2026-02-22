@@ -4,10 +4,10 @@
 <style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Tetris — Stack & Clear</title>
+<title>Tetris - Stack & Clear</title>
 
 <!-- ─── SEO ─── -->
-<meta name="description" content="Tetris — stack tetrominoes, clear lines, chase high scores. A browser game by taozi4887.">
+<meta name="description" content="Tetris - stack tetrominoes, clear lines, chase high scores. A browser game by taozi4887.">
 <meta name="keywords" content="tetris, block puzzle, tetrominoes, taozi4887, browser game, stacking game">
 <meta name="author" content="taozi4887">
 <meta name="robots" content="index, follow">
@@ -18,8 +18,8 @@
 <!-- ─── Open Graph ─── -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://taozi4887.dev/tetris.html">
-<meta property="og:title" content="Tetris — Stack & Clear">
-<meta property="og:description" content="Tetris — stack tetrominoes, clear lines, chase high scores.">
+<meta property="og:title" content="Tetris - Stack & Clear">
+<meta property="og:description" content="Tetris - stack tetrominoes, clear lines, chase high scores.">
 <meta property="og:image" content="https://taozi4887.dev/og-image.png">
 <meta property="og:site_name" content="taozi4887">
 <meta property="og:locale" content="en_US">
@@ -27,8 +27,8 @@
 <!-- ─── Twitter / X Card ─── -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://taozi4887.dev/tetris.html">
-<meta name="twitter:title" content="Tetris — Stack & Clear">
-<meta name="twitter:description" content="Tetris — stack tetrominoes, clear lines, chase high scores.">
+<meta name="twitter:title" content="Tetris - Stack & Clear">
+<meta name="twitter:description" content="Tetris - stack tetrominoes, clear lines, chase high scores.">
 <meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
 
 <!-- ─── JSON-LD Structured Data ─── -->
@@ -38,7 +38,7 @@
   "@type": "SoftwareApplication",
   "name": "Tetris",
   "url": "https://taozi4887.dev/tetris.html",
-  "description": "Tetris — stack tetrominoes, clear lines, chase high scores.",
+  "description": "Tetris - stack tetrominoes, clear lines, chase high scores.",
   "applicationCategory": "Game",
   "author": {
     "@type": "Person",
@@ -337,7 +337,7 @@
     border: 1px dashed rgba(255,255,255,0.1);
   }
 
-  /* Piece colors — active (bright & vivid) */
+  /* Piece colors - active (bright & vivid) */
   .piece-I {
     background: rgba(50, 220, 255, 0.88) !important;
     border-color: rgba(100, 240, 255, 0.7) !important;
@@ -374,7 +374,7 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 0 12px rgba(255,160,40,0.3), 0 0 3px rgba(255,160,40,0.5);
   }
 
-  /* Locked (placed) pieces — slightly dimmer but still vivid */
+  /* Locked (placed) pieces - slightly dimmer but still vivid */
   .cell.locked-I {
     background: rgba(50, 220, 255, 0.55);
     border-color: rgba(50, 220, 255, 0.35);
@@ -411,7 +411,7 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 6px rgba(255,160,40,0.1);
   }
 
-  /* Ghost colors — tinted outline */
+  /* Ghost colors - tinted outline */
   .cell.ghost-I { background: rgba(50, 220, 255, 0.12); border: 1px dashed rgba(50,220,255,0.3); }
   .cell.ghost-O { background: rgba(255, 220, 50, 0.12); border: 1px dashed rgba(255,220,50,0.3); }
   .cell.ghost-T { background: rgba(180, 100, 255, 0.12); border: 1px dashed rgba(180,100,255,0.3); }
@@ -449,6 +449,47 @@
     letter-spacing: -2px; line-height: 1;
   }
   .overlay-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .mp-score-row { display:flex; justify-content:space-between; gap:28px; font-size:12px; letter-spacing:0.03em; min-width:180px; }
+  .mp-score-row .mp-score-name { color:var(--muted); }
+  .mp-score-row .mp-score-val { color:var(--text); font-family:'DM Mono',monospace; }
+  .mp-score-row.winner .mp-score-name { color:var(--text); }
+  .mp-score-row.winner .mp-score-val { color:var(--accent3); font-weight:600; }
+
+  /* ── MP END SCREEN ── */
+  #mpEndScreen {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,10,11,0.96); backdrop-filter: blur(14px);
+    display: none; align-items: center; justify-content: center;
+    animation: fadeIn 0.4s ease both;
+  }
+  #mpEndScreen.active { display: flex; }
+  .mp-end-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 22px; text-align: center; padding: 40px 32px;
+    max-width: 440px; width: 100%;
+  }
+  .mp-end-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(38px, 8vw, 60px);
+    letter-spacing: -2px; line-height: 1;
+  }
+  .mp-end-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .mp-end-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px; letter-spacing: 0.03em;
+  }
+  .mp-end-table th {
+    font-size: 9px; color: var(--muted); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0 0 8px; font-weight: 400;
+    border-bottom: 1px solid var(--border);
+  }
+  .mp-end-table td {
+    padding: 9px 8px 0; font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+  .mp-end-table tr.winner td { color: var(--accent3); }
+  .mp-end-table td:first-child { text-align:left; color:inherit; font-family:inherit; }
+  .mp-end-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .overlay-score {
     font-family: 'Instrument Serif', serif;
     font-size: 32px; letter-spacing: -1px;
@@ -628,6 +669,177 @@
   .board-container.shake {
     animation: boardShake 0.12s ease;
   }
+
+  /* ── MULTIPLAYER ───────────────────────────────────────── */
+  :root { --opp-cell: 13px; }
+
+  /* Lobby */
+  #lobby { justify-content: flex-start; padding-top: 48px; align-items: center; }
+  .lobby-inner { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 26px; }
+  .lobby-title { font-family: 'Instrument Serif', serif; font-size: 32px; letter-spacing: -1px; margin-bottom: 4px; }
+  .lobby-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; line-height: 1.6; }
+  .lobby-input {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 10px 14px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+    outline: none; transition: border-color 0.2s; flex: 1; width: 100%;
+  }
+  .lobby-input:focus { border-color: var(--accent); }
+  .lobby-input::placeholder { color: var(--muted); }
+  .lobby-input:disabled { opacity: 0.38; cursor: not-allowed; }
+  .lobby-row { display: flex; gap: 10px; align-items: stretch; padding: 0 5px 20px 0;}
+  .lobby-code-row {
+    display: none; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 20px;
+  }
+  .lobby-code-label { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .lobby-code-val { font-family: 'Instrument Serif', serif; font-size: 28px;
+    letter-spacing: 3px; color: var(--accent); flex: 1; }
+  .player-slots { display: flex; flex-direction: column; gap: 8px; }
+  .player-slots-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .lobby-slot {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    font-size: 12px; letter-spacing: 0.04em; min-height: 44px;
+  }
+  .slot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+  .slot-dot.connected { background: var(--accent3); }
+  .slot-tag { margin-left: auto; font-size: 10px; letter-spacing: 0.08em; color: var(--muted); }
+  .mode-cards { display: flex; gap: 15px; padding: 20px 0;}
+  .mode-card {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    cursor: pointer; transition: all 0.2s; user-select: none;
+  }
+  .mode-card:hover { border-color: var(--border2); }
+  .mode-card.selected { border-color: var(--accent); background: rgba(200,255,74,0.04); }
+  /* SP-only controls hidden in MP; MP-only controls hidden in SP */
+  .sp-only { display: inline-flex; }
+  .mp-only { display: none; }
+  body.mp .sp-only { display: none !important; }
+  body.mp .mp-only { display: inline-flex !important; }
+  /* Leave-game confirm popup */
+  #leaveConfirmPopup {
+    display: none; position: absolute; bottom: 44px; left: 0; z-index: 200;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 16px;
+    min-width: 190px; box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  }
+  .mode-card-name { font-size: 13px; color: var(--text); margin-bottom: 5px; }
+  .mode-card-desc { font-size: 10px; color: var(--muted); line-height: 1.55; letter-spacing: 0.02em; }
+  #lobbyStatus { font-size: 12px; color: var(--muted); min-height: 18px; letter-spacing: 0.03em; }
+
+  /* Garbage locked piece color */
+  .cell.locked-G {
+    background: rgba(110, 110, 130, 0.55);
+    border-color: rgba(110, 110, 130, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  /* Opponent board */
+  .mp-panel {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 130px;
+  }
+  body.mp .mp-panel { display: flex; }
+
+  .opp-board {
+    display: grid;
+    grid-template-columns: repeat(10, var(--opp-cell));
+    grid-template-rows: repeat(20, var(--opp-cell));
+    gap: 1px;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 3px;
+  }
+  .opp-cell {
+    width: var(--opp-cell); height: var(--opp-cell);
+    border-radius: 2px;
+    background: var(--surface3);
+    border: 1px solid rgba(37,37,40,0.4);
+  }
+  .opp-cell.opp-locked-I { background:rgba(50,220,255,.55); border-color:rgba(50,220,255,.3); }
+  .opp-cell.opp-locked-O { background:rgba(255,220,50,.55);  border-color:rgba(255,220,50,.3); }
+  .opp-cell.opp-locked-T { background:rgba(180,100,255,.55); border-color:rgba(180,100,255,.3); }
+  .opp-cell.opp-locked-S { background:rgba(50,230,120,.55);  border-color:rgba(50,230,120,.3); }
+  .opp-cell.opp-locked-Z { background:rgba(255,80,80,.55);   border-color:rgba(255,80,80,.3); }
+  .opp-cell.opp-locked-J { background:rgba(70,120,255,.55);  border-color:rgba(70,120,255,.3); }
+  .opp-cell.opp-locked-L { background:rgba(255,160,40,.55);  border-color:rgba(255,160,40,.3); }
+  .opp-cell.opp-locked-G { background:rgba(100,100,120,.55); border-color:rgba(100,100,120,.3); }
+
+  /* Garbage bar - right edge of board container */
+  .garbage-bar-wrap {
+    position: absolute; right: -12px; top: 8px; bottom: 8px;
+    width: 7px; background: var(--surface2); border-radius: 4px;
+    overflow: hidden; display: none; flex-direction: column-reverse;
+    border: 1px solid var(--border); z-index: 5;
+  }
+  body.mp .garbage-bar-wrap { display: flex; }
+  #garbageBar {
+    width: 100%; height: 0%; background: var(--accent2); border-radius: 3px;
+    transition: height 0.25s ease, background 0.25s, box-shadow 0.25s;
+    opacity: 0.2;
+  }
+
+  /* Incoming garbage warning */
+  .garbage-warn {
+    position: absolute; left: 50%; bottom: 14px;
+    transform: translateX(-50%);
+    background: rgba(255,80,80,0.9); color: #fff;
+    font-size: 11px; letter-spacing: 0.08em;
+    padding: 4px 12px; border-radius: 20px;
+    opacity: 0; pointer-events: none; z-index: 20;
+    transition: opacity 0.5s ease; white-space: nowrap;
+  }
+
+  /* MP mode banner row */
+  .mp-mode-banner {
+    display: none; width: 100%;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 20px;
+    font-size: 11px; letter-spacing: 0.08em; text-align: center;
+  }
+  body.mp .mp-mode-banner { display: block; }
+  .mp-banner-vs { color: var(--muted); }
+  .mp-banner-mode { color: var(--accent); }
+  .mp-banner-name { color: var(--text); }
+
+  /* Co-op progress */
+  .coop-progress-row {
+    display: none; align-items: center; gap: 12px; width: 100%;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 9px 16px;
+    font-size: 11px; letter-spacing: 0.06em; color: var(--muted);
+  }
+  body.mp .coop-progress-row { display: flex; }
+  .coop-bar-outer { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  #coopProgressBar { height: 100%; background: var(--accent3); border-radius: 2px; width: 0%; transition: width 0.3s; }
+
+  /* Chat */
+  .mp-chat { display: none; flex-direction: column; gap: 6px; width: 100%; margin-top: 4px; }
+  body.mp .mp-chat { display: flex; }
+  #chatLog {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 12px;
+    font-size: 11px; color: var(--muted); height: 150px;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
+    margin: 20px 0;
+  }
+  .chat-msg strong { color: var(--accent); font-weight: 400; margin-right: 5px; }
+  .chat-row { display: flex; gap: 8px; }
+  #chatInput {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 7px 12px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+    outline: none;
+    transition: border 0.2s ease;
+  }
+  #chatInput:focus { border-color: var(--accent); }
+  #chatInput::placeholder { color: var(--muted); }
 </style>
 </head>
 <body style="cursor:none">
@@ -653,6 +865,7 @@
 
   <div class="home-actions">
     <button class="btn primary" onclick="startGame()">Start Game</button>
+    <button class="btn" onclick="nav('lobby')">Multiplayer</button>
     <button class="btn" onclick="openModal('howto')">How to Play</button>
   </div>
 
@@ -665,12 +878,26 @@
 <!-- ══ GAME ══ -->
 <div id="game" class="screen">
   <div class="game-bar">
-    <span class="game-title">Tetris</span>
+    <span class="game-title" id="gameTitle">Tetris</span>
     <div class="chips">
       <div class="chip" id="scoreChip">score <strong id="scoreVal">0</strong></div>
       <div class="chip">level <strong id="levelVal">1</strong></div>
       <div class="chip">lines <strong id="linesVal">0</strong></div>
     </div>
+  </div>
+
+  <!-- MP mode banner (hidden in SP) -->
+  <div class="mp-mode-banner">
+    <span class="mp-banner-vs" id="oppNameInGame">Opponent</span>
+    <span class="mp-banner-vs"> · </span>
+    <span class="mp-banner-mode" id="mpModeBanner">Versus</span>
+  </div>
+
+  <!-- Co-op progress bar (hidden unless coop mode) -->
+  <div class="coop-progress-row" id="coopProgressRow" style="display:none">
+    <span>Co-op</span>
+    <div class="coop-bar-outer"><div id="coopProgressBar"></div></div>
+    <span id="coopProgressVal">0 / 150</span>
   </div>
 
   <div class="game-layout">
@@ -693,15 +920,24 @@
 
     <!-- Board -->
     <div class="board-container" id="boardContainer">
+      <!-- Garbage pending bar (visible in MP Versus mode) -->
+      <div class="garbage-bar-wrap"><div id="garbageBar"></div></div>
+      <!-- Incoming garbage warning flash -->
+      <div class="garbage-warn" id="garbageWarn"></div>
       <div class="game-board" id="board"></div>
       <canvas id="particleCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
       <div class="game-overlay" id="overlay">
         <div class="overlay-title" id="overlayTitle">Game Over</div>
         <div class="overlay-score" id="overlayScore">0</div>
         <div class="overlay-sub" id="overlaySub"></div>
-        <div style="display:flex;gap:10px;margin-top:4px;">
+        <div id="overlayMPScoreList" style="display:none;flex-direction:column;gap:6px;"></div>
+        <div id="overlaySPBtns" style="display:flex;gap:10px;margin-top:4px;">
           <button class="btn primary" onclick="startGame()">Play Again</button>
           <button class="btn" onclick="nav('home')">Menu</button>
+        </div>
+        <div id="overlayMPBtns" style="display:none;gap:10px;margin-top:4px;">
+          <button class="btn primary" onclick="mpBackToLobby()">Back to Lobby</button>
+          <button class="btn" onclick="mpGoHome()">Main Menu</button>
         </div>
       </div>
       <div class="pause-overlay" id="pauseOverlay">
@@ -724,6 +960,22 @@
       <div class="panel-box">
         <span class="panel-label">Lines</span>
         <span class="panel-stat" id="sideLinesVal">0</span>
+      </div>
+    </div>
+
+    <!-- MP: Opponent panel (hidden in single-player) -->
+    <div class="mp-panel" id="mpOpponentPanel">
+      <div class="panel-box">
+        <span class="panel-label" id="oppName">Opponent</span>
+        <div id="oppBoard" class="opp-board"></div>
+      </div>
+      <div class="panel-box">
+        <span class="panel-label">Their score</span>
+        <span class="panel-stat" id="oppScore">0</span>
+      </div>
+      <div class="panel-box">
+        <span class="panel-label">Their lines</span>
+        <span class="panel-stat" id="oppLines">0</span>
       </div>
     </div>
   </div>
@@ -761,14 +1013,114 @@
     <div class="status-text" id="statusText">Use <strong>arrow keys</strong> to move, <strong>↑</strong> to rotate, <strong>Space</strong> to hard drop.</div>
   </div>
 
-  <div style="display:flex;gap:10px;margin-top:4px;">
-    <button class="btn sm" onclick="startGame()">New Game</button>
-    <button class="btn sm" onclick="togglePause()">Pause</button>
-    <button class="btn sm" onclick="nav('home')">Menu</button>
+  <!-- MP chat (hidden in SP) -->
+  <div class="mp-chat">
+    <div id="chatLog"></div>
+    <div class="chat-row">
+      <input id="chatInput" placeholder="Chat…" maxlength="80" onkeydown="if(event.key==='Enter')mpSendChat()">
+      <button class="btn sm" onclick="mpSendChat()">Send</button>
+    </div>
+  </div>
+
+  <div style="position:relative;">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn sm sp-only" onclick="startGame()">New Game</button>
+      <button class="btn sm sp-only" onclick="togglePause()">Pause</button>
+      <button class="btn sm sp-only" onclick="nav('home')">Menu</button>
+      <button class="btn sm mp-only" onclick="confirmLeaveGame()">Leave Game</button>
+    </div>
+    <div id="leaveConfirmPopup">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Leave the match?<br><span style="font-size:10px;">Your opponent will win by default.</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn sm" onclick="doLeaveGame()" style="background:var(--accent2);color:#000;border-color:var(--accent2);">Leave</button>
+        <button class="btn sm" onclick="document.getElementById('leaveConfirmPopup').style.display='none'">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ══ HOWTO MODAL ══ -->
+<!-- ══ MP END SCREEN (fixed overlay, shown after multiplayer game ends) ══ -->
+<div id="mpEndScreen">
+  <div class="mp-end-inner">
+    <div class="mp-end-title" id="mpEndTitle"></div>
+    <div class="mp-end-sub" id="mpEndSub"></div>
+    <table class="mp-end-table" id="mpEndTable" style="display:none">
+      <thead><tr>
+        <th style="text-align:left">Player</th>
+        <th>Score</th>
+        <th>Lines</th>
+      </tr></thead>
+      <tbody id="mpEndTableBody"></tbody>
+    </table>
+    <div class="mp-end-actions">
+      <button class="btn primary" onclick="mpBackToLobby()">Back to Lobby</button>
+      <button class="btn" onclick="mpGoHome()">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOBBY ══ -->
+<div id="lobby" class="screen">
+  <div class="lobby-inner">
+    <div>
+      <div class="lobby-title">Multi<em>player<span style="color:var(--accent)">.</span></em></div>
+      <p class="lobby-sub">Create a room or join one with a room code. Share the code with your opponent.</p>
+    </div>
+
+    <div class="lobby-form">
+      <input class="lobby-input" id="lobbyName" placeholder="Your name" maxlength="20">
+
+      <div class="mode-cards">
+        <div class="mode-card selected" data-mode="versus" onclick="selectMode(this)">
+          <div class="mode-card-name">Versus</div>
+          <div class="mode-card-desc">Clear lines, send garbage. Last board standing wins.</div>
+        </div>
+        <div class="mode-card" data-mode="sprint" onclick="selectMode(this)">
+          <div class="mode-card-name">Sprint Race</div>
+          <div class="mode-card-desc">Same pieces, same board. First to clear 40 lines wins.</div>
+        </div>
+        <div class="mode-card" data-mode="coop" onclick="selectMode(this)">
+          <div class="mode-card-name">Co-op</div>
+          <div class="mode-card-desc">Work together to clear 150 lines before time&nbsp;runs out.</div>
+        </div>
+      </div>
+
+      <div class="lobby-row">
+        <input class="lobby-input" id="lobbyCodeInput" placeholder="Room code (join existing)" maxlength="8"
+          oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="lobby-row">
+        <button class="btn primary" id="lobbyCreateBtn" onclick="lobbyCreateRoom()">Create Room</button>
+        <button class="btn" id="lobbyJoinBtn" onclick="lobbyJoinRoom()">Join Room</button>
+        <button class="btn sm" id="lobbyBackBtn" onclick="lobbyGoBack()">Back</button>
+        <button class="btn" id="lobbyLeaveBtn" onclick="lobbyLeave()" style="display:none">Leave Room</button>
+      </div>
+    </div>
+
+    <div class="lobby-code-row" id="lobbyCodeRow">
+      <span class="lobby-code-label">Room code</span>
+      <span class="lobby-code-val" id="lobbyCodeDisplay">______</span>
+      <button class="btn sm" id="copyCodeBtn" onclick="copyRoomCode()">Copy</button>
+    </div>
+
+    <div class="player-slots">
+      <div class="player-slots-label">Players</div>
+      <div class="lobby-slot" id="lobbySlot0">
+        <span class="slot-dot"></span>
+        <span style="color:var(--muted)">Empty</span>
+      </div>
+      <div class="lobby-slot" id="lobbySlot1">
+        <span class="slot-dot"></span>
+        <span style="color:var(--muted)">Empty</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn primary" id="lobbyReadyBtn" onclick="lobbyReady()" disabled>Ready</button>
+      <span id="lobbyStatus">Enter your name and create or join a room.</span>
+    </div>
+  </div>
+</div>
 <div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
   <div class="modal howto-modal" onclick="event.stopPropagation()">
     <div class="howto-title">How to Play</div>
@@ -820,7 +1172,7 @@
 
 <script>
 // ═══════════════════════════════════════
-//  AUDIO ENGINE — Web Audio API SFX
+//  AUDIO ENGINE - Web Audio API SFX
 // ═══════════════════════════════════════
 let audioCtx = null;
 let soundEnabled = false;
@@ -983,7 +1335,7 @@ const PIECES = {
   ]}
 };
 
-// SRS Wall Kick data — keyed by "from>to" rotation state
+// SRS Wall Kick data - keyed by "from>to" rotation state
 const KICK_JLSTZ = {
   // CW rotations
   '0>1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
@@ -1047,6 +1399,15 @@ const FORCE_LOCK_TIME = 8000; // absolute max time per piece on ground
 let actionLock = false; // prevents concurrent operations (hold+harddrop race)
 let lastDropTime = 0;
 let bag = [];
+let rng = null;            // seeded PRNG for MP (null = Math.random in SP)
+// ── Multiplayer state (see MP ENGINE section) ──
+let mpWs = null; let mpPlayerId = null; let mpRoomCode = null;
+let mpMode = 'versus'; let mpIsActive = false; let mpSeed = null;
+let mpPlayerName = ''; let mpSprintTarget = 40; let mpCoopTarget = 150;
+let mpCoopLines = 0; let mpSprintStart = 0; let mpPendingGarbage = 0;
+let mpOpponentData = { name: '', score: 0, lines: 0 };
+let mpLocksSinceUpdate = 0; let mpGarbageAnimTimer = null; let oppCells = null;
+let mpPendingGarbageRows = [];  // server-authoritative hole positions, applied at next spawn
 let dasTimer = null;
 let dasDirection = null;
 let dasDelay = 167; // ms
@@ -1127,10 +1488,22 @@ function buildNextQueueDOM() {
 //  BAG RANDOMIZER (7-bag)
 // ═══════════════════════════════════════
 
+// Mulberry32 seeded PRNG - used in MP so all clients share the same bag order
+function mulberry32(seed) {
+  let s = seed >>> 0;
+  return function rand() {
+    s += 0x6D2B79F5;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
 function fillBag() {
   const types = ['I','O','T','S','Z','J','L'];
+  const rand = rng || Math.random;
   for (let i = types.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [types[i], types[j]] = [types[j], types[i]];
   }
   bag.push(...types);
@@ -1284,9 +1657,9 @@ function moveRight() {
 function moveDown() {
   if (isValid(currentType, currentRotation, currentX, currentY + 1)) {
     currentY++;
-    // NOTE: do NOT reset lastWasSpin here — gravity/soft drop shouldn't
+    // NOTE: do NOT reset lastWasSpin here - gravity/soft drop shouldn't
     // cancel a T-spin. Only left/right movement resets it.
-    // New lowest row reached — reset lock move counter and force lock
+    // New lowest row reached - reset lock move counter and force lock
     if (currentY > lowestY) {
       lowestY = currentY;
       lockMoves = 0;
@@ -1315,7 +1688,7 @@ function onPieceMoved() {
         }, FORCE_LOCK_TIME);
       }
     } else {
-      // Max resets exhausted — force lock immediately
+      // Max resets exhausted - force lock immediately
       lockPiece();
     }
   } else {
@@ -1352,6 +1725,8 @@ function holdPiece() {
   if (!canHold || gameStatus !== 'playing') return;
   canHold = false;
   sfx.hold();
+  // MP: notify server so it keeps piece sequence in sync
+  if (mpIsActive && mpWs) mpSend({ type: 'event', kind: 'hold' });
 
   clearLockTimer();
   clearDropTimer();
@@ -1450,6 +1825,21 @@ function lockPiece() {
   shakeBoard();
   spawnLockParticles(currentType, shape, currentX, currentY);
 
+  // MP: send placement to server for authoritative validation + garbage routing.
+  // Server computes ghost Y, T-spin, and line clears independently from its own board.
+  if (mpIsActive && mpWs && gameStatus === 'playing') {
+    mpSend({
+      type:          'event',
+      kind:          'piecePlaced',
+      x:             currentX,
+      rot:           currentRotation,
+      tSpin:         tSpin,  // hint - server validates with its own corner check
+      score,
+      perfectClear:  false,  // TODO: implement perfect clear detection
+      elapsed:       mpSprintStart ? Math.round((Date.now() - mpSprintStart) / 1000) : 0,
+    });
+  }
+
   const clearedRows = [];
   for (let r = 0; r < TOTAL; r++) {
     if (board[r].every(c => c !== EMPTY)) clearedRows.push(r);
@@ -1500,6 +1890,7 @@ function handleLineClear(rows, tSpin) {
   const comboBonus = comboCount > 0 ? 50 * comboCount * level : 0;
   score += baseScore * level + b2bBonus + comboBonus;
   lines += n;
+  // (MP attack routing is handled server-side via the piecePlaced event)
 
   const newLevel = Math.floor(lines / 10) + 1;
   if (newLevel > level) {
@@ -1554,11 +1945,13 @@ function handleLineClear(rows, tSpin) {
     }, 350);
   }
 
-  // Spawn next piece immediately — no delay
+  // Spawn next piece immediately - no delay
   spawnNext();
 }
 
 function spawnNext() {
+  // Apply any pending MP garbage before spawning the next piece
+  if (window.mpHooks?.applyGarbage) window.mpHooks.applyGarbage();
   fillNextQueue();
   const type = nextQueue.shift();
   fillNextQueue();
@@ -1590,7 +1983,7 @@ function startDropTimer() {
   dropTimer = setInterval(() => {
     if (gameStatus !== 'playing') return;
     if (!moveDown()) {
-      // On ground — start lock timer if not already
+      // On ground - start lock timer if not already
       if (!lockTimer) startLockTimer();
       // Start force lock on first ground touch
       if (!forceLockTimer) {
@@ -1821,12 +2214,16 @@ function openModal(id) { document.getElementById(id + 'Backdrop').classList.add(
 function closeModal(id) { document.getElementById(id + 'Backdrop').classList.remove('open'); }
 
 function startGame() {
+  // Exit MP mode if transitioning from MP → SP
+  if (mpWs) { mpWs.close(); mpWs = null; }
+  mpIsActive = false; mpPendingGarbage = 0; mpPendingGarbageRows = [];
+  document.body.classList.remove('mp');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
   initGame();
 }
 
-function initGame() {
+function initGame(sharedSeed) {
   createBoard();
   buildBoardDOM();
   initParticles();
@@ -1841,6 +2238,7 @@ function initGame() {
   nextQueue = [];
   canHold = true;
   bag = [];
+  rng = (sharedSeed !== undefined) ? mulberry32(sharedSeed) : null;
   gameStatus = 'playing';
   keysDown = {};
   lastWasSpin = false;
@@ -1869,6 +2267,14 @@ function gameOver() {
   clearForceLock();
   sfx.gameOver();
 
+  // In MP mode, notify server; show a brief topped-out message while we wait for gameEnd
+  if (window.mpHooks?.onGameOver) {
+    window.mpHooks.onGameOver();
+    const statusEl = document.getElementById('statusText');
+    if (statusEl) statusEl.innerHTML = '<strong style="color:var(--accent2)">Topped out…</strong>';
+    return;
+  }
+
   updateStatus('over');
 
   // Save best
@@ -1886,10 +2292,14 @@ function gameOver() {
   document.getElementById('overlayTitle').style.color = '';
   document.getElementById('overlayScore').textContent = score;
   document.getElementById('overlaySub').textContent = lines + ' lines · level ' + level;
+  document.getElementById('overlaySPBtns').style.display    = 'flex';
+  document.getElementById('overlayMPBtns').style.display    = 'none';
+  document.getElementById('overlayMPScoreList').style.display = 'none';
   overlay.classList.add('active');
 }
 
 function togglePause() {
+  if (mpIsActive) return;  // no pause in multiplayer
   if (gameStatus === 'playing') {
     gameStatus = 'paused';
     clearDropTimer();
@@ -1908,7 +2318,7 @@ function togglePause() {
 }
 
 // ═══════════════════════════════════════
-//  INPUT — KEYBOARD (DAS + ARR)
+//  INPUT - KEYBOARD (DAS + ARR)
 // ═══════════════════════════════════════
 
 function handleAction(action) {
@@ -2019,7 +2429,7 @@ document.addEventListener('keydown', (e) => {
     case 'r':
     case 'R':
       e.preventDefault();
-      startGame();
+      if (!mpWs) startGame();
       break;
   }
 });
@@ -2042,7 +2452,7 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-// Soft drop auto-repeat — always faster than gravity
+// Soft drop auto-repeat - always faster than gravity
 function startSoftDropRepeat() {
   clearSoftDropRepeat();
   softDrop(); sfx.softDrop(); render();
@@ -2357,6 +2767,682 @@ function updateParticles() {
 //  INIT
 // ═══════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+//  MULTIPLAYER ENGINE
+//  Architecture: Client-side simulation + event sync via WebSocket.
+//  Server (Cloudflare Durable Object) owns: room creation, seed
+//  generation, attack calculation, and event relay.
+//  Client owns: full local board simulation (deterministic from seed).
+//  Security: server calculates ALL garbage from event type -
+//  clients cannot lie about attack values sent to opponents.
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Config ── Set these to your deployed Cloudflare Worker URL ──
+// Auto-detect local vs production - no manual URL switching needed
+const _IS_LOCAL      = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const MP_SERVER_HTTP = _IS_LOCAL ? 'http://localhost:8787' : 'https://tetris-mp.inlowik.workers.dev';
+const MP_SERVER_WS   = _IS_LOCAL ? 'ws://localhost:8787'  : 'wss://tetris-mp.inlowik.workers.dev';
+
+// ─────────────────────────────────────────────────────────────────
+//  Opponent board rendering
+// ─────────────────────────────────────────────────────────────────
+const OPP_ROWS = 20, OPP_COLS = 10;
+
+function buildOpponentBoard() {
+  const el = document.getElementById('oppBoard');
+  if (!el) return;
+  el.innerHTML = '';
+  oppCells = [];
+  for (let r = 0; r < OPP_ROWS; r++) {
+    oppCells[r] = [];
+    for (let c = 0; c < OPP_COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'opp-cell';
+      el.appendChild(cell);
+      oppCells[r][c] = cell;
+    }
+  }
+}
+
+function renderOpponentSnapshot(snapshot) {
+  if (!oppCells || !snapshot) return;
+  for (let r = 0; r < OPP_ROWS; r++) {
+    for (let c = 0; c < OPP_COLS; c++) {
+      const ch = snapshot[r * OPP_COLS + c];
+      const cell = oppCells[r][c];
+      cell.className = 'opp-cell';
+      if (ch && ch !== '.') cell.classList.add('opp-locked-' + ch);
+    }
+  }
+}
+
+// Encode the visible board (20×10) as a 200-char string for the server to relay
+function encodeBoardSnapshot() {
+  let s = '';
+  for (let r = BUFFER; r < TOTAL; r++)
+    for (let c = 0; c < COLS; c++)
+      s += board[r][c] || '.';
+  return s;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Garbage bar UI
+// ─────────────────────────────────────────────────────────────────
+function updateGarbageBar() {
+  const bar   = document.getElementById('garbageBar');
+  const label = document.getElementById('garbageCount');
+  if (!bar) return;
+  const pct = Math.min(1, mpPendingGarbage / 20);
+  bar.style.height  = (pct * 100) + '%';
+  bar.style.opacity = pct > 0 ? '1' : '0.2';
+  const danger = Math.min(1, mpPendingGarbage / 8);
+  const g = Math.round(80 - danger * 60);
+  bar.style.background = `rgb(255,${g},40)`;
+  bar.style.boxShadow  = pct > 0.3 ? `0 0 8px rgba(255,80,40,${(pct * 0.7).toFixed(2)})` : 'none';
+  if (label) label.textContent = mpPendingGarbage > 0 ? mpPendingGarbage : '';
+}
+
+function flashGarbageWarning(amount, fromName) {
+  const warn = document.getElementById('garbageWarn');
+  if (!warn) return;
+  warn.textContent = '+' + amount + ' incoming';
+  warn.style.opacity = '1';
+  clearTimeout(mpGarbageAnimTimer);
+  mpGarbageAnimTimer = setTimeout(() => { warn.style.opacity = '0'; }, 1800);
+}
+
+// Apply pending garbage from the server's authoritative queue (called in spawnNext via hook).
+// Hole positions come from the server - the client never picks them, preventing exploit.
+function applyPendingGarbage() {
+  if (!mpIsActive || mpPendingGarbageRows.length === 0) return;
+  const rows = mpPendingGarbageRows.splice(0);   // drain the whole queue atomically
+  mpPendingGarbage = Math.max(0, mpPendingGarbage - rows.length);
+  updateGarbageBar();
+  for (const { holeCol } of rows) {
+    board.shift();                              // shift existing rows upward
+    const gRow = new Array(COLS).fill('G');
+    gRow[Math.max(0, Math.min(COLS - 1, holeCol | 0))] = EMPTY;
+    board.push(gRow);
+  }
+  mpSend({ type: 'event', kind: 'garbageApplied', count: rows.length });
+  render();
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Hooks called by existing game functions
+// ─────────────────────────────────────────────────────────────────
+function mpOnGameOver() {
+  if (!mpWs) return;
+  mpSend({ type: 'event', kind: 'gameOver', score });
+  mpIsActive = false;
+}
+
+// Install hooks into the engine
+window.mpHooks = {
+  applyGarbage: applyPendingGarbage,  // called in spawnNext; applies queued server garbage
+  onGameOver:   mpOnGameOver,         // called in local gameOver(); notifies server
+};
+
+// ─────────────────────────────────────────────────────────────────
+//  WebSocket client
+// ─────────────────────────────────────────────────────────────────
+function mpConnect(roomCode, playerName, mode) {
+  return new Promise((resolve, reject) => {
+    if (mpWs) { mpWs.close(); mpWs = null; }
+    mpWs = new WebSocket(`${MP_SERVER_WS}/room/${roomCode}`);
+
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) reject(new Error('Connection timed out'));
+    }, 8000);
+
+    mpWs.onopen = () => {
+      mpSend({ type: 'join', name: playerName, mode });
+    };
+
+    mpWs.onmessage = (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      // Resolve the promise once we get our joined confirmation
+      if (msg.type === 'joined' && !resolved) {
+        resolved = true; clearTimeout(timeout); mpStartKeepalive(); resolve(msg);
+      } else if (msg.type === 'error' && !resolved) {
+        resolved = true; clearTimeout(timeout); reject(new Error(msg.reason));
+      }
+      handleMPMessage(msg);
+    };
+
+    mpWs.onerror = () => {
+      if (!resolved) { resolved = true; clearTimeout(timeout); reject(new Error('Connection failed. Is the server running?')); }
+    };
+
+    mpWs.onclose = () => {
+      mpStopKeepalive();
+      if (mpIsActive) {
+        showMPStatus('Server disconnected.', 'error');
+        mpIsActive = false;
+      } else if (mpWs !== null) {
+        // mpWs is null when we already cleaned up (e.g. lobbyClosed / lobbyLeave)
+        lobbySetConnected(false);
+        const _rb2 = document.getElementById('lobbyReadyBtn');
+        if (_rb2) { _rb2.disabled = true; _rb2.textContent = 'Ready'; }
+        mpUpdateLobbyStatus('Disconnected.');
+      }
+    };
+  });
+}
+
+function mpSend(msg) {
+  if (mpWs && mpWs.readyState === WebSocket.OPEN) mpWs.send(JSON.stringify(msg));
+}
+
+let _mpPingInterval = null;
+
+function mpStartKeepalive() {
+  _mpPingInterval = setInterval(() => {
+    if (mpWs && mpWs.readyState === WebSocket.OPEN) mpSend({ type: 'ping' });
+  }, 15_000);
+}
+
+function mpStopKeepalive() {
+  clearInterval(_mpPingInterval);
+  _mpPingInterval = null;
+}
+
+function mpDisconnect() {
+  mpStopKeepalive();
+  if (mpWs) { mpWs.close(); mpWs = null; }
+  mpIsActive = false; mpPendingGarbage = 0;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Incoming message dispatcher
+// ─────────────────────────────────────────────────────────────────
+function handleMPMessage(msg) {
+  switch (msg.type) {
+
+    case 'pong': break;  // keepalive response, no-op
+
+    case 'joined':
+      mpPlayerId = msg.playerId;
+      mpMode     = msg.mode;
+      updateLobbyPlayers(msg.players);
+      mpUpdateLobbyMode(msg.mode);
+      if (msg.playerId !== 0) mpDisableModeSelect();
+      // Host gets "Close Lobby" (kicks everyone), joiner gets "Leave Room"
+      { const lb = document.getElementById('lobbyLeaveBtn');
+        if (lb) { lb.textContent = msg.playerId === 0 ? 'Close Lobby' : 'Leave Room';
+                  lb.onclick = msg.playerId === 0 ? lobbyCloseLobby : lobbyLeave; } }
+      break;
+
+    case 'playerJoined':
+    case 'playerReady':
+      updateLobbyPlayers(msg.players);
+      if (msg.type === 'playerReady') {
+        mpUpdateLobbyStatus('Player readied up!');
+      }
+      break;
+
+    case 'lobbyClosed':
+      // Host closed the room — clean up and return to lobby
+      mpFullReset();
+      nav('lobby');
+      setTimeout(() => mpUpdateLobbyStatus('The host closed the lobby.'), 30);
+      break;
+
+    case 'playerLeft':
+      updateLobbyPlayers(msg.players || []);
+      if (!mpIsActive) {
+        // Still in lobby — re-enable ready so the remaining player can wait for a new joiner
+        mpUpdateLobbyStatus(msg.name + ' left the room. Waiting for a new player…');
+        const _rb = document.getElementById('lobbyReadyBtn');
+        if (_rb) { _rb.disabled = false; _rb.textContent = 'Ready'; }
+        if (mpPlayerId === 0) {
+          document.querySelectorAll('.mode-card').forEach(c => { c.style.pointerEvents = ''; c.style.opacity = ''; });
+        }
+      } else {
+        showMPStatus(msg.name + ' disconnected.', 'warn');
+      }
+      break;
+
+    case 'start':
+      mpSeed         = msg.seed;
+      mpMode         = msg.mode;
+      mpSprintTarget = msg.sprintTarget || 40;
+      mpCoopTarget   = msg.coopTarget   || 150;
+      mpCoopLines    = 0;
+      mpSprintStart  = Date.now();
+      startMPGame();
+      break;
+
+    case 'incomingGarbage':
+      mpPendingGarbage = msg.pending;
+      // Store server-provided hole positions - these are applied in applyPendingGarbage()
+      if (Array.isArray(msg.garbageLines)) {
+        mpPendingGarbageRows.push(...msg.garbageLines);
+      }
+      updateGarbageBar();
+      flashGarbageWarning(msg.amount, msg.fromName);
+      break;
+
+    case 'pieceConfirmed':
+      // Server verified our placement. Update status display with authoritative info.
+      if (msg.lines > 0) {
+        const pfx = msg.b2b ? '<strong style="color:var(--accent4)">B2B</strong> ' : '';
+        let ptxt = '';
+        if      (msg.tSpin === 'tspin') ptxt = pfx + '<strong style="color:var(--accent)">T-SPIN ' + ['','Single','Double','Triple'][msg.lines] + '!</strong>';
+        else if (msg.lines === 4)        ptxt = pfx + '<strong style="color:var(--accent)">TETRIS!</strong>';
+        else if (msg.lines > 1)          ptxt = '<strong>' + msg.lines + ' lines</strong> cleared!';
+        if (ptxt) { const el = document.getElementById('statusText'); if (el) el.innerHTML = ptxt; }
+      }
+      break;
+
+    case 'opponentUpdate':
+      mpOpponentData.score = msg.score;
+      mpOpponentData.lines = msg.lines;
+      updateOpponentStats();
+      if (msg.snapshot) renderOpponentSnapshot(msg.snapshot);
+      break;
+
+    case 'playerOver':
+      if (msg.playerId !== mpPlayerId) {
+        // Send our final score to the server before it calls endGame
+        mpSend({ type: 'event', kind: 'scoreSync', score });
+        // We (the winner) can stop playing immediately — gameEnd will follow within ms
+        showMPStatus('Opponent topped out!', 'win');
+        clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+        gameStatus = 'over';
+      }
+      break;
+
+    case 'coopProgress':
+      mpCoopLines = msg.total;
+      updateCoopProgress(msg.total, msg.target);
+      break;
+
+    case 'gameEnd':
+      handleMPGameEnd(msg);
+      break;
+
+    case 'chat':
+      addChatMessage(msg.name, msg.text);
+      break;
+
+    case 'reset':
+      updateLobbyPlayers(msg.players || []);
+      showLobbyReady();
+      break;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Lobby UI
+// ─────────────────────────────────────────────────────────────────
+function lobbyCreateRoom() {
+  const name = document.getElementById('lobbyName').value.trim() || 'Player 1';
+  const mode = document.querySelector('.mode-card.selected')?.dataset.mode || 'versus';
+  mpPlayerName = name;
+  mpUpdateLobbyStatus('Creating room\u2026');
+  lobbySetConnected(true);
+
+  fetch(`${MP_SERVER_HTTP}/create`)
+    .then(r => r.json())
+    .then(data => {
+      mpRoomCode = data.roomCode;
+      document.getElementById('lobbyCodeDisplay').textContent = mpRoomCode;
+      document.getElementById('lobbyCodeRow').style.display   = 'flex';
+      mpUpdateLobbyStatus('Room created! Waiting for opponent\u2026');
+      return mpConnect(mpRoomCode, name, mode);
+    })
+    .then(() => {
+      document.getElementById('lobbyReadyBtn').disabled = false;
+      mpUpdateLobbyStatus('Connected \u2014 share the code, then press Ready.');
+    })
+    .catch(err => {
+      const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
+      mpUpdateLobbyStatus(noServer
+        ? 'Cannot reach server \u2014 run: cd server && npx wrangler dev'
+        : 'Error: ' + err.message, 'error');
+      lobbySetConnected(false);
+    });
+}
+
+function lobbyJoinRoom() {
+  const name = document.getElementById('lobbyName').value.trim() || 'Player 2';
+  const code = document.getElementById('lobbyCodeInput').value.trim().toUpperCase();
+  if (code.length < 4) { mpUpdateLobbyStatus('Enter a valid room code.', 'error'); return; }
+  mpPlayerName = name;
+  mpRoomCode   = code;
+  document.getElementById('lobbyCodeDisplay').textContent = code;
+  document.getElementById('lobbyCodeRow').style.display   = 'flex';
+  mpUpdateLobbyStatus('Joining ' + code + '\u2026');
+  lobbySetConnected(true);
+
+  mpConnect(code, name, 'versus')
+    .then(() => {
+      document.getElementById('lobbyReadyBtn').disabled = false;
+      mpUpdateLobbyStatus('Connected \u2014 press Ready to start.');
+    })
+    .catch(err => {
+      const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
+      mpUpdateLobbyStatus(noServer
+        ? 'Cannot reach server \u2014 run: cd server && npx wrangler dev'
+        : 'Error: ' + err.message, 'error');
+      document.getElementById('lobbyCodeRow').style.display = 'none';
+      lobbySetConnected(false);
+    });
+}
+
+function lobbyReady() {
+  mpSend({ type: 'ready' });
+  document.getElementById('lobbyReadyBtn').disabled    = true;
+  document.getElementById('lobbyReadyBtn').textContent = 'Waiting\u2026';
+  mpUpdateLobbyStatus('Waiting for opponent to ready up\u2026');
+}
+
+// Lock/unlock the pre-connection lobby controls.
+function lobbySetConnected(connected) {
+  document.getElementById('lobbyName').disabled      = connected;
+  document.getElementById('lobbyCodeInput').disabled = connected;
+  document.querySelectorAll('.mode-card').forEach(c => {
+    c.style.pointerEvents = connected ? 'none' : '';
+    c.style.opacity = (connected && !c.classList.contains('selected')) ? '0.3' : '';
+  });
+  const hideCreate = connected ? 'none' : '';
+  document.getElementById('lobbyCreateBtn').style.display = hideCreate;
+  document.getElementById('lobbyJoinBtn').style.display   = hideCreate;
+  document.getElementById('lobbyBackBtn').style.display   = hideCreate;
+  document.getElementById('lobbyLeaveBtn').style.display  = connected ? '' : 'none';
+}
+
+function lobbyCloseLobby() {
+  mpSend({ type: 'closeLobby' });
+  mpFullReset();
+  nav('lobby');
+}
+
+function lobbyLeave() {
+  mpDisconnect();
+  lobbySetConnected(false);
+  mpPlayerId = null; mpRoomCode = null;
+  document.getElementById('lobbyCodeInput').value        = '';
+  document.getElementById('lobbyCodeDisplay').textContent = '______';
+  document.getElementById('lobbyCodeRow').style.display   = 'none';
+  const rb = document.getElementById('lobbyReadyBtn');
+  if (rb) { rb.disabled = true; rb.textContent = 'Ready'; }
+  updateLobbyPlayers([]);
+  mpUpdateLobbyStatus('Left the room.');
+}
+
+function mpUpdateLobbyStatus(text, t) {
+  const el = document.getElementById('lobbyStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = t === 'error' ? 'var(--accent2)' : 'var(--muted)';
+}
+
+function mpUpdateLobbyMode(mode) {
+  document.querySelectorAll('.mode-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.mode === mode)
+  );
+}
+
+function mpDisableModeSelect() {
+  document.querySelectorAll('.mode-card').forEach(c => {
+    c.style.pointerEvents = 'none';
+    c.style.opacity = c.classList.contains('selected') ? '1' : '0.3';
+  });
+}
+
+function updateLobbyPlayers(players) {
+  for (let i = 0; i < 2; i++) {
+    const slot = document.getElementById('lobbySlot' + i);
+    if (!slot) continue;
+    const p = players[i];  // use position — IDs can be non-sequential after reconnects
+    if (p) {
+      slot.innerHTML =
+        `<span class="slot-dot connected"></span>` +
+        `<span>${p.name}</span>` +
+        `<span class="slot-tag">${p.ready ? '\u2713 READY' : 'waiting'}</span>`;
+    } else {
+      slot.innerHTML = `<span class="slot-dot"></span><span style="color:var(--muted)">Empty</span>`;
+    }
+  }
+}
+
+function showLobbyReady() {
+  const btn = document.getElementById('lobbyReadyBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Ready'; }
+}
+
+function selectMode(el) {
+  if (mpPlayerId !== null && mpPlayerId !== 0) return; // only host picks mode
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function copyRoomCode() {
+  if (!mpRoomCode) return;
+  navigator.clipboard.writeText(mpRoomCode).then(() => {
+    const btn = document.getElementById('copyCodeBtn');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  MP game start  (called when server sends 'start')
+// ─────────────────────────────────────────────────────────────────
+function startMPGame() {
+  // Transition to game screen
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+  document.body.classList.add('mp');
+
+  // Resolve opponent name from lobby slots
+  for (let i = 0; i < 2; i++) {
+    if (i === mpPlayerId) continue;
+    const slot = document.getElementById('lobbySlot' + i);
+    const nameEl = slot?.querySelector('span:nth-child(2)');
+    mpOpponentData.name = nameEl?.textContent || 'Opponent';
+  }
+
+  const oppNameEl = document.getElementById('oppName');
+  if (oppNameEl) oppNameEl.textContent = mpOpponentData.name;
+  const oppNameInGame = document.getElementById('oppNameInGame');
+  if (oppNameInGame) oppNameInGame.textContent = mpOpponentData.name;
+
+  // Mode banner
+  const modeLabels = {
+    versus: 'Versus',
+    sprint: 'Sprint Race \u2014 ' + mpSprintTarget + ' lines',
+    coop:   'Co-op \u2014 ' + mpCoopTarget + ' lines',
+  };
+  const banner = document.getElementById('mpModeBanner');
+  if (banner) banner.textContent = modeLabels[mpMode] || mpMode;
+
+  // Co-op progress row visibility
+  const coopRow = document.getElementById('coopProgressRow');
+  if (coopRow) coopRow.style.display = mpMode === 'coop' ? 'flex' : 'none';
+
+  buildOpponentBoard();
+  updateOpponentStats();
+  updateGarbageBar();
+
+  // Start game with shared seed (ensures all clients get same piece sequence)
+  mpIsActive = true;
+  mpLocksSinceUpdate = 0;
+  mpPendingGarbageRows = [];
+  initGame(mpSeed);
+}
+
+function updateOpponentStats() {
+  const s = document.getElementById('oppScore');
+  const l = document.getElementById('oppLines');
+  if (s) s.textContent = mpOpponentData.score;
+  if (l) l.textContent = mpOpponentData.lines;
+}
+
+function updateCoopProgress(total, target) {
+  const val = document.getElementById('coopProgressVal');
+  const bar = document.getElementById('coopProgressBar');
+  if (val) val.textContent = total + ' / ' + target;
+  if (bar) bar.style.width = Math.min(100, (total / target) * 100) + '%';
+}
+
+function showMPStatus(text, t) {
+  const el = document.getElementById('statusText');
+  if (!el) return;
+  const color = t === 'win' ? 'var(--accent3)' : t === 'error' ? 'var(--accent2)' : 'var(--accent)';
+  el.innerHTML = `<strong style="color:${color}">${text}</strong>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  MP end-game overlay
+// ─────────────────────────────────────────────────────────────────
+function handleMPGameEnd(msg) {
+  mpIsActive = false;
+  // msg.gameType holds 'versusEnd'|'sprintWin'|'coopWin'
+  // (server sends {type:'gameEnd', gameType:'versusEnd', ...} to avoid key collision)
+  const gt = msg.gameType || msg.type;  // fallback for older builds
+
+  let title = '', sub = '', accent = '';
+
+  if (gt === 'versusEnd') {
+    const iWon = msg.winner === mpPlayerId;
+    title  = iWon ? 'Victory!' : 'Defeated';
+    accent = iWon ? 'var(--accent3)' : 'var(--accent2)';
+    sub    = msg.reason === 'disconnect' ? 'Opponent disconnected' : '';
+  } else if (gt === 'sprintWin') {
+    const iWon = msg.winner === mpPlayerId;
+    title  = iWon ? 'Sprint Win!' : 'Too Slow!';
+    accent = iWon ? 'var(--accent3)' : 'var(--accent2)';
+    sub    = (iWon ? 'You finished in ' : (msg.winnerName + ' finished in ')) + msg.elapsed + 's';
+  } else if (gt === 'coopWin') {
+    title  = 'Mission Clear!';
+    accent = 'var(--accent)';
+    sub    = msg.lines + ' lines cleared together!';
+  }
+
+  // Stop local game
+  clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+  gameStatus = 'over';
+
+  // Populate end screen
+  const titleEl = document.getElementById('mpEndTitle');
+  const subEl   = document.getElementById('mpEndSub');
+  const tableEl = document.getElementById('mpEndTable');
+  const tbody   = document.getElementById('mpEndTableBody');
+
+  titleEl.textContent   = title;
+  titleEl.style.color   = accent;
+  subEl.textContent     = sub;
+  tbody.innerHTML       = '';
+
+  const scores = msg.scores || [];
+  if (scores.length) {
+    scores.forEach(s => {
+      const isWinner = s.id === msg.winner;
+      const tr = document.createElement('tr');
+      if (isWinner) tr.className = 'winner';
+      tr.innerHTML =
+        '<td>' + (isWinner ? '\u2713 ' : '') + s.name + '</td>' +
+        '<td style="text-align:right">' + s.score + '</td>' +
+        '<td style="text-align:right">' + s.lines + '</td>';
+      tbody.appendChild(tr);
+    });
+    tableEl.style.display = 'table';
+  } else {
+    tableEl.style.display = 'none';
+  }
+
+  document.getElementById('mpEndScreen').classList.add('active');
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Chat
+// ─────────────────────────────────────────────────────────────────
+function addChatMessage(name, text) {
+  const log = document.getElementById('chatLog');
+  if (!log) return;
+  const item = document.createElement('div');
+  item.className = 'chat-msg';
+  item.innerHTML = `<strong>${name}</strong>${text}`;
+  log.appendChild(item);
+  log.scrollTop = log.scrollHeight;
+}
+
+function mpSendChat() {
+  const inp = document.getElementById('chatInput');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (text) { mpSend({ type: 'chat', text }); inp.value = ''; }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  MP utilities: leave confirm, full reset, navigation
+// ─────────────────────────────────────────────────────────────────
+function confirmLeaveGame() {
+  const p = document.getElementById('leaveConfirmPopup');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function doLeaveGame() {
+  document.getElementById('leaveConfirmPopup').style.display = 'none';
+  mpFullReset();
+  nav('lobby');
+}
+
+function mpBackToLobby() {
+  mpFullReset();
+  nav('lobby');
+}
+
+function mpGoHome() {
+  mpFullReset();
+  nav('home');
+}
+
+function lobbyGoBack() {
+  // If connected, disconnect cleanly; then navigate home
+  if (mpWs) lobbyLeave();
+  nav('home');
+}
+
+// Full MP teardown: closes socket, resets all state, restores lobby UI
+function mpFullReset() {
+  mpDisconnect();
+  mpPlayerId         = null;
+  mpRoomCode         = null;
+  mpMode             = 'versus';
+  mpSeed             = null;
+  mpPendingGarbage   = 0;
+  mpPendingGarbageRows = [];
+  mpLocksSinceUpdate = 0;
+  mpOpponentData     = { name: '', score: 0, lines: 0 };
+  document.body.classList.remove('mp');
+  // Stop any running game timers
+  clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+  gameStatus = 'idle';
+  // Hide end screen + game overlay + leave popup
+  document.getElementById('mpEndScreen').classList.remove('active');
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('leaveConfirmPopup').style.display = 'none';
+  // Restore lobby to pristine state
+  lobbySetConnected(false);
+  document.getElementById('lobbyCodeInput').value         = '';
+  document.getElementById('lobbyCodeDisplay').textContent = '______';
+  document.getElementById('lobbyCodeRow').style.display   = 'none';
+  const rb = document.getElementById('lobbyReadyBtn');
+  if (rb) { rb.disabled = true; rb.textContent = 'Ready'; }
+  updateLobbyPlayers([]);
+  // Re-enable mode cards
+  document.querySelectorAll('.mode-card').forEach(c => { c.style.pointerEvents = ''; c.style.opacity = ''; });
+  mpUpdateLobbyStatus('Enter your name and create or join a room.');
+}
+
+// ─────────────────────────────────────────────────────────────────
 loadBest();
 buildHeroPreview();
 
