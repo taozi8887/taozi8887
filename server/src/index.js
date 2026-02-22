@@ -327,6 +327,13 @@ export class TetrisRoom {
   }
 
   async webSocketMessage(ws, rawMsg) {
+    // ── Hibernation recovery ──────────────────────────────────────────────────
+    // Cloudflare may evict this DO from memory between messages while keeping
+    // WebSocket connections alive. If that happened, in-memory Maps are empty.
+    // Rebuild them from per-WS attachments + durable storage.
+    if (this.players.size === 0) await this._rebuildFromHibernation();
+    // ─────────────────────────────────────────────────────────────────────────
+
     let msg;
     try { msg = JSON.parse(rawMsg); } catch { return; }
     const id = this.wsToId.get(ws);
@@ -341,6 +348,9 @@ export class TetrisRoom {
       if (newId===0 && msg.mode && ['versus','sprint','coop'].includes(msg.mode)) this.mode = msg.mode;
       this.players.set(newId, { ws, name, ready:false, alive:true, score:0, lines:0, pendingGarbage:0, eventCount:0, lastEventSec:Math.floor(Date.now()/1000) });
       this.wsToId.set(ws, newId);
+      // Persist player identity on the WS itself — survives DO hibernation
+      ws.serializeAttachment({ id:newId, name });
+      await this._persistMeta();
       ws.send(JSON.stringify({type:'joined', playerId:newId, mode:this.mode, players:this.getPlayerList()}));
       this.broadcast({type:'playerJoined', players:this.getPlayerList()}, newId);
       return;
@@ -365,6 +375,7 @@ export class TetrisRoom {
           this.bags.set(pid, new PlayerBag(this.seed, pid));
           p.alive=true; p.score=0; p.lines=0; p.pendingGarbage=0;
         }
+        await this._persistMeta();
         this.broadcast({type:'start', seed:this.seed, mode:this.mode, sprintTarget:this.sprintTarget, coopTarget:this.coopTarget});
       }
       return;
@@ -462,10 +473,12 @@ export class TetrisRoom {
             return;
           }
 
+          let sentAtk = 0;
           if (this.mode === 'versus') {
             let atk = msg.perfectClear
               ? calcPerfectClearAttack(cleared)
               : calcAttack({lines:cleared, tSpin:actualTSpin, b2b, combo:bag.combo});
+            sentAtk = atk;
 
             if (atk > 0) {
               for (const [oid, op] of this.players) {
@@ -489,7 +502,7 @@ export class TetrisRoom {
           }
 
           // Confirm back to attacker with authoritative results
-          player.ws.send(JSON.stringify({type:'pieceConfirmed', lines:cleared, tSpin:actualTSpin, b2b, combo:bag.combo}));
+          player.ws.send(JSON.stringify({type:'pieceConfirmed', lines:cleared, tSpin:actualTSpin, b2b, combo:bag.combo, atk:sentAtk}));
         }
 
         // Step 7: advance piece sequence
@@ -525,11 +538,19 @@ export class TetrisRoom {
         this.endGame({type:'versusEnd', winner:w?.[0]??null, winnerName:w?.[1]?.name??null, scores:this.getScores()});
       }
     }
+    if (this.mode === 'coop') {
+      // In co-op, the game only ends when ALL players are dead
+      const alive = [...this.players.entries()].filter(([,p]) => p.alive);
+      if (alive.length === 0) {
+        this.endGame({type:'coopLoss', scores:this.getScores()});
+      }
+    }
   }
 
   endGame(payload) {
     if (this.gameState === 'finished') return;
     this.gameState = 'finished';
+    this._persistMeta();  // fire-and-forget
     // Spread would overwrite type:'gameEnd' with payload's type, so hoist it as gameType
     const {type: gameType, ...rest} = payload;
     this.broadcast({type:'gameEnd', gameType, ...rest});
@@ -537,11 +558,13 @@ export class TetrisRoom {
       this.gameState = 'waiting';
       for (const p of this.players.values()) { p.ready=false; p.alive=true; p.score=0; p.lines=0; p.pendingGarbage=0; }
       this.bags.clear();
+      this._persistMeta();
       this.broadcast({type:'reset', players:this.getPlayerList()});
     }, 45_000);
   }
 
   async webSocketClose(ws) {
+    if (this.players.size === 0) await this._rebuildFromHibernation();
     const id = this.wsToId.get(ws);
     if (id === undefined) return;
     const p = this.players.get(id);
@@ -558,6 +581,48 @@ export class TetrisRoom {
   }
 
   async webSocketError(ws) { await this.webSocketClose(ws); }
+
+  // ── Hibernation helpers ──────────────────────────────────────────────────
+  async _persistMeta() {
+    await this.state.storage.put('meta', {
+      gameState: this.gameState,
+      mode:      this.mode,
+      seed:      this.seed,
+      nextId:    this.nextId,
+      coopLines: this.coopLines,
+    });
+  }
+
+  async _rebuildFromHibernation() {
+    // Restore basic meta from durable storage
+    const meta = await this.state.storage.get('meta');
+    if (meta) {
+      this.gameState = meta.gameState ?? 'waiting';
+      this.mode      = meta.mode      ?? 'versus';
+      this.seed      = meta.seed      ?? null;
+      this.nextId    = meta.nextId    ?? 0;
+      this.coopLines = meta.coopLines ?? 0;
+    }
+    // Restore per-player data from WS attachments
+    for (const w of this.state.getWebSockets()) {
+      const att = w.deserializeAttachment();
+      if (att?.id === undefined) continue;
+      this.wsToId.set(w, att.id);
+      this.players.set(att.id, {
+        ws: w, name: att.name ?? 'Player', ready: att.ready ?? false,
+        alive: true, score: 0, lines: 0, pendingGarbage: 0,
+        eventCount: 0, lastEventSec: Math.floor(Date.now()/1000),
+      });
+    }
+    // If we woke up mid-game but can't restore board/bag state,
+    // gracefully end the game and send everyone back to lobby
+    if (this.gameState === 'playing' && this.bags.size === 0 && this.players.size > 0) {
+      this.gameState = 'waiting';
+      await this._persistMeta();
+      this.broadcast({ type: 'serverRestart' });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   broadcast(msg, excludeId = -1) {
     const data = JSON.stringify(msg);
