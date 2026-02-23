@@ -788,35 +788,68 @@
     opacity: 0.2;
   }
 
-  /* Incoming garbage warning */
+  /* Incoming garbage warning — big, can't miss it */
   .garbage-warn {
-    position: absolute; left: 50%; bottom: 14px;
-    transform: translateX(-50%);
-    background: rgba(255,80,80,0.9); color: #fff;
-    font-size: 11px; letter-spacing: 0.08em;
-    padding: 4px 12px; border-radius: 20px;
+    position: absolute; left: 50%; bottom: 18px;
+    transform: translateX(-50%) scale(0.8);
+    background: linear-gradient(135deg, #ff3a3a, #ff7043);
+    color: #fff; font-family: 'Instrument Serif', serif;
+    font-size: 22px; letter-spacing: -0.5px;
+    padding: 8px 22px; border-radius: 30px;
+    box-shadow: 0 0 24px rgba(255,60,60,0.7);
     opacity: 0; pointer-events: none; z-index: 20;
-    transition: opacity 0.5s ease; white-space: nowrap;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
+  }
+  .garbage-warn.show {
+    opacity: 1; transform: translateX(-50%) scale(1);
+    animation: garbagePulse 0.5s ease;
+  }
+  @keyframes garbagePulse {
+    0%   { transform: translateX(-50%) scale(1.2); }
+    50%  { transform: translateX(-50%) scale(0.95); }
+    100% { transform: translateX(-50%) scale(1); }
   }
 
-  /* Attack sent flash */
+  /* Attack sent flash (floating bubbles right of board) */
   #attackSentFlash {
-    position: absolute; right: -48px; top: 50%;
+    position: absolute; right: -52px; top: 50%;
     transform: translateY(-50%);
     display: flex; flex-direction: column; align-items: center;
     gap: 4px; pointer-events: none; z-index: 20;
   }
   .atk-bubble {
-    background: rgba(80,220,120,0.92); color: #0a0a0b;
-    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
-    padding: 3px 9px; border-radius: 20px; white-space: nowrap;
-    animation: atkFly 1.4s ease forwards;
+    background: linear-gradient(135deg, #3ddc84, #00bfa5);
+    color: #0a0a0b;
+    font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700;
+    padding: 4px 11px; border-radius: 20px; white-space: nowrap;
+    box-shadow: 0 0 12px rgba(61,220,132,0.5);
+    animation: atkFly 1.5s ease forwards;
   }
   @keyframes atkFly {
-    0%   { opacity: 1; transform: translateY(0); }
-    70%  { opacity: 1; transform: translateY(-24px); }
-    100% { opacity: 0; transform: translateY(-36px); }
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    20%  { transform: translateY(-6px) scale(1.1); }
+    80%  { opacity: 1; transform: translateY(-30px) scale(1); }
+    100% { opacity: 0; transform: translateY(-44px) scale(0.8); }
   }
+
+  /* Attack projectile flying to opponent board */
+  .atk-projectile {
+    position: fixed; pointer-events: none; z-index: 9999;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle, #3ddc84 30%, #00bfa5 100%);
+    box-shadow: 0 0 8px 3px rgba(61,220,132,0.7);
+    transition: left 0.45s cubic-bezier(0.4,0,0.2,1),
+                top  0.45s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.45s ease;
+  }
+  /* Flash the opponent board when hit */
+  @keyframes oppBoardHit {
+    0%   { filter: brightness(1); }
+    30%  { filter: brightness(2) saturate(0.5) sepia(1) hue-rotate(-10deg); }
+    100% { filter: brightness(1); }
+  }
+  .opp-board.hit { animation: oppBoardHit 0.5s ease forwards; }
 
   /* MP mode banner row */
   .mp-mode-banner {
@@ -2871,20 +2904,59 @@ function updateGarbageBar() {
 function flashGarbageWarning(amount, fromName) {
   const warn = document.getElementById('garbageWarn');
   if (!warn) return;
-  warn.textContent = '+' + amount + ' incoming';
-  warn.style.opacity = '1';
+  warn.textContent = '\u26a0\ufe0f +' + amount + ' lines!';
+  warn.classList.remove('show');
+  void warn.offsetWidth; // reflow to restart animation
+  warn.classList.add('show');
   clearTimeout(mpGarbageAnimTimer);
-  mpGarbageAnimTimer = setTimeout(() => { warn.style.opacity = '0'; }, 1800);
+  mpGarbageAnimTimer = setTimeout(() => { warn.classList.remove('show'); }, 1800);
 }
 
 function flashAttackSent(atk) {
+  // Floating bubble beside board
   const container = document.getElementById('attackSentFlash');
-  if (!container) return;
-  const el = document.createElement('div');
-  el.className = 'atk-bubble';
-  el.textContent = '\u25b2' + atk;
-  container.appendChild(el);
-  setTimeout(() => el.remove(), 1500);
+  if (container) {
+    const el = document.createElement('div');
+    el.className = 'atk-bubble';
+    el.textContent = '\u26a1 +' + atk;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+
+  // Projectile flying from board to opponent mini-board
+  const board = document.getElementById('board');
+  const oppBoard = document.getElementById('oppBoard');
+  if (!board || !oppBoard) return;
+  const br = board.getBoundingClientRect();
+  const or = oppBoard.getBoundingClientRect();
+  const startX = br.right - 5;
+  const startY = br.top + br.height * 0.45;
+  const endX   = or.left + or.width / 2;
+  const endY   = or.top  + or.height / 2;
+
+  const count = Math.min(atk, 6);
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'atk-projectile';
+    dot.style.left    = startX + 'px';
+    dot.style.top     = (startY + (i - count / 2) * 10) + 'px';
+    dot.style.opacity = '1';
+    document.body.appendChild(dot);
+    setTimeout(() => {
+      dot.style.left    = endX + 'px';
+      dot.style.top     = endY + 'px';
+      dot.style.opacity = '0';
+    }, 20 + i * 40);
+    setTimeout(() => {
+      dot.remove();
+      if (i === count - 1) {
+        oppBoard.classList.remove('hit');
+        void oppBoard.offsetWidth;
+        oppBoard.classList.add('hit');
+        setTimeout(() => oppBoard.classList.remove('hit'), 600);
+      }
+    }, 500 + i * 40);
+  }
 }
 
 // Apply pending garbage from the server's authoritative queue (called in spawnNext via hook).

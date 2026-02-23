@@ -422,12 +422,10 @@ export class TetrisRoom {
         const x    = msg.x   | 0;
         const type = bag.currentPiece;
 
-        // Step 1: apply queued incoming garbage BEFORE this piece spawns
-        if (bag._pendingGarbageLines.length > 0) {
-          const toApply = bag._pendingGarbageLines.splice(0);
-          bag.applyGarbageLines(toApply);
-          player.pendingGarbage = Math.max(0, player.pendingGarbage - toApply.length);
-        }
+        // NOTE: Garbage is applied AFTER this piece is locked (see bottom of this block).
+        // This matches the client which applies garbage in spawnNext() — *between* pieces.
+        // Applying it here (before ghostY) caused a 1-piece desync where the server and
+        // client computed ghostY on different boards.
 
         // Step 2: compute authoritative landing position
         const ghostY = sGetGhostY(bag.board, type, rot, x);
@@ -508,7 +506,16 @@ export class TetrisRoom {
         // Step 7: advance piece sequence
         bag.confirmPlacement();
 
-        // Broadcast authoritative board to opponents
+        // Step 8: apply any queued incoming garbage NOW (between this piece and next).
+        // This matches the client: applyPendingGarbage() runs in spawnNext(), i.e. AFTER
+        // locking the current piece and BEFORE the next piece appears.
+        if (bag._pendingGarbageLines.length > 0) {
+          const toApply = bag._pendingGarbageLines.splice(0);
+          bag.applyGarbageLines(toApply);
+          player.pendingGarbage = Math.max(0, player.pendingGarbage - toApply.length);
+        }
+
+        // Broadcast authoritative board to opponents (includes any garbage just applied)
         this.broadcast({type:'opponentUpdate', from:id, score:player.score, lines:player.lines, snapshot:sEncodeBoard(bag.board)}, id);
         return;
       }
