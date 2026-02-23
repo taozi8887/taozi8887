@@ -349,7 +349,7 @@ export class TetrisRoom {
       this.players.set(newId, { ws, name, ready:false, alive:true, score:0, lines:0, pendingGarbage:0, eventCount:0, lastEventSec:Math.floor(Date.now()/1000) });
       this.wsToId.set(ws, newId);
       // Persist player identity on the WS itself — survives DO hibernation
-      ws.serializeAttachment({ id:newId, name });
+      ws.serializeAttachment({ id:newId, name, alive:true, score:0, lines:0 });
       await this._persistMeta();
       ws.send(JSON.stringify({type:'joined', playerId:newId, mode:this.mode, players:this.getPlayerList()}));
       this.broadcast({type:'playerJoined', players:this.getPlayerList()}, newId);
@@ -401,7 +401,7 @@ export class TetrisRoom {
       if (this.gameState !== 'playing' || !player.alive) return;
       const nowSec = Math.floor(Date.now()/1000);
       if (nowSec !== player.lastEventSec) { player.eventCount=0; player.lastEventSec=nowSec; }
-      if (++player.eventCount > 20) return;
+      if (++player.eventCount > 40) return;  // raised from 20 — high-level play can hit 20/sec legitimately
 
       const bag  = this.bags.get(id);
       const kind = msg.kind;
@@ -459,6 +459,8 @@ export class TetrisRoom {
           bag.b2b   = isDifficult;
           player.lines += cleared;
           player.score  = Math.max(player.score, msg.score|0);
+          // Keep WS attachment up to date so hibernation restores accurate stats
+          ws.serializeAttachment({ id, name:player.name, alive:player.alive, score:player.score, lines:player.lines });
 
           if (this.mode === 'coop') {
             this.coopLines += cleared;
@@ -537,6 +539,8 @@ export class TetrisRoom {
   _handleGameOver(id, player, finalScore) {
     player.alive = false;
     player.score = Math.max(player.score, finalScore);
+    // Persist updated state (alive: false, final score) so hibernation doesn't resurrect
+    try { player.ws.serializeAttachment({ id, name:player.name, alive:false, score:player.score, lines:player.lines }); } catch {}
     this.broadcast({type:'playerOver', playerId:id, name:player.name, score:player.score});
     if (this.mode === 'versus') {
       const alive = [...this.players.entries()].filter(([,p]) => p.alive);
@@ -610,15 +614,21 @@ export class TetrisRoom {
       this.nextId    = meta.nextId    ?? 0;
       this.coopLines = meta.coopLines ?? 0;
     }
-    // Restore per-player data from WS attachments
+    // Restore per-player data from WS attachments (includes alive, score, lines)
     for (const w of this.state.getWebSockets()) {
       const att = w.deserializeAttachment();
       if (att?.id === undefined) continue;
       this.wsToId.set(w, att.id);
       this.players.set(att.id, {
-        ws: w, name: att.name ?? 'Player', ready: att.ready ?? false,
-        alive: true, score: 0, lines: 0, pendingGarbage: 0,
-        eventCount: 0, lastEventSec: Math.floor(Date.now()/1000),
+        ws: w,
+        name:          att.name  ?? 'Player',
+        ready:         att.ready ?? false,
+        alive:         att.alive ?? true,   // restore actual alive state, NOT always true
+        score:         att.score ?? 0,
+        lines:         att.lines ?? 0,      // restore accumulated lines
+        pendingGarbage: 0,
+        eventCount:    0,
+        lastEventSec:  Math.floor(Date.now()/1000),
       });
     }
     // If we woke up mid-game but can't restore board/bag state,
