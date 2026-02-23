@@ -2286,6 +2286,11 @@ function startGame() {
   if (mpWs) { mpWs.close(); mpWs = null; }
   mpIsActive = false; mpPendingGarbage = 0; mpPendingGarbageRows = [];
   document.body.classList.remove('mp');
+  // Hide MP-only UI that may have been shown during a previous MP session
+  const asp2 = document.getElementById('attackSentPanel');
+  if (asp2) asp2.style.display = 'none';
+  const coopRow2 = document.getElementById('coopProgressRow');
+  if (coopRow2) coopRow2.style.display = 'none';
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
   initGame();
@@ -2336,7 +2341,7 @@ function gameOver() {
   sfx.gameOver();
 
   // In MP mode, notify server; show a brief topped-out message while we wait for gameEnd
-  if (window.mpHooks?.onGameOver) {
+  if (mpIsActive && window.mpHooks?.onGameOver) {
     window.mpHooks.onGameOver();
     const statusEl = document.getElementById('statusText');
     if (statusEl) statusEl.innerHTML = '<strong style="color:var(--accent2)">Topped out…</strong>';
@@ -3614,6 +3619,9 @@ function mpFullReset() {
   // Hide attack panel
   const asp = document.getElementById('attackSentPanel');
   if (asp) asp.style.display = 'none';
+  // Hide coop progress bar
+  const coopRow = document.getElementById('coopProgressRow');
+  if (coopRow) coopRow.style.display = 'none';
   // Restore lobby to pristine state
   lobbySetConnected(false);
   document.getElementById('lobbyCodeInput').value         = '';
