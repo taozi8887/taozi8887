@@ -811,13 +811,13 @@
     100% { transform: translateX(-50%) scale(1); }
   }
 
-  /* Attack sent flash (floating bubbles right of board) */
+  /* Attack sent flash — lives in the left panel, visible only in MP */
   #attackSentFlash {
-    position: absolute; right: -52px; top: 50%;
-    transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: center;
-    gap: 4px; pointer-events: none; z-index: 20;
+    display: none; flex-direction: column; align-items: center;
+    gap: 4px; pointer-events: none; min-height: 48px;
+    position: relative; overflow: visible; width: 100%;
   }
+  body.mp #attackSentFlash { display: flex; }
   .atk-bubble {
     background: linear-gradient(135deg, #3ddc84, #00bfa5);
     color: #0a0a0b;
@@ -971,6 +971,11 @@
         <span class="panel-label">Best</span>
         <span class="panel-stat" id="sideBestVal">0</span>
       </div>
+      <!-- Attack sent indicator (MP only) -->
+      <div class="panel-box" id="attackSentPanel" style="display:none;">
+        <span class="panel-label">Sent</span>
+        <div id="attackSentFlash"></div>
+      </div>
     </div>
 
     <!-- Board -->
@@ -979,8 +984,8 @@
       <div class="garbage-bar-wrap"><div id="garbageBar"></div></div>
       <!-- Incoming garbage warning flash -->
       <div class="garbage-warn" id="garbageWarn"></div>
-      <!-- Attack sent flash (versus) -->
-      <div id="attackSentFlash"></div>
+      <!-- Attack projectile container (fixed-position dots travel to opp board) -->
+      <div id="attackSentFlashOld" style="display:none"></div>
       <div class="game-board" id="board"></div>
       <canvas id="particleCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
       <div class="game-overlay" id="overlay">
@@ -3049,7 +3054,7 @@ let _mpPingInterval = null;
 function mpStartKeepalive() {
   _mpPingInterval = setInterval(() => {
     if (mpWs && mpWs.readyState === WebSocket.OPEN) mpSend({ type: 'ping' });
-  }, 8_000);
+  }, 4_000);
 }
 
 function mpStopKeepalive() {
@@ -3112,9 +3117,7 @@ function handleMPMessage(msg) {
         mpUpdateLobbyStatus(msg.name + ' left the room. Waiting for a new player…');
         const _rb = document.getElementById('lobbyReadyBtn');
         if (_rb) { _rb.disabled = false; _rb.textContent = 'Ready'; }
-        if (mpPlayerId === 0) {
-          document.querySelectorAll('.mode-card').forEach(c => { c.style.pointerEvents = ''; c.style.opacity = ''; });
-        }
+        // Do NOT re-enable mode cards — mode was committed when the room was created
       } else {
         showMPStatus(msg.name + ' disconnected.', 'warn');
       }
@@ -3435,6 +3438,9 @@ function startMPGame() {
   buildOpponentBoard();
   updateOpponentStats();
   updateGarbageBar();
+  // Show the attack sent panel in MP
+  const asp = document.getElementById('attackSentPanel');
+  if (asp) asp.style.display = '';
 
   // Start game with shared seed (ensures all clients get same piece sequence)
   mpIsActive = true;
@@ -3599,6 +3605,9 @@ function mpFullReset() {
   document.getElementById('mpEndScreen').classList.remove('active');
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('leaveConfirmPopup').style.display = 'none';
+  // Hide attack panel
+  const asp = document.getElementById('attackSentPanel');
+  if (asp) asp.style.display = 'none';
   // Restore lobby to pristine state
   lobbySetConnected(false);
   document.getElementById('lobbyCodeInput').value         = '';

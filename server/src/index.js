@@ -329,9 +329,10 @@ export class TetrisRoom {
   async webSocketMessage(ws, rawMsg) {
     // ── Hibernation recovery ──────────────────────────────────────────────────
     // Cloudflare may evict this DO from memory between messages while keeping
-    // WebSocket connections alive. If that happened, in-memory Maps are empty.
-    // Rebuild them from per-WS attachments + durable storage.
-    if (this.players.size === 0) await this._rebuildFromHibernation();
+    // WebSocket connections alive. Rebuild from attachments + storage whenever
+    // the incoming WS handle is not yet in our in-memory map (covers both the
+    // fully-empty case and partial-rebuild races with multiple simultaneous WSs).
+    if (!this.wsToId.has(ws)) await this._rebuildFromHibernation();
     // ─────────────────────────────────────────────────────────────────────────
 
     let msg;
@@ -575,7 +576,7 @@ export class TetrisRoom {
   }
 
   async webSocketClose(ws) {
-    if (this.players.size === 0) await this._rebuildFromHibernation();
+    if (!this.wsToId.has(ws)) await this._rebuildFromHibernation();
     const id = this.wsToId.get(ws);
     if (id === undefined) return;
     const p = this.players.get(id);
