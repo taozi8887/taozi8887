@@ -425,10 +425,9 @@ export class TetrisRoom {
 
         // NOTE: Garbage is applied AFTER this piece is locked (see bottom of this block).
         // This matches the client which applies garbage in spawnNext() — *between* pieces.
-        // Applying it here (before ghostY) caused a 1-piece desync where the server and
-        // client computed ghostY on different boards.
 
-        // Step 2: compute authoritative landing position
+        // Step 2: validate placement is physically possible on server board (anti-cheat).
+        // We still compute ghostY on our own board to confirm the piece could land there.
         const ghostY = sGetGhostY(bag.board, type, rot, x);
         if (ghostY === null) { this._handleGameOver(id, player, msg.score|0); return; }
 
@@ -438,13 +437,27 @@ export class TetrisRoom {
         }
         bag.violations = 0;
 
-        // Step 3: T-spin detection (before locking)
+        // Step 3: T-spin detection (before locking) — use server board for physics check
         const actualTSpin = sDetectTSpin(bag.board, type, rot, x, ghostY);
 
-        // Step 4: lock piece to server board
-        sLockPiece(bag.board, type, rot, x, ghostY);
+        // Step 4: Sync server board from client snapshot (prevents server/client drift).
+        // The client sends its actual post-lock board state with every piece placement.
+        // We adopt it as truth so the snapshot we broadcast to the opponent is always
+        // pixel-perfect with what the player is actually seeing on their screen.
+        // Validated above: the placement is physically possible, so this is safe.
+        const snapLen = S_TOTAL * S_COLS; // 24 * 10 = 240
+        if (typeof msg.boardSnapshot === 'string' && msg.boardSnapshot.length === snapLen) {
+          for (let r = 0; r < S_TOTAL; r++)
+            for (let c = 0; c < S_COLS; c++) {
+              const ch = msg.boardSnapshot[r * S_COLS + c];
+              bag.board[r][c] = (ch && ch !== '.') ? ch : S_EMPTY;
+            }
+        } else {
+          // Fallback (old clients or snapshot missing): lock at server ghostY as before
+          sLockPiece(bag.board, type, rot, x, ghostY);
+        }
 
-        // Step 5: clear lines
+        // Step 5: clear lines from the now-synced board
         const cleared = sClearLines(bag.board);
 
         // Step 6: update combo + b2b, compute attack

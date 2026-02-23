@@ -1890,16 +1890,20 @@ function lockPiece() {
   spawnLockParticles(currentType, shape, currentX, currentY);
 
   // MP: send placement to server for authoritative validation + garbage routing.
-  // Server computes ghost Y, T-spin, and line clears independently from its own board.
+  // boardSnapshot is the full board state with this piece already locked in (pre-clear).
+  // The server uses it to keep its simulation in sync with the client so the opponent
+  // always sees the correct board, even if server + client boards would otherwise drift.
   if (mpIsActive && mpWs && gameStatus === 'playing') {
     mpSend({
       type:          'event',
       kind:          'piecePlaced',
+      piece:         currentType,           // piece type so server can detect bag drift
       x:             currentX,
       rot:           currentRotation,
       tSpin:         tSpin,  // hint - server validates with its own corner check
+      boardSnapshot: encodeBoardSnapshot(), // post-lock board — server adopts as truth
       score,
-      perfectClear:  false,  // TODO: implement perfect clear detection
+      perfectClear:  false,
       elapsed:       mpSprintStart ? Math.round((Date.now() - mpSprintStart) / 1000) : 0,
     });
   }
@@ -2880,10 +2884,12 @@ function renderOpponentSnapshot(snapshot) {
   }
 }
 
-// Encode the visible board (20×10) as a 200-char string for the server to relay
+// Encode the full board (all TOTAL rows including buffer zone) as a 240-char string.
+// We include the buffer zone because pieces near the top can occupy those rows.
+// The server uses this snapshot as the authoritative board state to prevent drift.
 function encodeBoardSnapshot() {
   let s = '';
-  for (let r = BUFFER; r < TOTAL; r++)
+  for (let r = 0; r < TOTAL; r++)
     for (let c = 0; c < COLS; c++)
       s += board[r][c] || '.';
   return s;
