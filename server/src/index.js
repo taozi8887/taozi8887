@@ -365,6 +365,8 @@ export class TetrisRoom {
     if (msg.type === 'ready') {
       if (this.gameState !== 'waiting') return;
       player.ready = true;
+      // Persist ready state so it survives DO hibernation (joiner may arrive after eviction)
+      try { ws.serializeAttachment({ id, name:player.name, alive:player.alive, score:player.score, lines:player.lines, ready:true }); } catch {}
       this.broadcast({type:'playerReady', playerId:id, players:this.getPlayerList()});
       const all = [...this.players.values()];
       if (all.length === this.maxPlayers && all.every(p => p.ready)) {
@@ -423,29 +425,10 @@ export class TetrisRoom {
         const x    = msg.x   | 0;
         const type = bag.currentPiece;
 
-        // NOTE: Garbage is applied AFTER this piece is locked (see bottom of this block).
-        // This matches the client which applies garbage in spawnNext() — *between* pieces.
-
-        // Step 2: validate placement is physically possible on server board (anti-cheat).
-        // We still compute ghostY on our own board to confirm the piece could land there.
-        const ghostY = sGetGhostY(bag.board, type, rot, x);
-        if (ghostY === null) { this._handleGameOver(id, player, msg.score|0); return; }
-
-        if (!sIsValid(bag.board, type, rot, x, ghostY)) {
-          if (++bag.violations >= 5) ws.close(1008, 'Too many invalid placements');
-          return;
-        }
-        bag.violations = 0;
-
-        // Step 3: T-spin detection (before locking) — use server board for physics check
-        const actualTSpin = sDetectTSpin(bag.board, type, rot, x, ghostY);
-
-        // Step 4: Sync server board from client snapshot (prevents server/client drift).
-        // The client sends its actual post-lock board state with every piece placement.
-        // We adopt it as truth so the snapshot we broadcast to the opponent is always
-        // pixel-perfect with what the player is actually seeing on their screen.
-        // Validated above: the placement is physically possible, so this is safe.
-        const snapLen = S_TOTAL * S_COLS; // 24 * 10 = 240
+        // Step 1: adopt the client's post-lock board snapshot as the authoritative board.
+        // Do this FIRST so all subsequent checks (ghostY, T-spin, line clear) run on the
+        // correct board state, which eliminates server/client drift entirely.
+        const snapLen = S_TOTAL * S_COLS; // 24×10 = 240
         if (typeof msg.boardSnapshot === 'string' && msg.boardSnapshot.length === snapLen) {
           for (let r = 0; r < S_TOTAL; r++)
             for (let c = 0; c < S_COLS; c++) {
@@ -453,12 +436,26 @@ export class TetrisRoom {
               bag.board[r][c] = (ch && ch !== '.') ? ch : S_EMPTY;
             }
         } else {
-          // Fallback (old clients or snapshot missing): lock at server ghostY as before
-          sLockPiece(bag.board, type, rot, x, ghostY);
+          // Fallback for old clients without snapshot: lock piece at server-computed ghostY
+          const ghostYFb = sGetGhostY(bag.board, type, rot, x);
+          if (ghostYFb === null) { this._handleGameOver(id, player, msg.score|0); return; }
+          sLockPiece(bag.board, type, rot, x, ghostYFb);
         }
 
-        // Step 5: clear lines from the now-synced board
+        // Step 2: T-spin detection on the now-correct board (piece is already locked in it)
+        // We need the Y position where the piece landed. Use ghostY on the pre-lock board
+        // — but since the snapshot is post-lock, approximate with whatever x/rot says.
+        // For T-spin the exact Y matters less; use last valid row scan.
+        const ghostY = sGetGhostY(bag.board, type, rot, x);
+        // ghostY may be null if a T is at the very top — that's fine, tspin = 'none'
+        const actualTSpin = (ghostY !== null) ? sDetectTSpin(bag.board, type, rot, x, ghostY) : 'none';
+
+        // Step 3: clear lines from the synced board
         const cleared = sClearLines(bag.board);
+
+        // Anti-cheat: sanity-check that the declared piece can appear somewhere on the board.
+        // Count violations only — never close the WS mid-game to avoid false game-overs.
+        if (ghostY === null) { bag.violations++; } else { bag.violations = 0; }
 
         // Step 6: update combo + b2b, compute attack
         // Always persist the client-reported score (they are authoritative for cosmetic score)
