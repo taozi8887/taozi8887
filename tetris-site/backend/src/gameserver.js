@@ -115,7 +115,7 @@ export class GameRoom {
 
         // Write active room to KV immediately on join so friends/profile can show the Watch link
         if (p.userId && this.env?.RATE_KV) {
-          this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 7200 }).catch(() => {});
+          this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 1800 }).catch(() => {});
         }
 
         // Set mode and ranked flag from first player's join
@@ -206,13 +206,13 @@ export class GameRoom {
               const lines = [];
               const holeCol = Math.floor(Math.random() * 10);
               for (let i = 0; i < netAtk; i++) lines.push({ holeCol });
-              opp.ws.send(JSON.stringify({
+              try { opp.ws.send(JSON.stringify({
                 type: 'incomingGarbage',
                 pending: opp.pendingGarbage,
                 amount:  netAtk,
                 fromName: player.name,
                 garbageLines: lines,
-              }));
+              })); } catch {}
             }
           }
 
@@ -245,21 +245,21 @@ export class GameRoom {
 
           // Relay board update to opponent
           if (opp) {
-            opp.ws.send(JSON.stringify({
+            try { opp.ws.send(JSON.stringify({
               type: 'opponentUpdate',
               score:    player.score,
               lines:    player.lines,
               snapshot: player.board,
-            }));
+            })); } catch {}
           }
 
           // Confirm to placer
-          player.ws.send(JSON.stringify({
+          try { player.ws.send(JSON.stringify({
             type: 'pieceConfirmed',
             lines: linesCleared, tSpin, atk,
             b2b: isDiff && prevB2b,
             score: player.score,
-          }));
+          })); } catch {}
         }
 
         if (kind === 'gameOver') {
@@ -297,12 +297,12 @@ export class GameRoom {
           if (typeof data.score === 'number') player.score = data.score;
           const oppHB = this.opponent(player.id);
           if (oppHB && !oppHB.over) {
-            oppHB.ws.send(JSON.stringify({
+            try { oppHB.ws.send(JSON.stringify({
               type: 'opponentUpdate',
               score:    player.score,
               lines:    player.lines,
               snapshot: player.board,
-            }));
+            })); } catch {}
           }
           // Relay to spectators: send both boards
           if (this.spectators.size > 0) {
@@ -398,7 +398,7 @@ export class GameRoom {
       p.eloBefore = p.elo ?? null; // snapshot ELO at game start for match record
       // KV already written at join time; refresh TTL for long games
       if (p.userId && this.env?.RATE_KV) {
-        this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 7200 }).catch(() => {});
+        this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 1800 }).catch(() => {});
       }
     }
     this.broadcast({
@@ -538,7 +538,13 @@ export class GameRoom {
   }
 
   cleanup() {
-    for (const p of this.players.values()) { try { p.ws.close(); } catch {} }
+    for (const p of this.players.values()) {
+      // Delete presence KV so Watch button clears on idle timeout / forced shutdown
+      if (p.userId && this.env?.RATE_KV) {
+        this.env.RATE_KV.delete('activegame:' + p.userId).catch(() => {});
+      }
+      try { p.ws.close(); } catch {}
+    }
     this.players.clear();
   }
 }
