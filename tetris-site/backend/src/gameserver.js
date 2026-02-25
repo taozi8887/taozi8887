@@ -113,6 +113,11 @@ export class GameRoom {
         };
         this.players.set(id, p);
 
+        // Write active room to KV immediately on join so friends/profile can show the Watch link
+        if (p.userId && this.env?.RATE_KV) {
+          this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 7200 }).catch(() => {});
+        }
+
         // Set mode and ranked flag from first player's join
         if (id === 0) {
           if (data.mode) this.mode = data.mode;
@@ -325,6 +330,12 @@ export class GameRoom {
       case 'closeLobby': {
         if (!player || player.id !== 0) return; // only host
         this.broadcast({ type: 'lobbyClosed' });
+        // Clear KV presence for all players in lobby
+        if (this.env?.RATE_KV) {
+          for (const p of this.players.values()) {
+            if (p.userId) this.env.RATE_KV.delete('activegame:' + p.userId).catch(() => {});
+          }
+        }
         // Expire any pending challenge for this room so it disappears from the recipient's inbox
         if (this.env?.DB && this.roomCode) {
           this.env.DB.prepare("UPDATE challenges SET status='expired' WHERE room_code=?1 AND status='pending'")
@@ -361,6 +372,10 @@ export class GameRoom {
       }
       this.players.delete(player.id);
     } else if (!this.started) {
+      // Player left the lobby before the game started — clear their presence KV
+      if (player.userId && this.env?.RATE_KV) {
+        this.env.RATE_KV.delete('activegame:' + player.userId).catch(() => {});
+      }
       this.players.delete(player.id);
       this.broadcast({ type: 'playerLeft', name: player.name, players: this.mapPlayers() });
     } else {
@@ -381,7 +396,7 @@ export class GameRoom {
       p.over = false; p.score = 0; p.lines = 0;
       p.b2bActive = false; p.combo = -1; p.pendingGarbage = 0;
       p.eloBefore = p.elo ?? null; // snapshot ELO at game start for match record
-      // Write active game to KV so the presence endpoint can surface it
+      // KV already written at join time; refresh TTL for long games
       if (p.userId && this.env?.RATE_KV) {
         this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 7200 }).catch(() => {});
       }

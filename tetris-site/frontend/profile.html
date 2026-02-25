@@ -403,6 +403,7 @@
   let me            = null;
   let profileUser   = null;
   let activeTab     = 'stats';
+  let _presencePoll = null;
 
   const params      = new URLSearchParams(location.search);
   const targetUser  = params.get('u'); // if null → own profile
@@ -426,6 +427,7 @@
         profileUser = data;
         const isOwn = me && me.id === data.id;
         renderProfile(data, isOwn);
+        if (!isOwn) startPresencePoll(targetUser);
         if (!isOwn && me) {
           // Check existing friendship status
           try {
@@ -462,6 +464,25 @@
     // Auto-switch to ?tab if requested
     const tabParam = params.get('tab');
     if (tabParam && ['stats','alltime','matches','edit','settings'].includes(tabParam)) switchTab(tabParam);
+  }
+
+  function startPresencePoll(username) {
+    if (_presencePoll) clearInterval(_presencePoll);
+    async function checkPresence() {
+      const container = document.getElementById('watchLiveContainer');
+      if (!container) return;
+      try {
+        const r = await fetch(API.BASE + '/api/presence/room/' + encodeURIComponent(username));
+        const d = await r.json();
+        if (d.active && d.roomCode) {
+          container.innerHTML = `<a href="game.html?spectate=${encodeURIComponent(d.roomCode)}" class="btn sm" style="background:rgba(200,255,74,.12);border-color:rgba(200,255,74,.3);color:var(--accent)">\uD83C\uDFAE In Game \u2014 Watch Live \u2192</a>`;
+        } else {
+          container.innerHTML = '';
+        }
+      } catch {}
+    }
+    checkPresence();
+    _presencePoll = setInterval(checkPresence, 3_000);
   }
 
   function renderProfile(data, isOwn) {
