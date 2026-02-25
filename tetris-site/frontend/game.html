@@ -319,13 +319,13 @@
   }
 
   /* Ghost colors - tinted outline */
-  .cell.ghost-I { background: rgba(50, 220, 255, 0.12); border: 1px dashed rgba(50,220,255,0.3); }
-  .cell.ghost-O { background: rgba(255, 220, 50, 0.12); border: 1px dashed rgba(255,220,50,0.3); }
-  .cell.ghost-T { background: rgba(180, 100, 255, 0.12); border: 1px dashed rgba(180,100,255,0.3); }
-  .cell.ghost-S { background: rgba(50, 230, 120, 0.12); border: 1px dashed rgba(50,230,120,0.3); }
-  .cell.ghost-Z { background: rgba(255, 80, 80, 0.12); border: 1px dashed rgba(255,80,80,0.3); }
-  .cell.ghost-J { background: rgba(70, 120, 255, 0.12); border: 1px dashed rgba(70,120,255,0.3); }
-  .cell.ghost-L { background: rgba(255, 160, 40, 0.12); border: 1px dashed rgba(255,160,40,0.3); }
+  .cell.ghost-I { background: rgba(50, 220, 255, 0.22); border: 1px solid rgba(50,220,255,0.65); }
+  .cell.ghost-O { background: rgba(255, 220, 50, 0.22); border: 1px solid rgba(255,220,50,0.65); }
+  .cell.ghost-T { background: rgba(180, 100, 255, 0.22); border: 1px solid rgba(180,100,255,0.65); }
+  .cell.ghost-S { background: rgba(50, 230, 120, 0.22); border: 1px solid rgba(50,230,120,0.65); }
+  .cell.ghost-Z { background: rgba(255, 80, 80, 0.22); border: 1px solid rgba(255,80,80,0.65); }
+  .cell.ghost-J { background: rgba(70, 120, 255, 0.22); border: 1px solid rgba(70,120,255,0.65); }
+  .cell.ghost-L { background: rgba(255, 160, 40, 0.22); border: 1px solid rgba(255,160,40,0.65); }
 
   /* Line clear flash */
   @keyframes lineFlash {
@@ -2379,6 +2379,9 @@ function lockPiece() {
     if (board[r].every(c => c !== EMPTY)) clearedRows.push(r);
   }
 
+  const isPerfectClear = clearedRows.length > 0 &&
+    board.every((row, r) => clearedRows.includes(r) || row.every(c => c === EMPTY));
+
   if (mpIsActive && mpWs && gameStatus === 'playing') {
     mpSend({
       type:          'event',
@@ -2390,7 +2393,7 @@ function lockPiece() {
       boardSnapshot: encodeBoardSnapshot(), // post-lock board - server adopts as truth
       score,
       lines:         clearedRows.length,    // lines cleared this piece (server accumulates)
-      perfectClear:  false,
+      perfectClear:  isPerfectClear,
       elapsed:       mpSprintStart ? Math.round((Date.now() - mpSprintStart) / 1000) : 0,
     });
   }
@@ -2488,6 +2491,13 @@ function handleLineClear(rows, tSpin) {
   const sorted = [...rows].sort((a, b) => b - a);
   for (const r of sorted) board.splice(r, 1);
   while (board.length < TOTAL) board.unshift(new Array(COLS).fill(EMPTY));
+
+  // Perfect clear: board entirely empty after this clear
+  if (board.every(row => row.every(c => c === EMPTY))) {
+    score += [0, 800, 1200, 1800, 2000][n] * level;
+    updateScores();
+    document.getElementById('statusText').innerHTML = '<strong style="color:var(--accent)">PERFECT CLEAR!</strong>';
+  }
 
   // Fire-and-forget flash overlay (does NOT block gameplay)
   if (flashRows.length > 0) {
@@ -2985,7 +2995,7 @@ document.addEventListener('keydown', (e) => {
   // If a keybind slot is listening, capture the key
   if (_bindingSlot) { e.preventDefault(); handleRebindKeypress(e.key); return; }
 
-  const key = e.key;
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key; // normalize caps lock
 
   // Block repeat for instant actions (rotate/drop/hold/restart)
   const instantIds = ['rotateCW','rotateCCW','rotateCCW2','hardDrop','hold','restart'];
@@ -3028,7 +3038,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
-  const key = e.key;
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key; // normalize caps lock
   delete keysDown[key];
 
   if (isActionKey('left', key)) {

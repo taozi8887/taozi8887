@@ -81,7 +81,7 @@
 <div class="container">
   <div class="page-header">
     <h2>Leaderboard <button class="elo-help-btn" onclick="showRankModal()" title="ELO rank tiers">?</button></h2>
-    <p class="muted mt-s">Ranked by ELO rating. Versus mode only.</p>
+    <p class="muted mt-s">Ranked by ELO rating. Versus mode only. <span id="lbTotal" style="color:var(--text2)"></span></p>
   </div>
 
   <!-- Rank tier filter chips -->
@@ -230,6 +230,10 @@
       totalPages = Math.ceil((data.total || 0) / LIMIT) || 1;
       renderTable(data.players || [], (page - 1) * LIMIT);
       renderPagination();
+      const totalEl = document.getElementById('lbTotal');
+      if (totalEl && data.total != null) {
+        totalEl.textContent = fmtNum(data.total) + ' player' + (data.total !== 1 ? 's' : '');
+      }
     } catch (e) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">No players yet.</td></tr>';
     }

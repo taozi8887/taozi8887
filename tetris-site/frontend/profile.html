@@ -187,6 +187,7 @@
   <!-- Tabs -->
   <div class="tabs" id="tabBar">
     <button class="tab-btn active" onclick="switchTab('stats')">Stats</button>
+    <button class="tab-btn" onclick="switchTab('alltime')">All Time</button>
     <button class="tab-btn" onclick="switchTab('matches')">Matches</button>
     <button class="tab-btn" id="editTabBtn" onclick="switchTab('edit')" style="display:none">Edit Profile</button>
     <button class="tab-btn" id="settingsTabBtn" onclick="switchTab('settings')" style="display:none">Settings</button>
@@ -269,6 +270,20 @@
       <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stCoB2B">-</div></div>
       <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stCoCombo">-</div></div>
       <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stCoTime">-</div></div>
+    </div>
+  </div>
+
+  <!-- All Time Stats tab -->
+  <div id="tabAlltime" class="hidden">
+    <p class="small muted" style="margin-bottom:1.25rem">Combined totals and bests across all game modes.</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Total games</div><div class="value" id="atGames">-</div></div>
+      <div class="stat-cell"><div class="label">Total lines</div><div class="value" id="atLines">-</div></div>
+      <div class="stat-cell"><div class="label">Total tetrises</div><div class="value" id="atTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">Total T-Spins</div><div class="value" id="atTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="atTime">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="atCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="atB2B">-</div></div>
     </div>
   </div>
 
@@ -436,7 +451,7 @@
     }
     // Auto-switch to ?tab if requested
     const tabParam = params.get('tab');
-    if (tabParam && ['stats','matches','edit','settings'].includes(tabParam)) switchTab(tabParam);
+    if (tabParam && ['stats','alltime','matches','edit','settings'].includes(tabParam)) switchTab(tabParam);
   }
 
   function renderProfile(data, isOwn) {
@@ -551,6 +566,32 @@
     setVal('stCoB2B',      fmtNum(s.coop_b2b_max));
     setVal('stCoCombo',    fmtNum(s.coop_max_combo));
     setVal('stCoTime',     fmtTime((s.coop_time_played_ms || 0) / 1000));
+
+    // -- All Time (aggregated) --
+    const atGames = (s.versus_played || 0) + (s.casual_vs_played || 0) +
+                    (s.marathon_played || 0) + (s.sprint_played || 0) + (s.coop_played || 0);
+    const atLines = (s.total_lines || 0) + (s.casual_vs_lines || 0) +
+                    (s.marathon_total_lines || 0) + (s.sprint_total_lines || 0) + (s.coop_total_lines || 0);
+    const atTetrises = (s.versus_tetrises || s.tetrises || 0) + (s.casual_vs_tetrises || 0) +
+                       (s.marathon_tetrises || 0) + (s.sprint_tetrises || 0) + (s.coop_tetrises || 0);
+    const atTSpins = (s.versus_t_spins || s.t_spins || 0) + (s.casual_vs_t_spins || 0) +
+                     (s.marathon_t_spins || 0) + (s.sprint_t_spins || 0) + (s.coop_t_spins || 0);
+    const atTimeMs = (s.versus_time_played_ms || s.time_played_ms || 0) +
+                     (s.casual_vs_time_played_ms || 0) + (s.marathon_time_played_ms || 0) +
+                     (s.sprint_time_played_ms || 0) + (s.coop_time_played_ms || 0);
+    const atCombo = Math.max(
+      s.versus_max_combo || s.max_combo || 0, s.casual_vs_max_combo || 0,
+      s.marathon_max_combo || 0, s.sprint_max_combo || 0, s.coop_max_combo || 0);
+    const atB2B = Math.max(
+      s.versus_b2b_max || s.b2b_max || 0, s.casual_vs_b2b_max || 0,
+      s.marathon_b2b_max || 0, s.sprint_b2b_max || 0, s.coop_b2b_max || 0);
+    setVal('atGames',    fmtNum(atGames));
+    setVal('atLines',    fmtNum(atLines));
+    setVal('atTetrises', fmtNum(atTetrises));
+    setVal('atTSpins',   fmtNum(atTSpins));
+    setVal('atTime',     fmtTime(atTimeMs / 1000));
+    setVal('atCombo',    fmtNum(atCombo));
+    setVal('atB2B',      fmtNum(atB2B));
 
     // Matches - backend returns recent_matches (snake_case)
     renderMatches(data.recent_matches || [], data.id);
@@ -692,6 +733,7 @@
   window.switchTab = (tab) => {
     activeTab = tab;
     document.getElementById('tabStats').classList.toggle('hidden',    tab !== 'stats');
+    document.getElementById('tabAlltime').classList.toggle('hidden',  tab !== 'alltime');
     document.getElementById('tabMatches').classList.toggle('hidden',  tab !== 'matches');
     document.getElementById('tabEdit').classList.toggle('hidden',     tab !== 'edit');
     document.getElementById('tabSettings').classList.toggle('hidden', tab !== 'settings');
