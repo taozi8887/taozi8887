@@ -73,12 +73,14 @@ export class GameRoom {
           const boardSnaps = [...this.players.values()].map(p => ({
             id: p.id, name: p.name, score: p.score, lines: p.lines, snapshot: p.board,
           }));
-          ws.send(JSON.stringify({
-            type: 'spectatorJoined', specId,
-            started: this.started, finished: this.finished,
-            mode: this.mode, seed: this.seed,
-            players: this.mapPlayers(), boards: boardSnaps,
-          }));
+          try {
+            ws.send(JSON.stringify({
+              type: 'spectatorJoined', specId,
+              started: this.started, finished: this.finished,
+              mode: this.mode, seed: this.seed,
+              players: this.mapPlayers(), boards: boardSnaps,
+            }));
+          } catch {}
           // Notify players of updated spectator count
           this.broadcast({ type: 'spectatorCount', count: this.spectators.size });
           return;
@@ -311,7 +313,7 @@ export class GameRoom {
         break;
       }
 
-      case 'ping': ws.send(JSON.stringify({ type: 'pong' })); break;
+      case 'ping': try { ws.send(JSON.stringify({ type: 'pong' })); } catch {} break;
 
       case 'chat': {
         if (!player) return;
@@ -389,6 +391,8 @@ export class GameRoom {
       sprintTarget: this.sprintTarget, coopTarget: this.coopTarget,
       players: this.mapPlayers(),
     }, true); // also notify spectators that the game started
+    // Always send initial spectator count (may be 0) so the HUD chip shows immediately
+    this.broadcast({ type: 'spectatorCount', count: this.spectators.size });
   }
 
   async endGame(payload) {
@@ -446,11 +450,13 @@ export class GameRoom {
     try {
       // Use the stats handler directly (same Worker context)
       const { handleRecordMatch } = await import('./stats.js');
-      // Disconnects are never ranked — network drops / page reloads shouldn't affect ELO
-      const effectivelyRanked = this.isRanked && payload.reason !== 'disconnect';
+      // Disconnects are never ranked for ELO/stats purposes, but we still store the
+      // original isRanked flag and add void_reason='disconnect' so the UI can show a badge.
+      const voidReason = payload.reason === 'disconnect' ? 'disconnect' : null;
       const body = JSON.stringify({
         mode: this.mode, roomCode: this.roomCode,
-        isRanked: effectivelyRanked,
+        isRanked: this.isRanked,
+        voidReason,
         p1Id: p1.userId, p2Id: p2.userId, winnerId,
         p1Score: p1.score, p2Score: p2.score,
         p1Lines: p1.lines, p2Lines: p2.lines,

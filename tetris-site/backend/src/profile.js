@@ -55,7 +55,7 @@ export async function handleGetProfile(request, env, username) {
             m.p1_id, m.p2_id, m.p1_score, m.p2_score,
             m.p1_lines, m.p2_lines,
             m.p1_elo_delta, m.p2_elo_delta,
-            m.is_ranked, m.duration_ms,
+            m.is_ranked, m.void_reason, m.duration_ms,
             m.p1_elo_before, m.p2_elo_before,
             m.p1_final_board, m.p2_final_board,
             u1.username AS p1_name, u2.username AS p2_name,

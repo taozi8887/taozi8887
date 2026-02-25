@@ -156,8 +156,8 @@
     me = await injectNavUser(null);
     if (!me) { location.href = 'login.html?redir=friends.html'; return; }
     await loadAll();
-    // Auto-refresh every 15 s (challenge polling in api.js handles the 5 s badge updates)
-    _autoRefreshInterval = setInterval(loadAll, 15_000);
+    // Auto-refresh every 5 s so the Watch button appears quickly when a friend starts a game
+    _autoRefreshInterval = setInterval(loadAll, 5_000);
   }
 
   async function loadAll() {

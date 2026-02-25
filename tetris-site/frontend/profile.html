@@ -63,6 +63,14 @@
     .mode-badge.versus-casual  { background: rgba(180,130,255,.12); color: #b48aff;  border: 1px solid rgba(180,130,255,.3);  }
     .mode-badge.sprint         { background: rgba(255,190,60,.11);  color: #ffb83a;  border: 1px solid rgba(255,190,60,.3);   }
     .mode-badge.coop           { background: rgba(74,220,160,.11);  color: #4adca0;  border: 1px solid rgba(74,220,160,.28);  }
+    /* Voided-by-disconnect badge */
+    .void-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .6rem; padding: .12rem .45rem;
+      border-radius: 999px; letter-spacing: .07em; font-family: var(--mono);
+      background: rgba(255,160,80,.1); color: #ffaa55; border: 1px solid rgba(255,160,80,.28);
+      vertical-align: middle;
+    }
     /* Expandable match detail */
     .match-row { cursor: pointer; }
     .match-row:hover { background: rgba(255,255,255,.025); border-radius: 6px; }
@@ -696,6 +704,10 @@
 
       let modeKey = m.mode === 'versus' ? (m.is_ranked ? 'versus-ranked' : 'versus-casual') : m.mode;
       const mc = modeConfig[modeKey] || { cls: 'versus-casual', label: m.mode };
+      const isVoidDisconnect = m.void_reason === 'disconnect';
+      const voidBadge = isVoidDisconnect
+        ? `<span class="void-badge" title="This ranked match ended due to a disconnect — no ELO was changed">🔌 Disconnected · No ELO</span>`
+        : '';
 
       // Detail columns
       const scoreWin  = myScore > oppScore ? 'win' : myScore < oppScore ? 'loss' : '';
@@ -766,6 +778,7 @@
             ${oppLevelBadge}
             ${oppRankBadge}
             <span class="mode-badge ${mc.cls}">${mc.label}</span>
+            ${voidBadge}
           </div>
           <div class="flex gap-s" style="align-items:center;margin-right: 1rem;">
             <span class="result-tag ${res}">${label}</span>

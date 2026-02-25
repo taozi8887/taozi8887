@@ -3777,9 +3777,8 @@ function handleMPMessage(msg) {
       const chip = document.getElementById('specCountChip');
       const val  = document.getElementById('specCountVal');
       if (chip && val) {
-        const n = msg.count || 0;
-        chip.style.display = n > 0 ? '' : 'none';
-        val.textContent = n;
+        chip.style.display = '';
+        val.textContent = msg.count ?? 0;
       }
       break;
     }
@@ -4288,6 +4287,11 @@ function startMPGame() {
     }
   }
 
+  // Show spectator count chip (reset to 0 at game start)
+  const _scChip = document.getElementById('specCountChip');
+  const _scVal  = document.getElementById('specCountVal');
+  if (_scChip && _scVal) { _scChip.style.display = ''; _scVal.textContent = '0'; }
+
   const oppDisplayed = mpOpponentData.displayName || mpOpponentData.name || 'Opponent';
   const oppNameEl = document.getElementById('oppName');
   if (oppNameEl) oppNameEl.textContent = oppDisplayed;
@@ -4608,6 +4612,9 @@ function mpFullReset() {
   if (oppCard) oppCard.style.display = 'none';
   const oppGarbagePanel = document.getElementById('oppGarbageSentPanel');
   if (oppGarbagePanel) oppGarbagePanel.style.display = 'none';
+  // Hide spectator count chip
+  const scChip = document.getElementById('specCountChip');
+  if (scChip) scChip.style.display = 'none';
   document.body.classList.remove('mp');
   document.body.classList.remove('coop');
   document.body.classList.remove('sprint');
@@ -4794,8 +4801,10 @@ async function syncSettingsFromDB() {
 // ---------------------------------------
 
 let _specWs = null;
+let _specPingInterval = null;
 
 function startSpectate(roomCode) {
+  if (_specPingInterval) { clearInterval(_specPingInterval); _specPingInterval = null; }
   if (_specWs) { _specWs.close(); _specWs = null; }
   if (mpWs) { mpWs.close(); mpWs = null; }
   mpIsActive = false;
@@ -4810,6 +4819,12 @@ function startSpectate(roomCode) {
     _specWs.send(JSON.stringify({ type: 'join', spectator: true }));
     const status = document.getElementById('specStatus');
     if (status) status.textContent = 'Connected — waiting for game…';
+    // Keepalive: send ping every 30 s so Cloudflare doesn't close idle WS
+    _specPingInterval = setInterval(() => {
+      if (_specWs && _specWs.readyState === WebSocket.OPEN) {
+        try { _specWs.send(JSON.stringify({ type: 'ping' })); } catch {}
+      }
+    }, 30_000);
   };
 
   _specWs.onmessage = (e) => {
@@ -4830,6 +4845,7 @@ function startSpectate(roomCode) {
 }
 
 function stopSpectate() {
+  if (_specPingInterval) { clearInterval(_specPingInterval); _specPingInterval = null; }
   if (_specWs) { _specWs.close(); _specWs = null; }
   const overlay = document.getElementById('specOverlay');
   if (overlay) overlay.remove();

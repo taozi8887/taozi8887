@@ -61,15 +61,18 @@ export async function handleRecordMatch(request, env) {
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON.' }, 400); }
 
-  const { mode, roomCode, isRanked = true, p1Id, p2Id, winnerId, p1Score, p2Score,
+  const { mode, roomCode, isRanked = true, voidReason = null, p1Id, p2Id, winnerId, p1Score, p2Score,
           p1Lines, p2Lines, p1Stats = {}, p2Stats = {}, durationMs = 0,
           p1EloBefore = null, p2EloBefore = null,
           p1FinalBoard = null, p2FinalBoard = null } = body;
 
+  // Disconnects never affect ELO or ranked stats (network drops shouldn't punish players)
+  const effectivelyRanked = isRanked && !voidReason;
+
   // ── ELO update (ranked versus only, both players must be registered) ──
   let p1ELODelta = 0, p2ELODelta = 0;
 
-  if (isRanked && mode === 'versus' && p1Id && p2Id) {
+  if (effectivelyRanked && mode === 'versus' && p1Id && p2Id) {
     const [p1, p2] = await Promise.all([
       env.DB.prepare('SELECT elo FROM users WHERE id = ?1').bind(p1Id).first(),
       env.DB.prepare('SELECT elo FROM users WHERE id = ?1').bind(p2Id).first(),
@@ -100,12 +103,12 @@ export async function handleRecordMatch(request, env) {
   // ── Insert match record ────────────────────────────────────────
   await env.DB.prepare(
     `INSERT INTO matches (id,mode,room_code,p1_id,p2_id,winner_id,
-      p1_score,p2_score,p1_lines,p2_lines,p1_elo_delta,p2_elo_delta,is_ranked,duration_ms,played_at,
+      p1_score,p2_score,p1_lines,p2_lines,p1_elo_delta,p2_elo_delta,is_ranked,void_reason,duration_ms,played_at,
       p1_elo_before,p2_elo_before,p1_final_board,p2_final_board)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)`
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)`
   ).bind(matchId, mode, roomCode, p1Id || null, p2Id || null, winnerId || null,
          p1Score || 0, p2Score || 0, p1Lines || 0, p2Lines || 0,
-         p1ELODelta, p2ELODelta, isRanked ? 1 : 0, durationMs, now,
+         p1ELODelta, p2ELODelta, isRanked ? 1 : 0, voidReason || null, durationMs, now,
          p1EloBefore, p2EloBefore, p1FinalBoard, p2FinalBoard).run();
 
   // ── Update per-player stats ────────────────────────────────────
@@ -113,8 +116,8 @@ export async function handleRecordMatch(request, env) {
     if (!userId) return;
     const won  = isWinner ? 1 : 0;
 
-    // Casual versus: only track casual_vs columns, no ranked columns.
-    if (!isRanked && mode === 'versus') {
+    // Casual versus OR voided ranked game: only track casual_vs columns, no ranked columns.
+    if (!effectivelyRanked && mode === 'versus') {
       await env.DB.prepare(
         `UPDATE stats SET
           games_played             = games_played  + 1,

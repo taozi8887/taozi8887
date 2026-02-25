@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS matches (
   p1_elo_delta INTEGER DEFAULT 0,   -- ELO change for p1 after this match
   p2_elo_delta INTEGER DEFAULT 0,
   is_ranked    INTEGER NOT NULL DEFAULT 1, -- 1=ranked, 0=casual
+  void_reason  TEXT NULL,                  -- 'disconnect' = ranked match voided (no ELO change)
   duration_ms  INTEGER DEFAULT 0,
   played_at    INTEGER NOT NULL     -- Unix ms
 );
