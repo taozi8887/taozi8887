@@ -27,6 +27,32 @@ const runUpload = (req, res) => new Promise((resolve, reject) => {
 const AVATAR_BUCKET = 'avatars';
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
+/**
+ * Ensure the avatar storage bucket exists.
+ * Call once at server startup – not on every upload.
+ * Safe to call even if the bucket already exists (ignores the "already exists" error).
+ * If the service role key is misconfigured this will log a clear warning once,
+ * rather than noisy per-request errors.
+ */
+export async function initAvatarBucket() {
+  const { error } = await supabase.storage.createBucket(AVATAR_BUCKET, {
+    public: true,
+    fileSizeLimit: 2 * 1024 * 1024, // 2 MB
+    allowedMimeTypes: [...ALLOWED_TYPES],
+  });
+  if (error && !error.message?.toLowerCase().includes('already exists')) {
+    if (error.statusCode === '403' || error.status === 400) {
+      console.warn(
+        `[storage] Cannot create "${AVATAR_BUCKET}" bucket — RLS or permissions issue.\n` +
+        `  → Create the bucket manually in the Supabase dashboard (Storage → New bucket → "${AVATAR_BUCKET}", Public ✔).\n` +
+        `  → Or check that SUPABASE_SERVICE_ROLE_KEY is set correctly in production.`,
+      );
+    } else {
+      console.error('[storage] initAvatarBucket error:', error);
+    }
+  }
+}
+
 //  GET /api/profile/settings 
 // IMPORTANT: declared BEFORE /:username so Express matches it first
 router.get('/settings', requireAuth, async (req, res) => {
@@ -74,12 +100,6 @@ router.post('/avatar', requireAuth, requireEmailVerified, async (req, res) => {
     const ext    = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
     const key    = `${userId}-${Date.now()}.${ext}`;
 
-    // Ensure bucket exists — create it if missing, ignore "already exists" error
-    const { error: bucketErr } = await supabase.storage.createBucket(AVATAR_BUCKET, { public: true });
-    if (bucketErr && !bucketErr.message?.includes('already exists')) {
-      console.error('POST /api/profile/avatar createBucket:', bucketErr);
-    }
-
     // Delete old avatar if exists
     const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('user_id', userId).single();
     if (prof?.avatar_url) {
@@ -91,9 +111,16 @@ router.post('/avatar', requireAuth, requireEmailVerified, async (req, res) => {
       .from(AVATAR_BUCKET)
       .upload(key, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
     if (uploadErr) {
-      if (uploadErr.statusCode === '403' || uploadErr.status === 400) {
-        console.error('POST /api/profile/avatar: Storage RLS/auth error — verify SUPABASE_SERVICE_ROLE_KEY is set correctly in production:', uploadErr);
-        return res.status(500).json({ error: 'Storage permission error. Check server configuration.' });
+      const isRlsError = uploadErr.statusCode === '403'
+        || (uploadErr.status === 400 && uploadErr.message?.toLowerCase().includes('security policy'));
+      if (isRlsError) {
+        console.error(
+          'POST /api/profile/avatar: Storage upload blocked by RLS.\n' +
+          '  → Ensure the "avatars" bucket exists and SUPABASE_SERVICE_ROLE_KEY is set correctly.\n' +
+          '  → In Supabase dashboard: Storage → avatars bucket → Policies → allow service_role INSERT.',
+          uploadErr,
+        );
+        return res.status(503).json({ error: 'Avatar storage is not configured. Please contact the administrator.' });
       }
       throw uploadErr;
     }

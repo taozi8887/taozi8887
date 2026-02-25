@@ -450,7 +450,7 @@
     } catch (e) { toast(e.message, 'error'); }
   };
 
-  window.doLogout = async () => { try { await API.auth.logout(); } catch {} location.href = 'index.html'; };
+  window.doLogout = async () => { API.clearNavCache?.(); try { await API.auth.logout(); } catch {} location.href = 'index.html'; };
 
   function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 

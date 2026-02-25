@@ -976,6 +976,7 @@
   };
 
   window.doLogout = async () => {
+    API.clearNavCache?.();
     try { await API.auth.logout(); } catch {}
     location.href = 'index.html';
   };
@@ -1001,7 +1002,7 @@
     { id: 'softDrop',   label: 'Soft Drop',    defaults: ['ArrowDown',  's'] },
     { id: 'rotateCW',   label: 'Rotate CW',    defaults: ['ArrowUp',    'x'] },
     { id: 'rotateCCW',  label: 'Rotate CCW',   defaults: ['z',      'Control'] },
-    { id: 'rotateCCW2', label: 'Rotate CCW 2', defaults: ['Alt',        ''] },
+    { id: 'rotateCCW2', label: 'Rotate 180',  defaults: ['Alt',        ''] },
     { id: 'hardDrop',   label: 'Hard Drop',    defaults: [' ',          ''] },
     { id: 'hold',       label: 'Hold Piece',   defaults: ['c',      'Shift'] },
     { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },

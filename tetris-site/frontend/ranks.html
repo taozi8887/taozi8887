@@ -203,7 +203,7 @@
   }
 
   window.doLogout = async () => {
-    try { const { default: API } = await import('./api.js'); await API.auth.logout(); } catch {}
+    try { const { default: API } = await import('./api.js'); API.clearNavCache?.(); await API.auth.logout(); } catch {}
     location.reload();
   };
 

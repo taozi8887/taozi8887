@@ -306,6 +306,7 @@
   window.hideRankModal  = () => document.getElementById('rankModal').classList.add('hidden');
 
   window.doLogout = async () => {
+    API.clearNavCache?.();
     try { await API.auth.logout(); } catch {}
     location.href = 'index.html';
   };

@@ -2,11 +2,21 @@
   'use strict';
 
   /* ── Disable everything on touch / mobile devices ── */
-  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
   if (isTouch) {
     // Undo the hardcoded cursor:none baked into each HTML file
     const fix = document.createElement('style');
-    fix.textContent = 'html, *, *::before, *::after { cursor: auto !important; }';
+    fix.textContent = `
+      html, *, *::before, *::after { cursor: auto !important; }
+      button, [role="button"], a, select, label, summary { cursor: pointer !important; }
+      input[type="text"], input[type="email"], input[type="password"],
+      input[type="search"], input[type="url"], input[type="tel"],
+      input[type="number"], textarea { cursor: text !important; }
+      * { user-select: none; -webkit-user-select: none; }
+      input, textarea, [contenteditable="true"] {
+        user-select: text !important; -webkit-user-select: text !important;
+      }
+    `;
     document.head.appendChild(fix);
     document.documentElement.style.cursor = '';
     // Still run page-transition reveal so bfcache / back-button works

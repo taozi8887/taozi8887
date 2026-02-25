@@ -20,7 +20,7 @@ if (missingEnv.length) {
 import { GameRoom }     from './gameroom.js';
 import { MatchmakingQueue } from './matchmaking.js';
 import { router as authRouter    } from './auth.js';
-import { router as profileRouter } from './profile.js';
+import { router as profileRouter, initAvatarBucket } from './profile.js';
 import { router as statsRouter   } from './stats.js';
 import { router as friendsRouter } from './friends.js';
 
@@ -214,4 +214,8 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-httpSv.listen(PORT, () => console.log(`Tetris backend running on :${PORT}`));
+httpSv.listen(PORT, () => {
+  console.log(`Tetris backend running on :${PORT}`);
+  // Ensure avatar storage bucket exists (runs once, safe to re-run)
+  initAvatarBucket().catch(() => {});
+});

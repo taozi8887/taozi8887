@@ -475,6 +475,7 @@
   }
 
   window.logout = async () => {
+    API.clearNavCache?.();
     try { await API.auth.logout(); } catch {}
     location.reload();
   };

@@ -177,7 +177,9 @@ const health = {
 
 /* ── Exported API object ──────────────────────────────────────── */
 
-const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, BASE };
+const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, BASE,
+  clearNavCache: () => { try { sessionStorage.removeItem(_NAV_CACHE_KEY); } catch {} },
+};
 export default API;
 
 /* ── Helpers exposed as named exports ─────────────────────────── */
@@ -191,12 +193,91 @@ export async function getMe() {
   catch { return null; }
 }
 
+/* ── Navbar state cache (sessionStorage) ─────────────────────────
+   Stores { loggedIn: bool, username, avatarSrc } so the next page
+   load can paint the correct navbar state synchronously, eliminating
+   the "Sign in → logged-in name" flash on every navigation.
+─────────────────────────────────────────────────────────────────── */
+const _NAV_CACHE_KEY = '_navUserCache';
+
+function _readNavCache() {
+  try { return JSON.parse(sessionStorage.getItem(_NAV_CACHE_KEY)); } catch { return null; }
+}
+function _writeNavCache(me) {
+  try {
+    const v = me
+      ? { loggedIn: true, username: me.username, avatarSrc: _navAvatarSrc(me) }
+      : { loggedIn: false };
+    sessionStorage.setItem(_NAV_CACHE_KEY, JSON.stringify(v));
+  } catch {}
+}
+export function clearNavCache() {
+  try { sessionStorage.removeItem(_NAV_CACHE_KEY); } catch {}
+}
+function _navAvatarSrc(me) {
+  if (!me) return '';
+  const rawUrl = (me.avatarUrl || (me.profile?.avatar_key ? API.profile.avatarUrl(me.profile.avatar_key) : '')) || '';
+  return rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE + rawUrl) : '';
+}
+
+/**
+ * Synchronously paint the navbar from the cached state so there's no
+ * visible "Sign in" flash while the async auth check completes.
+ */
+function _applyNavCache() {
+  const cached = _readNavCache();
+  if (!cached) {
+    // No cache yet – hide Sign in to avoid the flash; it'll appear after auth check
+    document.getElementById('navLoginBtn')?.classList.add('hidden');
+    document.getElementById('navLogoutBtn')?.classList.add('hidden');
+    return;
+  }
+  if (!cached.loggedIn) {
+    document.getElementById('navLoginBtn')?.classList.remove('hidden');
+    document.getElementById('navLogoutBtn')?.classList.add('hidden');
+    document.getElementById('navUsername')?.classList.add('hidden');
+    const av = document.getElementById('navAvatar'); if (av) av.style.display = 'none';
+    const fl = document.getElementById('navFriendsLink'); if (fl) fl.style.display = 'none';
+    document.getElementById('navSettingsBtn')?.classList.add('hidden');
+    return;
+  }
+  // Logged-in state
+  document.getElementById('navLoginBtn')?.classList.add('hidden');
+  document.getElementById('navLogoutBtn')?.classList.remove('hidden');
+  const fl = document.getElementById('navFriendsLink'); if (fl) fl.style.display = '';
+  document.getElementById('navSettingsBtn')?.classList.remove('hidden');
+  const username = document.getElementById('navUsername');
+  if (username && cached.username) {
+    username.textContent = cached.username;
+    username.classList.remove('hidden');
+  }
+  const av = document.getElementById('navAvatar');
+  if (av) {
+    av.style.display = '';
+    if (cached.avatarSrc) {
+      av.innerHTML = `<img src="${cached.avatarSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.remove()">`;
+    } else if (cached.username) {
+      av.textContent = cached.username.slice(0, 2).toUpperCase();
+    }
+  }
+}
+
+// Apply cache immediately when this module is imported
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _applyNavCache, { once: true });
+  } else {
+    _applyNavCache();
+  }
+}
+
 /**
  * Inject current user info into the navbar.
  * Expects elements with ids: navUsername, navAvatar, navLoginBtn, navLogoutBtn.
  */
 export async function injectNavUser(me) {
   if (!me) me = await getMe();
+  _writeNavCache(me); // update cache with fresh result
   const loginBtn  = document.getElementById('navLoginBtn');
   const logoutBtn = document.getElementById('navLogoutBtn');
   const username  = document.getElementById('navUsername');

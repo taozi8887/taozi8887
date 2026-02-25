@@ -1523,7 +1523,7 @@ const KEYBIND_DEFS = [
   { id: 'softDrop',   label: 'Soft Drop',    defaults: ['ArrowDown',  's'] },
   { id: 'rotateCW',   label: 'Rotate CW',    defaults: ['ArrowUp',    'x'] },
   { id: 'rotateCCW',  label: 'Rotate CCW',   defaults: ['z',      'Control'] },
-  { id: 'rotateCCW2', label: '180',          defaults: ['Alt',        ''] },
+  { id: 'rotateCCW2', label: 'Rotate 180',    defaults: ['Alt',        ''] },
   { id: 'hardDrop',   label: 'Hard Drop',    defaults: [' ',          ''] },
   { id: 'hold',       label: 'Hold Piece',   defaults: ['c',      'Shift'] },
   { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },
@@ -1575,7 +1575,12 @@ function loadSettings() {
 
 function saveSettingsToStorage() {
   try {
-    localStorage.setItem('tetrisSettings3', JSON.stringify({ keybinds, dasDelay, dasInterval, soundEnabled }));
+    const s = { keybinds, dasDelay, dasInterval, soundEnabled };
+    localStorage.setItem('tetrisSettings3', JSON.stringify(s));
+    // Also persist to DB when the user is logged in (fire-and-forget)
+    if (window._authUser) {
+      API.profile.saveSettings({ settings: s }).catch(() => {});
+    }
   } catch(e) {}
 }
 
@@ -2177,6 +2182,35 @@ function tryRotate(dir) {
     }
   }
   console.log('  ALL KICKS FAILED');
+  return false;
+}
+
+// 180-degree spin: try CW×2, fall back to CCW×2, restore on full failure.
+function tryRotate180() {
+  if (currentType === 'O') return false;
+  // Snapshot state that tryRotate modifies
+  const savedX = currentX, savedY = currentY, savedRot = currentRotation;
+  const savedLowestY = lowestY, savedLockMoves = lockMoves;
+  const savedLastSpin = lastWasSpin, savedLastKick = lastKickIdx;
+
+  function restore() {
+    currentX = savedX; currentY = savedY; currentRotation = savedRot;
+    lowestY = savedLowestY; lockMoves = savedLockMoves;
+    lastWasSpin = savedLastSpin; lastKickIdx = savedLastKick;
+  }
+
+  // CW × 2
+  if (tryRotate(1)) {
+    if (tryRotate(1)) return true;
+    restore();
+  } else {
+    // CCW × 2
+    if (tryRotate(-1)) {
+      if (tryRotate(-1)) return true;
+      restore();
+    }
+  }
+  restore();
   return false;
 }
 
@@ -3083,8 +3117,10 @@ document.addEventListener('keydown', (e) => {
     if (!keysDown['_sd']) { keysDown['_sd'] = true; startSoftDropRepeat(); }
   } else if (isActionKey('rotateCW', key)) {
     e.preventDefault(); tryRotate(1); render();
-  } else if (isActionKey('rotateCCW', key) || isActionKey('rotateCCW2', key)) {
+  } else if (isActionKey('rotateCCW', key)) {
     e.preventDefault(); e.stopPropagation(); tryRotate(-1); render();
+  } else if (isActionKey('rotateCCW2', key)) {
+    e.preventDefault(); e.stopPropagation(); tryRotate180(); render();
   } else if (isActionKey('hardDrop', key)) {
     e.preventDefault(); hardDrop(); render();
   } else if (isActionKey('hold', key)) {
@@ -4775,6 +4811,7 @@ async function refreshElo() {
 }
 
 async function gameLogout() {
+  try { sessionStorage.removeItem('_navUserCache'); } catch {}
   try {
     await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' });
   } catch {}
