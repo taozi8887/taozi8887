@@ -816,6 +816,7 @@
     animation: mqFoundPop .4s cubic-bezier(.175,.885,.32,1.275) both;
   }
   @keyframes mqFoundPop { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:scale(1); } }
+  @keyframes specEndPop  { from { opacity:0; transform:scale(.88) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
   .mq-found-vs { display: flex; align-items: center; gap: 1.5rem; justify-content: center; padding: .75rem 0; }
   .mq-found-player { display: flex; flex-direction: column; gap: .25rem; min-width: 90px; }
   .mq-found-name { font-family: var(--serif); font-size: 1.1rem; letter-spacing: -.02em; }
@@ -3777,8 +3778,19 @@ function handleMPMessage(msg) {
       const chip = document.getElementById('specCountChip');
       const val  = document.getElementById('specCountVal');
       if (chip && val) {
+        const prev = parseInt(val.textContent) || 0;
+        const n = msg.count ?? 0;
         chip.style.display = '';
-        val.textContent = msg.count ?? 0;
+        val.textContent = n;
+        // Notify the player when someone starts (or stops) watching
+        if (n > prev && mpIsActive) {
+          chip.classList.remove('pop');
+          void chip.offsetWidth;
+          chip.classList.add('pop');
+          setTimeout(() => chip.classList.remove('pop'), 1500);
+          const watchMsg = n === 1 ? '\u{1F441} Someone is spectating!' : `\u{1F441} ${n} spectators watching`;
+          showMPStatus(watchMsg, 'info');
+        }
       }
       break;
     }
@@ -4849,6 +4861,8 @@ function stopSpectate() {
   if (_specWs) { _specWs.close(); _specWs = null; }
   const overlay = document.getElementById('specOverlay');
   if (overlay) overlay.remove();
+  const endOverlay = document.getElementById('specEndOverlay');
+  if (endOverlay) endOverlay.remove();
   nav('lobby');
 }
 window.stopSpectate = stopSpectate;
@@ -4875,7 +4889,6 @@ function _buildSpectateUI(roomCode) {
       <div id="specBoard0" class="spec-board-wrap"></div>
       <div id="specBoard1" class="spec-board-wrap"></div>
     </div>
-    <div id="specGameEndMsg" style="display:none;font-family:var(--serif);font-size:2.5rem;color:var(--accent);text-align:center;margin-top:1rem"></div>
   `;
   document.body.appendChild(div);
   // Attach exit via addEventListener so it works inside module scope
@@ -4918,20 +4931,26 @@ function _handleSpectateMessage(data) {
   } else if (data.type === 'spectatorUpdate') {
     (data.boards || []).forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
   } else if (data.type === 'spectatorGameEnd') {
-    const msgEl = document.getElementById('specGameEndMsg');
-    if (msgEl) {
-      const scores = data.scores || [];
-      const winner = scores.length ? scores.reduce((a, b) => (a.score || 0) >= (b.score || 0) ? a : b) : null;
-      msgEl.textContent = winner ? (winner.name + ' wins!') : 'Game Over';
-      msgEl.style.display = 'block';
+    const scores = data.scores || [];
+    const gt = data.gameType || '';
+    // Use server-authoritative winner ID — never infer from score
+    let winnerName = null;
+    if (data.winner != null) {
+      const ws = scores.find(s => s.id === data.winner);
+      winnerName = ws ? (ws.displayName || ws.name) : (data.winnerName || null);
+    } else if (data.winnerName) {
+      winnerName = data.winnerName;
     }
-    if (status) status.textContent = 'Match ended — you can exit or wait for the next game';
+    const statusEl = document.getElementById('specStatus');
+    if (statusEl) statusEl.textContent = 'Match ended — you can exit or wait for the next game';
+    _showSpecEndOverlay(winnerName, gt, data.reason);
   } else if (data.type === 'error') {
-    if (status) status.textContent = 'Error: ' + (data.reason || 'unknown');
+    const statusEl2 = document.getElementById('specStatus');
+    if (statusEl2) statusEl2.textContent = 'Error: ' + (data.reason || 'unknown');
   } else if (data.type === 'reset') {
-    const msgEl = document.getElementById('specGameEndMsg');
-    if (msgEl) msgEl.style.display = 'none';
-    if (status) status.textContent = 'Waiting for rematch…';
+    _hideSpecEndOverlay();
+    const statusEl3 = document.getElementById('specStatus');
+    if (statusEl3) statusEl3.textContent = 'Waiting for rematch…';
   }
 }
 
@@ -4964,6 +4983,57 @@ function _initSpecBoard(boardIdx, playerName, elo, xp, isPlaceholder) {
       </div>`}
     </div>
   `;
+}
+
+function _showSpecEndOverlay(winnerName, gameType, reason) {
+  // Remove any existing overlay first
+  const old = document.getElementById('specEndOverlay');
+  if (old) old.remove();
+
+  let title, sub, color;
+  if (reason === 'disconnect') {
+    title = winnerName ? (winnerName + ' wins') : 'Game Over';
+    sub = 'Opponent disconnected — no ELO changed';
+    color = 'var(--accent3)';
+  } else if (!winnerName) {
+    title = 'Game Over';
+    sub = gameType === 'coopWin' ? 'Co-op clear!' : gameType === 'coopLoss' ? 'Co-op topped out' : 'Draw';
+    color = 'var(--text2)';
+  } else {
+    title = winnerName + ' wins!';
+    sub = gameType === 'sprintWin' ? 'Sprint Race' : gameType === 'versusEnd' ? 'Versus' : '';
+    color = 'var(--accent3)';
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'specEndOverlay';
+  overlay.style.cssText = [
+    'position:fixed;inset:0;z-index:600',
+    'display:flex;align-items:center;justify-content:center',
+    'background:rgba(10,10,11,.78);backdrop-filter:blur(8px)',
+  ].join(';');
+  overlay.innerHTML = `
+    <div style="
+      background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:2.5rem 3rem;text-align:center;max-width:380px;width:90%;
+      box-shadow:0 0 60px rgba(0,0,0,.6);
+      animation:specEndPop .25s cubic-bezier(.34,1.56,.64,1) both;
+    ">
+      <div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.75rem">Match Over</div>
+      <div style="font-family:var(--serif);font-size:2.6rem;line-height:1.1;color:${color};margin-bottom:.5rem">${escHtml(title)}</div>
+      ${sub ? `<div style="font-size:.8rem;color:var(--text3);margin-bottom:1.5rem">${escHtml(sub)}</div>` : '<div style="margin-bottom:1.5rem"></div>'}
+      <button type="button" class="btn sm ghost" id="specEndExitBtn" style="margin-right:.5rem">Exit</button>
+      <button type="button" class="btn sm" id="specEndWaitBtn">Wait for rematch</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('specEndExitBtn').addEventListener('click', stopSpectate);
+  document.getElementById('specEndWaitBtn').addEventListener('click', _hideSpecEndOverlay);
+}
+
+function _hideSpecEndOverlay() {
+  const el = document.getElementById('specEndOverlay');
+  if (el) el.remove();
 }
 
 function _renderSpecBoard(boardIdx, snapshotStr, score, lines) {
