@@ -140,6 +140,12 @@ export class GameRoom {
             atk = VERSUS_ATK[Math.min(linesCleared, 4)] || 0;
           }
 
+          // Perfect clear: overrides attack to 10 lines and counts as difficult (B2B)
+          if (data.perfectClear && linesCleared > 0) {
+            atk = 10;
+            isDiff = true;
+          }
+
           if (isDiff && prevB2b) atk += B2B_BONUS;
           player.b2bActive = isDiff;
 

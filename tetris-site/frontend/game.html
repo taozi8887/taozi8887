@@ -1520,7 +1520,7 @@ const KEYBIND_DEFS = [
   { id: 'softDrop',   label: 'Soft Drop',    defaults: ['ArrowDown',  's'] },
   { id: 'rotateCW',   label: 'Rotate CW',    defaults: ['ArrowUp',    'x'] },
   { id: 'rotateCCW',  label: 'Rotate CCW',   defaults: ['z',      'Control'] },
-  { id: 'rotateCCW2', label: 'Rotate CCW 2', defaults: ['Alt',        ''] },
+  { id: 'rotateCCW2', label: '180',          defaults: ['Alt',        ''] },
   { id: 'hardDrop',   label: 'Hard Drop',    defaults: [' ',          ''] },
   { id: 'hold',       label: 'Hold Piece',   defaults: ['c',      'Shift'] },
   { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },
@@ -2451,6 +2451,14 @@ function handleLineClear(rows, tSpin) {
   lines += n;
   // (MP attack routing is handled server-side via the piecePlaced event)
 
+  // Marathon 300-line cap: end the game as a clear rather than letting it run forever
+  if (!mpIsActive && window._soloMode === 'marathon' && lines >= 300) {
+    lines = 300;
+    updateScores();
+    marathonClear();
+    return;
+  }
+
   // In versus, the server broadcasts a shared level (gravitySync). Don't change
   // drop speed locally — wait for the server's authoritative level message.
   if (!mpIsActive || mpMode !== 'versus') {
@@ -2530,6 +2538,12 @@ function spawnNext() {
   fillNextQueue();
 
   if (!spawnPiece(type)) return;
+
+  // 20G mode: instantly snap piece to bottom on spawn (solo marathon, level 20+)
+  if (!mpIsActive && level >= 20) {
+    currentY = getGhostY();
+    lockMoves = 0; // fresh lock-move counter at the floor
+  }
 
   canHold = true;
   clearLockTimer();
@@ -2850,6 +2864,41 @@ function initGame(sharedSeed) {
   nextPieceType = '';
   fillNextQueue();
   spawnNext();
+}
+
+// Marathon 300-line clear — shows a victory screen instead of Game Over
+function marathonClear() {
+  gameStatus = 'over';
+  clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+  sfx.levelUp();
+  if (score > bestScore) { bestScore = score; try { localStorage.setItem('tetrisBest', bestScore); } catch {} }
+  if (lines > bestLines) { bestLines = lines; try { localStorage.setItem('tetrisBestLines', bestLines); } catch {} }
+  const _mXpP = window.recordSoloGame?.({ mode: 'marathon', score, lines, level,
+    timeMs: Date.now() - soloStartTime, tetrises: localTetrises, tSpins: localTSpins,
+    b2bMax: localB2bMax, maxCombo: localMaxCombo });
+  if (_mXpP && typeof _mXpP.then === 'function') {
+    _mXpP.then(xpResult => {
+      if (!xpResult) return;
+      const xpEl = document.getElementById('overlayXpPanel');
+      if (!xpEl) return;
+      const lvUpHTML = xpResult.leveledUp
+        ? `<div class="xp-level-up-banner">\u2605 Level Up! \u2192 ${xpResult.level} \u2605</div>` : '';
+      xpEl.innerHTML = `<div class="xp-gain-amount">+${xpResult.xpGained} XP</div>` +
+        `<div style="font-size:.7rem;color:var(--text3)">Level ${xpResult.level}</div>` + lvUpHTML;
+      xpEl.style.display = 'flex';
+    }).catch(() => {});
+  }
+  const overlay = document.getElementById('overlay');
+  document.getElementById('overlayTitle').textContent = 'Marathon Clear!';
+  document.getElementById('overlayTitle').style.color = 'var(--accent)';
+  document.getElementById('overlayScore').textContent = score;
+  document.getElementById('overlaySub').textContent = '300 lines \u00b7 level ' + level;
+  document.getElementById('overlaySPBtns').style.display    = 'flex';
+  document.getElementById('overlayMPBtns').style.display    = 'none';
+  document.getElementById('overlayMPScoreList').style.display = 'none';
+  const _mXpPanelEl = document.getElementById('overlayXpPanel');
+  if (_mXpPanelEl) { _mXpPanelEl.innerHTML = ''; _mXpPanelEl.style.display = 'none'; }
+  overlay.classList.add('active');
 }
 
 function gameOver() {
@@ -3593,6 +3642,7 @@ window.mpHooks = {
 function mpConnect(roomCode, playerName, mode, isRanked = true) {
   return new Promise((resolve, reject) => {
     if (mpWs) { mpWs.close(); mpWs = null; }
+    mpRoomCode = roomCode;
     mpWs = new WebSocket(`${MP_SERVER_WS}/room/${roomCode}`);
 
     let resolved = false;
@@ -3630,9 +3680,24 @@ function mpConnect(roomCode, playerName, mode, isRanked = true) {
 
     mpWs.onclose = () => {
       mpStopKeepalive();
+      stopMPHeartbeat();
       if (mpIsActive) {
-        showMPStatus('Server disconnected.', 'error');
+        // Lost connection mid-game — show a proper end screen so the player isn't stranded
         mpIsActive = false;
+        clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
+        gameStatus = 'over';
+        document.getElementById('overlay').classList.remove('active');
+        const _dcTitle = document.getElementById('mpEndTitle');
+        const _dcSub   = document.getElementById('mpEndSub');
+        const _dcElo   = document.getElementById('mpEndEloSection');
+        const _dcTable = document.getElementById('mpEndTable');
+        const _dcXp    = document.getElementById('mpEndXpSection');
+        if (_dcTitle) { _dcTitle.textContent = 'Disconnected'; _dcTitle.style.color = 'var(--accent2)'; }
+        if (_dcSub)   _dcSub.textContent = 'Connection to server was lost.';
+        if (_dcElo)   _dcElo.style.display = 'none';
+        if (_dcTable) _dcTable.style.display = 'none';
+        if (_dcXp)    _dcXp.style.display = 'none';
+        document.getElementById('mpEndScreen').classList.add('active');
       } else if (window._mqInFoundPhase) {
         // Server dropped us during the match-found countdown — cancel and re-queue
         if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
@@ -4659,6 +4724,8 @@ async function refreshElo() {
       window._authUser.elo = me.elo;
       if (typeof me.xp === 'number') window._authUser.xp = me.xp;
     }
+    // Refresh the queue screen ELO/rank display with the updated value
+    if (typeof updateQueueCards === 'function') updateQueueCards();
   } catch {}
 }
 
@@ -4749,7 +4816,13 @@ async function init() {
       syncSettingsFromDB(); // pull latest settings from DB into localStorage (non-blocking)
     } else applyAuthToNav(null);
   } catch { applyAuthToNav(null); }
-  handleUrlParams();
+  // Defer WS connections until after page load to prevent
+  // "connection interrupted while page was loading" browser errors
+  if (document.readyState === 'complete') {
+    handleUrlParams();
+  } else {
+    window.addEventListener('load', handleUrlParams, { once: true });
+  }
 }
 
 init();

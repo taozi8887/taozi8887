@@ -54,6 +54,41 @@
       display: inline-block; margin: 0 .1rem;
     }
 
+    /* Rebind table */
+    .rebind-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .rebind-table th {
+      font-size: .65rem; color: var(--text3); text-transform: uppercase;
+      letter-spacing: .1em; font-weight: 400;
+      padding: 0 .75rem .625rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .rebind-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .rebind-table tr:last-child td { border-bottom: none; }
+    .rebind-table td:first-child { color: var(--text2); }
+    .rebind-slots { display: flex; gap: .4rem; }
+    .kbslot {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .2rem .6rem;
+      font-family: var(--mono); font-size: .68rem; color: var(--text);
+      cursor: pointer; min-width: 52px; text-align: center;
+      transition: border-color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .kbslot:hover { border-color: var(--accent); background: var(--bg2); }
+    .kbslot.empty { color: var(--text3); border-style: dashed; }
+    .kbslot.listening {
+      border-color: var(--accent); background: rgba(200,255,74,.08);
+      color: var(--accent); animation: pulse-border .7s ease infinite alternate;
+    }
+    @keyframes pulse-border {
+      from { box-shadow: 0 0 0 1px rgba(200,255,74,.15); }
+      to   { box-shadow: 0 0 0 3px rgba(200,255,74,.35); }
+    }
+    .rebind-hint { font-size: .7rem; color: var(--text3); margin-top: .875rem; }
+    .rebind-actions { display: flex; gap: .6rem; margin-top: 1rem; justify-content: flex-end; }
+    .rebind-save-notice { font-size: .7rem; color: var(--accent); opacity: 0; transition: opacity .4s; margin-right: auto; align-self: center; }
+    .rebind-save-notice.show { opacity: 1; }
+
     /* Scoring rows */
     .score-row {
       display: flex; justify-content: space-between; align-items: baseline;
@@ -154,26 +189,17 @@
   <!-- Keyboard Controls -->
   <div class="section-card">
     <h3>Keyboard Controls</h3>
-    <table class="key-table">
+    <table class="rebind-table" id="rebindTable">
       <thead>
-        <tr><th>Action</th><th>Default Keys</th></tr>
+        <tr><th>Action</th><th>Slot 1</th><th>Slot 2</th></tr>
       </thead>
-      <tbody>
-        <tr><td>Move Left</td><td><kbd class="kbd">←</kbd> <kbd class="kbd">A</kbd></td></tr>
-        <tr><td>Move Right</td><td><kbd class="kbd">→</kbd> <kbd class="kbd">D</kbd></td></tr>
-        <tr><td>Soft Drop</td><td><kbd class="kbd">↓</kbd> <kbd class="kbd">S</kbd></td></tr>
-        <tr><td>Hard Drop</td><td><kbd class="kbd">Space</kbd></td></tr>
-        <tr><td>Rotate Clockwise</td><td><kbd class="kbd">↑</kbd> <kbd class="kbd">X</kbd></td></tr>
-        <tr><td>Rotate Counter-Clockwise</td><td><kbd class="kbd">Z</kbd> <kbd class="kbd">Ctrl</kbd> <kbd class="kbd">Alt</kbd></td></tr>
-        <tr><td>Hold Piece</td><td><kbd class="kbd">C</kbd> <kbd class="kbd">Shift</kbd></td></tr>
-        <tr><td>Pause / Resume</td><td><kbd class="kbd">Esc</kbd> <kbd class="kbd">P</kbd></td></tr>
-        <tr><td>Restart</td><td><kbd class="kbd">R</kbd></td></tr>
-      </tbody>
+      <tbody id="rebindBody"></tbody>
     </table>
-    <p style="font-size:.72rem;color:var(--text3);margin-top:1rem;">
-      All keybinds are fully rebindable in-game via <strong style="color:var(--text2)">Settings → Key Bindings</strong>.<br>
-      Competitive recommended settings: <strong style="color:var(--text2)">DAS 133ms, ARR 0ms</strong>.
-    </p>
+    <p class="rebind-hint">Click any key to rebind it — press <strong style="color:var(--text2)">Esc</strong> to clear a slot. Changes save instantly and apply in-game.</p>
+    <div class="rebind-actions">
+      <span class="rebind-save-notice" id="rebindSaveNotice">✓ Saved</span>
+      <button class="btn sm" onclick="resetRebindDefaults()">Reset Defaults</button>
+    </div>
   </div>
 
   <!-- Scoring -->
@@ -295,6 +321,130 @@
 
 <div id="toast-container"></div>
 
+<script>
+// ── Keybind system (mirrors game.html — same localStorage key: tetrisSettings3) ──
+const KEYBIND_DEFS = [
+  { id: 'left',       label: 'Move Left',    defaults: ['ArrowLeft',  'a'] },
+  { id: 'right',      label: 'Move Right',   defaults: ['ArrowRight', 'd'] },
+  { id: 'softDrop',   label: 'Soft Drop',    defaults: ['ArrowDown',  's'] },
+  { id: 'hardDrop',   label: 'Hard Drop',    defaults: [' ',          ''] },
+  { id: 'rotateCW',   label: 'Rotate CW',    defaults: ['ArrowUp',    'x'] },
+  { id: 'rotateCCW',  label: 'Rotate CCW',   defaults: ['z',      'Control'] },
+  { id: 'rotateCCW2', label: '180',          defaults: ['Alt',        ''] },
+  { id: 'hold',       label: 'Hold Piece',   defaults: ['c',      'Shift'] },
+  { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },
+  { id: 'restart',    label: 'Restart',      defaults: ['r',          ''] },
+];
+
+const KEY_DISPLAY = {
+  ' ': 'Space', ArrowLeft: '← Left', ArrowRight: '→ Right',
+  ArrowUp: '↑ Up', ArrowDown: '↓ Down', Escape: 'Esc',
+  Control: 'Ctrl', Shift: 'Shift', Alt: 'Alt',
+  Tab: 'Tab', CapsLock: 'Caps',
+};
+const displayKey = k => KEY_DISPLAY[k] || k || '';
+
+let keybinds = {};
+let _listening = null; // { defId, slotIndex, btnEl }
+
+function loadKeybinds() {
+  const defaults = {};
+  KEYBIND_DEFS.forEach(d => { defaults[d.id] = [...d.defaults]; });
+  keybinds = { ...defaults };
+  try {
+    const raw = localStorage.getItem('tetrisSettings3');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.keybinds) Object.assign(keybinds, s.keybinds);
+    }
+  } catch {}
+}
+
+function saveKeybinds() {
+  try {
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem('tetrisSettings3') || '{}'); } catch {}
+    s.keybinds = keybinds;
+    localStorage.setItem('tetrisSettings3', JSON.stringify(s));
+  } catch {}
+  // Flash the save notice
+  const notice = document.getElementById('rebindSaveNotice');
+  if (notice) {
+    notice.classList.add('show');
+    clearTimeout(notice._t);
+    notice._t = setTimeout(() => notice.classList.remove('show'), 1500);
+  }
+}
+
+function buildRebindTable() {
+  const tbody = document.getElementById('rebindBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  KEYBIND_DEFS.forEach(def => {
+    const keys = keybinds[def.id] || def.defaults;
+    const tr = document.createElement('tr');
+    const tdLabel = document.createElement('td');
+    tdLabel.textContent = def.label;
+    tr.appendChild(tdLabel);
+    for (let i = 0; i < 2; i++) {
+      const k = keys[i] || '';
+      const td = document.createElement('td');
+      const btn = document.createElement('button');
+      btn.className = 'kbslot' + (k ? '' : ' empty');
+      btn.textContent = displayKey(k) || '—';
+      btn.addEventListener('click', () => startListening(def.id, i, btn));
+      td.appendChild(btn);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function startListening(defId, slotIndex, btnEl) {
+  if (_listening) {
+    _listening.btnEl.classList.remove('listening');
+    const cur = keybinds[_listening.defId]?.[_listening.slotIndex] || '';
+    _listening.btnEl.textContent = displayKey(cur) || '—';
+    _listening.btnEl.className = 'kbslot' + (cur ? '' : ' empty');
+  }
+  _listening = { defId, slotIndex, btnEl };
+  btnEl.classList.add('listening');
+  btnEl.textContent = 'Press key…';
+}
+
+document.addEventListener('keydown', e => {
+  if (!_listening) return;
+  e.preventDefault(); e.stopPropagation();
+  const { defId, slotIndex, btnEl } = _listening;
+  _listening = null;
+  btnEl.classList.remove('listening');
+
+  if (e.key === 'Escape') {
+    if (!keybinds[defId]) keybinds[defId] = ['', ''];
+    keybinds[defId][slotIndex] = '';
+  } else {
+    // Clear duplicate from any other slot
+    for (const [id, ks] of Object.entries(keybinds)) {
+      for (let i = 0; i < ks.length; i++) {
+        if (ks[i] === e.key && !(id === defId && i === slotIndex)) ks[i] = '';
+      }
+    }
+    if (!keybinds[defId]) keybinds[defId] = ['', ''];
+    keybinds[defId][slotIndex] = e.key;
+  }
+  saveKeybinds();
+  buildRebindTable();
+});
+
+function resetRebindDefaults() {
+  KEYBIND_DEFS.forEach(d => { keybinds[d.id] = [...d.defaults]; });
+  saveKeybinds();
+  buildRebindTable();
+}
+
+loadKeybinds();
+document.addEventListener('DOMContentLoaded', buildRebindTable);
+</script>
 <script type="module">
   import { injectNavUser } from './api.js';
   async function init() {
