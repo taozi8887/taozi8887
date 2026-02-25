@@ -4052,9 +4052,11 @@ function cancelQueue() {
   if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
   window._mqInFoundPhase = false;
   if (mqWs) {
-    try { mqWs.send(JSON.stringify({ type: 'leave' })); } catch {}
     try {
-      if (mqWs.readyState === WebSocket.OPEN || mqWs.readyState === WebSocket.CONNECTING) {
+      if (mqWs.readyState === WebSocket.OPEN) {
+        mqWs.send(JSON.stringify({ type: 'leave' }));
+        mqWs.close();
+      } else if (mqWs.readyState === WebSocket.CONNECTING) {
         mqWs.close();
       }
     } catch {}
