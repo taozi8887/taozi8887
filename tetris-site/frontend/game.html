@@ -3923,6 +3923,7 @@ function enterQueue(mode) {
   }, 1000);
 
   mqWs = new WebSocket(`${MP_SERVER_WS}/matchmaking/${mode}`);
+  const thisMqWs = mqWs; // capture this socket so stale onclose/onerror can self-identify
 
   mqWs.onopen = () => {
     mqWs.send(JSON.stringify({
@@ -4030,13 +4031,15 @@ function enterQueue(mode) {
   };
 
   mqWs.onerror = () => {
+    if (mqWs !== thisMqWs) return; // stale socket fired after a new one was created
     cancelQueue();
     mpUpdateLobbyStatus('Could not reach matchmaking server.', 'error');
   };
 
   // Unexpected close after enqueue
   mqWs.onclose = () => {
-    if (mqWs !== null && mqMode !== null) {
+    if (mqWs !== thisMqWs) return; // stale socket's onclose fired after a new one was created
+    if (mqMode !== null) {
       mqWs = null;
       cancelQueue();
     }
