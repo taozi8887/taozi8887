@@ -133,6 +133,59 @@
 </footer>
 <div id="toast-container"></div>
 
+<!-- Rank tiers modal -->
+<div id="rankModal" class="modal-backdrop hidden" onclick="if(event.target===this)window.hideRankModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">ELO Rank Tiers</h3>
+      <button class="modal-close" onclick="window.hideRankModal()">✕</button>
+    </div>
+    <div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Challenger" style="font-size:.72rem">Challenger</span>
+        <span class="rank-modal-elo">2600+</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Grandmaster" style="font-size:.72rem">Grandmaster</span>
+        <span class="rank-modal-elo">2200 – 2599</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Master" style="font-size:.72rem">Master</span>
+        <span class="rank-modal-elo">2000 – 2199</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Diamond" style="font-size:.72rem">Diamond</span>
+        <span class="rank-modal-elo">1800 – 1999</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Platinum" style="font-size:.72rem">Platinum</span>
+        <span class="rank-modal-elo">1600 – 1799</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Gold" style="font-size:.72rem">Gold</span>
+        <span class="rank-modal-elo">1400 – 1599</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Silver" style="font-size:.72rem">Silver</span>
+        <span class="rank-modal-elo">1200 – 1399</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Bronze" style="font-size:.72rem">Bronze</span>
+        <span class="rank-modal-elo">1000 – 1199</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Iron" style="font-size:.72rem">Iron</span>
+        <span class="rank-modal-elo">800 – 999</span>
+      </div>
+      <div class="rank-modal-row">
+        <span class="rank-badge Unranked" style="font-size:.72rem">Unranked</span>
+        <span class="rank-modal-elo">&lt; 800</span>
+      </div>
+    </div>
+    <a href="ranks.html" class="btn sm ghost" style="align-self:flex-start">Full ranks page →</a>
+  </div>
+</div>
+
 <script type="module">
   import API, { injectNavUser, getRank, fmtNum, getLevel, levelBadgeHTML } from './api.js';
 
@@ -243,6 +296,9 @@
     el.innerHTML = btns.join('');
   }
   window._goPage = (p) => { if (p >= 1 && p <= totalPages) loadPage(p); };
+
+  window.showRankModal  = () => document.getElementById('rankModal').classList.remove('hidden');
+  window.hideRankModal  = () => document.getElementById('rankModal').classList.add('hidden');
 
   window.doLogout = async () => {
     try { await API.auth.logout(); } catch {}

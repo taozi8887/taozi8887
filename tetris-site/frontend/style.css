@@ -443,7 +443,6 @@ textarea.input { resize: vertical; min-height: 80px; }
   color: #ffd700;
   font-weight: 700;
   font-size: .8rem;
-  animation: lvlPulse 1s ease-in-out 3;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
