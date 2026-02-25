@@ -110,8 +110,8 @@
             <th class="rank-col">#</th>
             <th>Player</th>
             <th class="elo-col">ELO</th>
-            <th class="wins-col">Wins</th>
-            <th class="games-col">Games</th>
+            <th class="wins-col">RK Wins</th>
+            <th class="games-col">RK Games</th>
           </tr>
         </thead>
         <tbody id="lbBody">
@@ -203,8 +203,8 @@
       const posCell = pos <= 3
         ? `<td class="rank-col"><span class="medal">${medals[pos-1]}</span></td>`
         : `<td class="rank-col rank-num">${pos}</td>`;
-      const games = p.games_played || 0;
-      const wins  = p.games_won    || 0;
+      const games = p.versus_played || 0;
+      const wins  = p.versus_won    || 0;
       return `
         <tr>
           ${posCell}

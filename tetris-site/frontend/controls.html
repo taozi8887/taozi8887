@@ -206,23 +206,64 @@
     <h3>Multiplayer &amp; Garbage</h3>
     <div class="step">
       <div class="step-n">→</div>
-      <div class="step-body">In <strong>Versus</strong> mode, clearing lines sends <strong>garbage rows</strong> to your opponent. Garbage fills from the bottom with a random single-gap column.</div>
+      <div class="step-body">In <strong>Versus</strong> mode, clearing lines sends <strong>garbage rows</strong> to your opponent. Garbage fills from the bottom with a random single-gap column that shifts each piece placed.</div>
     </div>
     <div class="step">
       <div class="step-n">→</div>
-      <div class="step-body"><strong>Countering:</strong> If you clear lines while garbage is queued (shown in the bar on the right of your board), you cancel it before it lands. Aggressive clearing can neutralize incoming threats entirely.</div>
+      <div class="step-body"><strong>Cancelling:</strong> When you clear lines while garbage is queued (shown in the red bar on the right of your board), your attack cancels it first before any remainder is sent. Clear fast to neutralize threats before they land.</div>
     </div>
-    <div class="step">
-      <div class="step-n">→</div>
-      <div class="step-body"><strong>Sprint Race:</strong> Both players receive identical piece sequences. First to clear 40 lines wins. A pure speed challenge - no garbage involved.</div>
-    </div>
-    <div class="step">
-      <div class="step-n">→</div>
-      <div class="step-body"><strong>Co-op:</strong> Work together on separate boards to clear 150 combined lines before the timer runs out. Communication and efficiency are key.</div>
-    </div>
-    <div class="step">
-      <div class="step-n">→</div>
-      <div class="step-body"><strong>ELO</strong> is only affected in <strong>Versus</strong> (ranked). Win to gain points, lose to drop. The closer the opponent's ELO, the smaller the change.</div>
+
+    <!-- Attack table -->
+    <div style="margin:1.25rem 0 .5rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Garbage Sent (Versus)</div>
+    <table class="key-table">
+      <thead>
+        <tr><th>Clear</th><th>Lines Sent</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Single (1 line)</td><td style="color:var(--text2);font-family:var(--mono)">0</td></tr>
+        <tr><td>Double (2 lines)</td><td style="color:var(--text2);font-family:var(--mono)">1</td></tr>
+        <tr><td>Triple (3 lines)</td><td style="color:var(--text2);font-family:var(--mono)">2</td></tr>
+        <tr><td>Tetris (4 lines) <span class="score-tag">B2B</span></td><td style="color:var(--accent);font-family:var(--mono)">4</td></tr>
+        <tr><td>T-Spin Single <span class="score-tag">B2B</span></td><td style="color:var(--text2);font-family:var(--mono)">2</td></tr>
+        <tr><td>T-Spin Double <span class="score-tag">B2B</span></td><td style="color:var(--accent);font-family:var(--mono)">4</td></tr>
+        <tr><td>T-Spin Triple <span class="score-tag">B2B</span></td><td style="color:var(--accent);font-family:var(--mono)">6</td></tr>
+        <tr><td>Back-to-Back bonus (on any B2B-eligible clear)</td><td style="color:var(--accent);font-family:var(--mono)">+1</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Combo table -->
+    <div style="margin:1.25rem 0 .5rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Combo Bonus (added on top)</div>
+    <table class="key-table">
+      <thead>
+        <tr><th>Combo count</th><th>Extra lines sent</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1st consecutive clear</td><td style="color:var(--text2);font-family:var(--mono)">+0</td></tr>
+        <tr><td>2nd – 3rd</td><td style="color:var(--text2);font-family:var(--mono)">+1</td></tr>
+        <tr><td>4th – 5th</td><td style="color:var(--text2);font-family:var(--mono)">+2</td></tr>
+        <tr><td>6th – 7th</td><td style="color:var(--text2);font-family:var(--mono)">+3</td></tr>
+        <tr><td>8th – 10th</td><td style="color:var(--text2);font-family:var(--mono)">+4</td></tr>
+        <tr><td>11th+</td><td style="color:var(--accent);font-family:var(--mono)">+5</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:.74rem;color:var(--text3);margin-top:.875rem">
+      Max garbage queued at once is capped at <strong style="color:var(--text2)">20 lines</strong>. All garbage values are calculated server-side — the client cannot spoof attacks.
+    </p>
+
+    <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem;display:flex;flex-direction:column;gap:.75rem;">
+      <div class="step" style="margin:0">
+        <div class="step-n">→</div>
+        <div class="step-body"><strong>Sprint Race:</strong> Both players receive identical piece sequences. First to clear 40 lines wins. No garbage — pure speed.</div>
+      </div>
+      <div class="step" style="margin:0">
+        <div class="step-n">→</div>
+        <div class="step-body"><strong>Co-op:</strong> Work together on separate boards to clear 150 combined lines. No garbage — efficiency and communication win.</div>
+      </div>
+      <div class="step" style="margin:0">
+        <div class="step-n">→</div>
+        <div class="step-body"><strong>ELO</strong> is only affected in <strong>Ranked Versus</strong>. Win to gain, lose to drop. The closer the opponent's ELO, the smaller the swing.</div>
+      </div>
     </div>
   </div>
 
