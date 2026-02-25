@@ -74,10 +74,10 @@ router.post('/avatar', requireAuth, requireEmailVerified, async (req, res) => {
     const ext    = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
     const key    = `${userId}-${Date.now()}.${ext}`;
 
-    // Ensure bucket exists (creates it on first deploy)
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.find(b => b.name === AVATAR_BUCKET)) {
-      await supabase.storage.createBucket(AVATAR_BUCKET, { public: true });
+    // Ensure bucket exists — create it if missing, ignore "already exists" error
+    const { error: bucketErr } = await supabase.storage.createBucket(AVATAR_BUCKET, { public: true });
+    if (bucketErr && !bucketErr.message?.includes('already exists')) {
+      console.error('POST /api/profile/avatar createBucket:', bucketErr);
     }
 
     // Delete old avatar if exists
@@ -90,7 +90,13 @@ router.post('/avatar', requireAuth, requireEmailVerified, async (req, res) => {
     const { error: uploadErr } = await supabase.storage
       .from(AVATAR_BUCKET)
       .upload(key, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
-    if (uploadErr) throw uploadErr;
+    if (uploadErr) {
+      if (uploadErr.statusCode === '403' || uploadErr.status === 400) {
+        console.error('POST /api/profile/avatar: Storage RLS/auth error — verify SUPABASE_SERVICE_ROLE_KEY is set correctly in production:', uploadErr);
+        return res.status(500).json({ error: 'Storage permission error. Check server configuration.' });
+      }
+      throw uploadErr;
+    }
 
     const { data: urlData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(key);
     const avatarUrl = urlData.publicUrl;

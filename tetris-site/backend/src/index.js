@@ -8,6 +8,15 @@ import { Server }       from 'socket.io';
 import cors             from 'cors';
 import cookieParser     from 'cookie-parser';
 import { createClient } from '@supabase/supabase-js';
+
+// Fail fast if critical env vars are missing
+const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const missingEnv = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missingEnv.length) {
+  console.error(`[FATAL] Missing required environment variables: ${missingEnv.join(', ')}`);
+  console.error('[FATAL] Storage and database operations will fail with RLS/auth errors without these.');
+  process.exit(1);
+}
 import { GameRoom }     from './gameroom.js';
 import { MatchmakingQueue } from './matchmaking.js';
 import { router as authRouter    } from './auth.js';
