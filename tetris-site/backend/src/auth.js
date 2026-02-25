@@ -4,7 +4,7 @@
 // POST /api/auth/logout
 // GET  /api/auth/me
 
-const PBKDF2_ITER    = 250_000;
+const PBKDF2_ITER    = 100_000;
 const SALT_BYTES     = 16;
 const KEY_LEN_BYTES  = 32;
 const JWT_EXPIRY_S   = 30 * 24 * 60 * 60; // 30 days
@@ -226,7 +226,7 @@ export async function handleLogin(request, env) {
 
   // Always run verifyPassword to prevent timing attacks even if user not found
   // Dummy must match real format exactly: 32-hex salt + iterations + 64-hex hash
-  const dummyHash = '00000000000000000000000000000000$250000$0000000000000000000000000000000000000000000000000000000000000000';
+  const dummyHash = '00000000000000000000000000000000$100000$0000000000000000000000000000000000000000000000000000000000000000';
   const ok = user ? await verifyPassword(password, user.password_hash) : await verifyPassword(password, dummyHash);
   if (!user || !ok) return jsonResponse({ error: 'Invalid username or password.' }, 401);
 
