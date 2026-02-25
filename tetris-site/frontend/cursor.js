@@ -1082,3 +1082,109 @@
     });
   })();
 })();
+
+// ─── Global Error Reporter ────────────────────────────────────────────────────
+// Catches all unhandled JS errors and promise rejections on every page.
+// Logs a detailed, copy-pastable report to the console.
+(function () {
+  'use strict';
+
+  function buildReport(kind, msg, source, lineno, colno, error) {
+    const lines = [
+      '╔══════════════════════════════════════════════════════════════╗',
+      '║                   TAOTRIS ERROR REPORT                      ║',
+      '╚══════════════════════════════════════════════════════════════╝',
+      '',
+      '── Meta ────────────────────────────────────────────────────────',
+      '  Type      : ' + kind,
+      '  Time      : ' + new Date().toISOString(),
+      '  Page      : ' + location.href,
+      '  UserAgent : ' + navigator.userAgent,
+      '',
+      '── Error ───────────────────────────────────────────────────────',
+      '  Message   : ' + msg,
+    ];
+
+    if (source)  lines.push('  Source    : ' + source);
+    if (lineno)  lines.push('  Line      : ' + lineno + (colno ? ':' + colno : ''));
+
+    if (error) {
+      if (error.name && error.name !== 'Error') lines.push('  Name      : ' + error.name);
+      if (error.code)  lines.push('  Code      : ' + error.code);
+      if (error.stack) {
+        lines.push('');
+        lines.push('── Stack Trace ─────────────────────────────────────────────────');
+        error.stack.trim().split('\n').forEach(l => lines.push('  ' + l.trim()));
+      }
+    }
+
+    // Capture relevant localStorage/sessionStorage keys (non-sensitive)
+    try {
+      const safeKeys = ['tetrisSettings3', 'mqPref', 'mpLastMode'];
+      const storageSnap = {};
+      safeKeys.forEach(k => {
+        const v = localStorage.getItem(k);
+        if (v !== null) storageSnap[k] = v.length > 120 ? v.slice(0, 120) + '…' : v;
+      });
+      if (Object.keys(storageSnap).length) {
+        lines.push('');
+        lines.push('── LocalStorage Snapshot ───────────────────────────────────────');
+        Object.entries(storageSnap).forEach(([k, v]) => lines.push('  ' + k + ' = ' + v));
+      }
+    } catch (_) {}
+
+    lines.push('');
+    lines.push('── Copy-Paste Block ────────────────────────────────────────────');
+    lines.push(JSON.stringify({
+      kind, time: new Date().toISOString(), page: location.href,
+      message: msg, source, line: lineno, col: colno,
+      stack: error?.stack || null,
+      ua: navigator.userAgent,
+    }, null, 2));
+    lines.push('────────────────────────────────────────────────────────────────');
+
+    return lines.join('\n');
+  }
+
+  // Uncaught synchronous errors
+  window.addEventListener('error', function (e) {
+    const report = buildReport(
+      'UncaughtError',
+      e.message || String(e),
+      e.filename || '',
+      e.lineno,
+      e.colno,
+      e.error
+    );
+    console.error('%c🚨 TAOTRIS ERROR — see report below', 'color:#ff4a6e;font-weight:bold;font-size:13px');
+    console.error(report);
+  });
+
+  // Unhandled promise rejections
+  window.addEventListener('unhandledrejection', function (e) {
+    const reason = e.reason;
+    const msg = reason instanceof Error ? reason.message : String(reason);
+    const report = buildReport(
+      'UnhandledPromiseRejection',
+      msg,
+      '',
+      null,
+      null,
+      reason instanceof Error ? reason : null
+    );
+    console.error('%c🚨 TAOTRIS PROMISE REJECTION — see report below', 'color:#ff4a6e;font-weight:bold;font-size:13px');
+    console.error(report);
+  });
+
+  // Intercept console.error so any manual error() calls also get the timestamp + page context
+  const _origError = console.error.bind(console);
+  console.error = function (...args) {
+    // Avoid recursing into our own report logs
+    if (args.length === 1 && typeof args[0] === 'string' && args[0].startsWith('╔')) {
+      return _origError(...args);
+    }
+    _origError('%c[console.error]', 'color:#ff4a6e;font-weight:bold',
+      new Date().toISOString(), '|', location.pathname, '\n', ...args);
+  };
+
+}());
