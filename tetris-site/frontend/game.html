@@ -3115,6 +3115,7 @@ boardContainer.addEventListener('touchend', (e) => {
 
 function buildHeroPreview() {
   const container = document.getElementById('heroPreview');
+  if (!container) return;
   const types = ['I','T','O','S','Z','L','J'];
   const colors = {
     I: 'piece-I', O: 'piece-O', T: 'piece-T', S: 'piece-S',
@@ -3883,6 +3884,12 @@ function enterQueue(mode) {
   const u = window._authUser;
   if (!u) { location.href = 'login.html?redir=game.html'; return; }
 
+  // Close any existing matchmaking socket before starting a new one
+  if (mqWs) {
+    try { if (mqWs.readyState === WebSocket.OPEN || mqWs.readyState === WebSocket.CONNECTING) mqWs.close(); } catch {}
+    mqWs = null;
+  }
+
   mqMode        = mode;
   mqSearchStart = Date.now();
   mpIsRanked    = mode === 'ranked-versus';
@@ -4043,7 +4050,12 @@ function cancelQueue() {
   window._mqInFoundPhase = false;
   if (mqWs) {
     try { mqWs.send(JSON.stringify({ type: 'leave' })); } catch {}
-    mqWs.close(); mqWs = null;
+    try {
+      if (mqWs.readyState === WebSocket.OPEN || mqWs.readyState === WebSocket.CONNECTING) {
+        mqWs.close();
+      }
+    } catch {}
+    mqWs = null;
   }
   mqMode        = null;
   mqSearchStart = null;
