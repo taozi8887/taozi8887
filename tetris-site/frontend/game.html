@@ -1066,6 +1066,7 @@
       <div class="chip" id="scoreChip">score <strong id="scoreVal">0</strong></div>
       <div class="chip">level <strong id="levelVal">1</strong></div>
       <div class="chip">lines <strong id="linesVal">0</strong></div>
+      <div class="chip" id="specCountChip" style="display:none">&#128065; <strong id="specCountVal">0</strong></div>
     </div>
   </div>
 
@@ -3772,6 +3773,17 @@ function handleMPMessage(msg) {
 
     case 'pong': break;  // keepalive response, no-op
 
+    case 'spectatorCount': {
+      const chip = document.getElementById('specCountChip');
+      const val  = document.getElementById('specCountVal');
+      if (chip && val) {
+        const n = msg.count || 0;
+        chip.style.display = n > 0 ? '' : 'none';
+        val.textContent = n;
+      }
+      break;
+    }
+
     case 'joined':
       mpPlayerId = msg.playerId;
       mpMode     = msg.mode;
@@ -4635,7 +4647,7 @@ window.addEventListener('load', () => {
 });
 </script>
 <script type="module">
-import API, { startChallengePolling, getLevel, getLevelInfo, levelBadgeHTML, getRank } from './api.js';
+import API, { startChallengePolling, getLevel, getLevelInfo, levelBadgeHTML } from './api.js';
 // Expose to classic (non-module) script sections
 window._getLevel       = getLevel;
 window._getLevelInfo   = getLevelInfo;
@@ -4855,22 +4867,37 @@ function _buildSpectateUI(roomCode) {
 }
 
 function _handleSpectateMessage(data) {
-  const status = document.getElementById('specStatus');
   if (data.type === 'spectatorJoined') {
-    if (status) status.textContent = data.started ? 'Game in progress' : 'Waiting for players…';
-    (data.players || []).forEach((p, i) => _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp));
+    const statusEl = document.getElementById('specStatus');
+    if (statusEl) statusEl.textContent = data.finished ? 'Match ended' : data.started ? 'Game in progress' : 'Waiting for players…';
+    // Always init both board slots — placeholder for missing players
+    const players = data.players || [];
+    for (let i = 0; i < 2; i++) {
+      const p = players[i];
+      const name = p ? (p.displayName || p.username || p.name || ('Player ' + (i + 1))) : 'Waiting…';
+      _initSpecBoard(i, name, p ? p.elo : null, p ? p.xp : null, !p);
+    }
     if (data.boards) {
-      data.boards.forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
+      data.boards.forEach((b, i) => { if (b && b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
     }
   } else if (data.type === 'playerJoined') {
-    if (status) status.textContent = (data.players || []).length + '/2 players joined…';
+    const statusEl = document.getElementById('specStatus');
+    if (statusEl) statusEl.textContent = (data.players || []).length + '/2 players joined…';
+    // Re-init each slot with real player data (replaces any placeholder)
     (data.players || []).forEach((p, i) => {
-      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp);
+      const name = p.displayName || p.username || p.name || ('Player ' + (i + 1));
+      _initSpecBoard(i, name, p.elo, p.xp, false);
     });
+    // Keep the second slot as placeholder if only 1 player joined
+    if ((data.players || []).length < 2) {
+      _initSpecBoard(1, 'Waiting…', null, null, true);
+    }
   } else if (data.type === 'start') {
-    if (status) status.textContent = 'Game started!';
+    const statusEl = document.getElementById('specStatus');
+    if (statusEl) statusEl.textContent = 'Game started!';
     (data.players || []).forEach((p, i) => {
-      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp);
+      const name = p.displayName || p.username || p.name || ('Player ' + (i + 1));
+      _initSpecBoard(i, name, p.elo, p.xp, false);
     });
   } else if (data.type === 'spectatorUpdate') {
     (data.boards || []).forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
@@ -4892,17 +4919,20 @@ function _handleSpectateMessage(data) {
   }
 }
 
-function _initSpecBoard(boardIdx, playerName, elo, xp) {
+function _initSpecBoard(boardIdx, playerName, elo, xp, isPlaceholder) {
   const wrap = document.getElementById('specBoard' + boardIdx);
   if (!wrap) return;
-  const rank  = elo  != null ? getRank(elo)  : null;
-  const level = xp   != null ? getLevel(xp)  : null;
+  const rank  = (!isPlaceholder && elo  != null) ? getRank(elo)  : null;
+  const level = (!isPlaceholder && xp   != null) ? getLevel(xp)  : null;
   const cellSize = 24;
   let cells = '';
   for (let i = 0; i < 200; i++) cells += '<div class="opp-cell" id="sc' + boardIdx + '_' + i + '"></div>';
   const rankHTML  = rank  ? `<span class="rank-badge ${rank.name}" style="font-size:.6rem;padding:.15rem .45rem">${rank.name}</span>` : '';
   const levelHTML = level != null ? `<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">Lv ${level}</span>` : '';
-  const eloHTML   = elo   != null ? `<span style="font-size:.75rem;font-family:var(--mono);color:var(--accent)">${fmtNum(elo)} ELO</span>` : '';
+  const eloHTML   = (!isPlaceholder && elo != null) ? `<span style="font-size:.75rem;font-family:var(--mono);color:var(--accent)">${fmtNum(elo)} ELO</span>` : '';
+  const boardContent = isPlaceholder
+    ? `<div style="width:${cellSize * 10}px;height:${cellSize * 20}px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:3px;color:var(--text3);font-size:.75rem">Waiting for player\u2026</div>`
+    : `<div id="specBoardGrid${boardIdx}" class="opp-board" style="--opp-cell:${cellSize}px;border:1px solid rgba(255,255,255,.08);border-radius:3px">${cells}</div>`;
   wrap.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:.6rem">
       <div style="text-align:center">
@@ -4911,13 +4941,11 @@ function _initSpecBoard(boardIdx, playerName, elo, xp) {
           ${rankHTML}${eloHTML}${levelHTML}
         </div>
       </div>
-      <div id="specBoardGrid${boardIdx}" class="opp-board" style="--opp-cell:${cellSize}px;border:1px solid rgba(255,255,255,.08);border-radius:3px">
-        ${cells}
-      </div>
-      <div style="display:flex;gap:1.25rem;font-size:.75rem;color:var(--text3)">
+      ${boardContent}
+      ${isPlaceholder ? '' : `<div style="display:flex;gap:1.25rem;font-size:.75rem;color:var(--text3)">
         <span>Score <strong id="spec${boardIdx}Score" style="color:var(--text);font-family:var(--mono)">0</strong></span>
         <span>Lines <strong id="spec${boardIdx}Lines" style="color:var(--text);font-family:var(--mono)">0</strong></span>
-      </div>
+      </div>`}
     </div>
   `;
 }

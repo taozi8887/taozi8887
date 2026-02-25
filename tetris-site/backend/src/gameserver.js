@@ -79,6 +79,8 @@ export class GameRoom {
             mode: this.mode, seed: this.seed,
             players: this.mapPlayers(), boards: boardSnaps,
           }));
+          // Notify players of updated spectator count
+          this.broadcast({ type: 'spectatorCount', count: this.spectators.size });
           return;
         }
 
@@ -335,7 +337,12 @@ export class GameRoom {
   async webSocketClose(ws) {
     // Check if it's a spectator
     const spec = [...this.spectators.values()].find(s => s.ws === ws);
-    if (spec) { this.spectators.delete(spec.id); return; }
+    if (spec) {
+      this.spectators.delete(spec.id);
+      // Notify remaining players of updated spectator count
+      this.broadcast({ type: 'spectatorCount', count: this.spectators.size });
+      return;
+    }
 
     const player = [...this.players.values()].find(p => p.ws === ws);
     if (!player) return;
