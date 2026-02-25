@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard - Tetris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    .lb-search {
+      display: flex; gap: .75rem; align-items: center; margin-bottom: 1.5rem;
+    }
+    .lb-search .input { max-width: 280px; }
+    .rank-col { width: 48px; }
+    .player-col { }
+    .elo-col    { width: 90px; color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .wins-col   { width: 72px; color: var(--text2); font-variant-numeric: tabular-nums; }
+    .games-col  { width: 72px; color: var(--text2); font-variant-numeric: tabular-nums; }
+    .pagination { display: flex; gap: .5rem; align-items: center; justify-content: center; margin-top: 1.5rem; }
+    .page-av {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--bg3); border: 1px solid var(--border);
+      overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+      font-size: .72rem; color: var(--text3);
+    }
+    .page-av img { width: 100%; height: 100%; object-fit: cover; }
+    .medal { font-size: 1rem; }
+    .rank-tiers { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .tier-chip {
+      padding: .25rem .75rem; border-radius: 999px;
+      font-size: .72rem; cursor: pointer; border: 1px solid;
+      transition: opacity .15s;
+    }
+    .tier-chip:not(.active) { opacity: .45; }
+    .elo-help-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.3rem; height: 1.3rem; border-radius: 50%; font-size: .7rem;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text3);
+      cursor: pointer; vertical-align: middle; margin-left: .5rem;
+      transition: border-color .2s, color .2s; flex-shrink: 0;
+    }
+    .elo-help-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-backdrop { position:fixed;inset:0;z-index:400;background:rgba(10,10,11,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center; }
+    .modal-backdrop.hidden { display:none; }
+    .modal-box { background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem 2rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem; }
+    .modal-header { display:flex;align-items:center;justify-content:space-between;gap:1rem; }
+    .modal-title { font-family:var(--serif);font-size:1.2rem;margin:0; }
+    .modal-close { background:none;border:none;color:var(--text3);font-size:1.25rem;line-height:1;cursor:pointer;padding:.1rem .35rem;border-radius:var(--radius);transition:color .15s,background .15s; }
+    .modal-close:hover { color:var(--text);background:var(--bg3); }
+    .rank-modal-row { display:flex;align-items:center;gap:.75rem;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04); }
+    .rank-modal-row:last-child { border-bottom:none; }
+    .rank-modal-elo { font-size:.72rem;color:var(--text3);font-family:var(--mono);margin-left:auto; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Tetris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html" class="active">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+      <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
+      <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h2>Leaderboard <button class="elo-help-btn" onclick="showRankModal()" title="ELO rank tiers">?</button></h2>
+    <p class="muted mt-s">Ranked by ELO rating. Versus mode only.</p>
+  </div>
+
+  <!-- Rank tier filter chips -->
+  <div class="rank-tiers" id="tierFilter">
+    <span class="tier-chip active" style="color:var(--text);border-color:var(--border)" data-rank="all">All</span>
+    <span class="tier-chip Challenger"  style="background:linear-gradient(90deg,#fff,#60efff,#ffd700);-webkit-background-clip:text;background-clip:text;color:transparent;border-color:rgba(255,215,0,.5)" data-rank="Challenger">Challenger</span>
+    <span class="tier-chip Grandmaster" style="color:var(--rank-gm);border-color:var(--rank-gm)" data-rank="Grandmaster">Grandmaster</span>
+    <span class="tier-chip Master"      style="color:var(--rank-master);border-color:var(--rank-master)" data-rank="Master">Master</span>
+    <span class="tier-chip Diamond"     style="color:var(--rank-diamond);border-color:var(--rank-diamond)" data-rank="Diamond">Diamond</span>
+    <span class="tier-chip Platinum"    style="color:var(--rank-platinum);border-color:var(--rank-platinum)" data-rank="Platinum">Platinum</span>
+    <span class="tier-chip Gold"        style="color:var(--rank-gold);border-color:var(--rank-gold)" data-rank="Gold">Gold</span>
+    <span class="tier-chip Silver"      style="color:var(--rank-silver);border-color:var(--rank-silver)" data-rank="Silver">Silver</span>
+    <span class="tier-chip Bronze"      style="color:var(--rank-bronze);border-color:var(--rank-bronze)" data-rank="Bronze">Bronze</span>
+    <span class="tier-chip Iron"        style="color:var(--rank-iron);border-color:var(--rank-iron)" data-rank="Iron">Iron</span>
+  </div>
+
+  <div class="lb-search">
+    <input id="searchInput" class="input" type="search" placeholder="Search players…">
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="rank-col">#</th>
+            <th>Player</th>
+            <th class="elo-col">ELO</th>
+            <th class="wins-col">Wins</th>
+            <th class="games-col">Games</th>
+          </tr>
+        </thead>
+        <tbody id="lbBody">
+          <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)" class="">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
+
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+  </div>
+</footer>
+<div id="toast-container"></div>
+
+<script type="module">
+  import API, { injectNavUser, getRank, fmtNum, getLevel, levelBadgeHTML } from './api.js';
+
+  let page    = 1;
+  const LIMIT = 25;
+  let totalPages = 1;
+  let filterRank = 'all';
+  let searchQ    = '';
+  let debounceTimer;
+
+  async function init() {
+    await injectNavUser(null);
+    loadPage(1);
+
+    document.getElementById('tierFilter').addEventListener('click', (e) => {
+      const chip = e.target.closest('.tier-chip');
+      if (!chip) return;
+      document.querySelectorAll('.tier-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      filterRank = chip.dataset.rank;
+      loadPage(1);
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      searchQ = e.target.value.trim();
+      debounceTimer = setTimeout(() => loadPage(1), 350);
+    });
+  }
+
+  async function loadPage(p) {
+    page = p;
+    const tbody = document.getElementById('lbBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Loading…</td></tr>';
+
+    try {
+      const params = { page, limit: LIMIT };
+      if (filterRank !== 'all') params.rank = filterRank;
+      if (searchQ)              params.q    = searchQ;
+
+      const data = await API.leaderboard.get(params);
+      totalPages = Math.ceil((data.total || 0) / LIMIT) || 1;
+      renderTable(data.players || [], (page - 1) * LIMIT);
+      renderPagination();
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">No players yet.</td></tr>';
+    }
+  }
+
+  function renderTable(players, offset) {
+    const tbody = document.getElementById('lbBody');
+    if (!players.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">No players found.</td></tr>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    tbody.innerHTML = players.map((p, i) => {
+      const pos    = offset + i + 1;
+      const rank   = getRank(p.elo);
+      // Backend returns avatarUrl (relative path or null)
+      const avSrc  = p.avatarUrl
+        ? (p.avatarUrl.startsWith('http') ? p.avatarUrl : API.BASE + p.avatarUrl)
+        : '';
+      const initials = (p.username||'?').slice(0,2).toUpperCase();
+      const avContent = avSrc
+        ? `<img src="${avSrc}" alt="" onerror="this.parentElement.textContent='${initials}';">`
+        : initials;
+      const posCell = pos <= 3
+        ? `<td class="rank-col"><span class="medal">${medals[pos-1]}</span></td>`
+        : `<td class="rank-col rank-num">${pos}</td>`;
+      const games = p.games_played || 0;
+      const wins  = p.games_won    || 0;
+      return `
+        <tr>
+          ${posCell}
+          <td>
+            <div class="flex gap-s" style="align-items:center; gap: 0.75rem;">
+              <div class="page-av">${avContent}</div>
+              <div>
+                <div class="flex gap-s" style="align-items:center;flex-wrap:wrap">
+                  <a href="profile.html?u=${encodeURIComponent(p.username)}">${levelBadgeHTML(getLevel(p.xp||0))} ${escHtml(p.display_name || p.username)}</a>
+                  ${p.display_name && p.display_name !== p.username ? `<span class="small muted">@${escHtml(p.username)}</span>` : ''}
+                  <span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="elo-col">${fmtNum(p.elo)}</td>
+          <td class="wins-col muted">${fmtNum(wins)}</td>
+          <td class="games-col muted">${fmtNum(games)}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderPagination() {
+    const el = document.getElementById('pagination');
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    const btns = [];
+    const addBtn = (label, p, disabled=false, active=false) => {
+      btns.push(`<button class="btn sm${active?' primary':''}" onclick="window._goPage(${p})" ${disabled?'disabled':''}>${label}</button>`);
+    };
+    addBtn('← Prev', page - 1, page === 1);
+    const range = 2;
+    for (let p = Math.max(1, page-range); p <= Math.min(totalPages, page+range); p++) {
+      addBtn(p, p, false, p===page);
+    }
+    addBtn('Next →', page + 1, page === totalPages);
+    el.innerHTML = btns.join('');
+  }
+  window._goPage = (p) => { if (p >= 1 && p <= totalPages) loadPage(p); };
+
+  window.doLogout = async () => {
+    try { await API.auth.logout(); } catch {}
+    location.href = 'index.html';
+  };
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  }
+
+  init();
+</script>
+</body>
+</html>

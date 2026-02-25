@@ -1,0 +1,15 @@
+{
+  "name": "tetris-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tetris site backend - Cloudflare Workers + D1 + Durable Objects",
+  "main": "src/index.js",
+  "scripts": {
+    "dev":    "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute tetris-db --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

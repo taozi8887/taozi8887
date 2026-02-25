@@ -1,0 +1,12 @@
+# Wrangler local dev state (SQLite, cache, logs)
+.wrangler/
+
+# Local secrets - NEVER commit
+tetris-site/backend/.dev.vars
+
+# Node dependencies
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db

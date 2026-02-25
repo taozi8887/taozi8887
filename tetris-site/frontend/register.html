@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Tetris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    .password-rules {
+      font-size: .75rem; color: var(--text3); margin-top: -.5rem;
+    }
+    .rule { display: flex; gap: .4rem; align-items: center; }
+    .rule.ok  { color: var(--accent); }
+    .rule.bad { color: var(--text3); }
+  </style>
+</head>
+<body>
+
+<div class="auth-page">
+  <a class="nav-logo" href="index.html" style="font-family:var(--serif);font-style:italic;color:var(--accent);font-size:1.6rem;">Tetris</a>
+
+  <div class="auth-card">
+    <h2 class="auth-title">Create account</h2>
+
+    <div id="errBox" class="form-error hidden" style="margin-bottom: 5px;"></div>
+
+    <form id="regForm" class="form-group" novalidate>
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" class="input" type="text" autocomplete="username"
+               required minlength="3" maxlength="20" placeholder="taozi4887"
+               pattern="[a-zA-Z0-9_\-]+">
+        <span class="small muted" id="usernameHint">3–20 chars, letters/numbers/_ and -</span>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" class="input" type="email" autocomplete="email" required placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" class="input" type="password" autocomplete="new-password" required placeholder="••••••••">
+        <div class="password-rules" id="pwRules">
+          <div class="rule" id="ruleLen" style="padding-top: 4px;">· At least 8 characters</div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" class="input" type="password" autocomplete="new-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn primary" id="submitBtn">Create account</button>
+    </form>
+  </div>
+
+  <p class="auth-footer">
+    Already have an account? <a href="login.html">Sign in</a>
+  </p>
+</div>
+
+<script type="module">
+  import API from './api.js';
+
+  // Redirect if already logged in
+  (async () => {
+    try { await API.auth.me(); location.href = 'index.html'; } catch {}
+  })();
+
+  const form      = document.getElementById('regForm');
+  const errBox    = document.getElementById('errBox');
+  const submitBtn = document.getElementById('submitBtn');
+  const pwInput   = document.getElementById('password');
+  const ruleLen   = document.getElementById('ruleLen');
+
+  pwInput.addEventListener('input', () => {
+    ruleLen.className = 'rule ' + (pwInput.value.length >= 8 ? 'ok' : 'bad');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = pwInput.value;
+    const confirm  = document.getElementById('confirm').value;
+
+    if (!username || !email || !password) { showErr('Please fill in all fields.'); return; }
+    if (!/^[a-zA-Z0-9_\-]{3,20}$/.test(username)) { showErr('Username must be 3–20 chars, letters/numbers/_ or -.'); return; }
+    if (password.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+    if (password !== confirm) { showErr('Passwords do not match.'); return; }
+
+    submitBtn.disabled    = true;
+    submitBtn.textContent = 'Creating account…';
+    errBox.classList.add('hidden');
+
+    try {
+      await API.auth.register({ username, email, password });
+      // Cookie is set; redirect to own profile so user can personalise immediately
+      const redir = new URLSearchParams(location.search).get('redir') || 'profile.html';
+      location.href = redir;
+    } catch (err) {
+      showErr(err.message || 'Registration failed.');
+      submitBtn.disabled    = false;
+      submitBtn.textContent = 'Create account';
+    }
+  });
+
+  function showErr(msg) {
+    errBox.textContent = msg;
+    errBox.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

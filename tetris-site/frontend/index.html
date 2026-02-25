@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris - tetris.taozi4887.dev</title>
+  <meta name="description" content="Competitive Tetris with rankings, profiles, and real-time multiplayer.">
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    /* Landing-page specific */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: border-color .2s;
+    }
+    .feature-card:hover { border-color: rgba(200,255,74,.25); }
+    .feature-icon {
+      font-size: 1.6rem; margin-bottom: .75rem;
+    }
+    .feature-title { font-family: var(--serif); font-size: 1.1rem; margin-bottom: .4rem; }
+    .feature-desc  { font-size: .82rem; color: var(--text2); }
+
+    .stats-banner {
+      display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap;
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    .banner-stat { text-align: center; }
+    .banner-stat .val { font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; word-break: break-word; overflow-wrap: break-word; }
+    .banner-stat .lbl { font-size: .75rem; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; }
+
+    .lb-preview {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .lb-preview-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .lb-preview-header h3 { font-size: 1rem; }
+    .lb-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .75rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-pos { width: 24px; text-align: right; color: var(--text3); }
+    .lb-pos.gold { color: var(--rank-gold); }
+    .lb-name { flex: 1; }
+    .lb-elo  { color: var(--accent); font-weight: 500; }
+    .lb-avg  { width: 56px; display: inline-block; border-radius: 50%; background: var(--bg3); overflow: hidden; }
+    .lb-av {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; color: var(--text3); overflow:hidden;
+    }
+    .lb-av img { width: 100%; height: 100%; object-fit: cover; }
+
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .mode-card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      background: var(--bg2);
+      transition: border-color .2s, transform .15s;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .mode-card:hover { border-color: rgba(255,255,255,.18); transform: translateY(-3px); }
+    .mode-card .tag {
+      font-size: .68rem; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: .5rem;
+    }
+    .mode-card h4 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: .35rem; }
+    .mode-card p  { font-size: .8rem; color: var(--text2); }
+    .mode-card .badge {
+      position: absolute; top: 1rem; right: 1rem;
+      font-size: .65rem; padding: .2rem .55rem;
+      border-radius: 999px; border: 1px solid rgba(200,255,74,.3);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Tetris</a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+      <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="logout()">Sign out</button>
+      <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-tag">Competitive Tetris Platform</div>
+    <h1>Play. Rank. <em>Compete.</em></h1>
+    <p class="muted">
+      Guideline Tetris with an ELO ranking system, public profiles,
+      real-time multiplayer, and a full friends/challenge inbox.
+    </p>
+    <div class="hero-btns">
+      <a class="btn primary lg" href="game.html">Play Now</a>
+      <a class="btn lg" href="leaderboard.html">Leaderboard</a>
+    </div>
+  </div>
+</section>
+
+<!-- Stats banner -->
+<div class="container">
+  <div class="stats-banner" id="statsBanner">
+    <div class="banner-stat"><div class="val" id="sbPlayers">-</div><div class="lbl">Players</div></div>
+    <div class="banner-stat"><div class="val" id="sbGames">-</div><div class="lbl">Games Played</div></div>
+    <div class="banner-stat"><div class="val" id="sbMinutes">-</div><div class="lbl">Minutes Played</div></div>
+    <div class="banner-stat"><div class="val" id="sbLines">-</div><div class="lbl">Lines Cleared</div></div>
+  </div>
+</div>
+
+<!-- Leaderboard preview -->
+<div class="container section">
+  <p class="section-title">Top Players</p>
+  <div class="lb-preview" id="lbPreview">
+    <div class="lb-preview-header">
+      <h3>Global Ranking</h3>
+      <a href="leaderboard.html" class="btn sm">See all →</a>
+    </div>
+    <div id="lbPreviewBody">
+      <!-- populated by JS -->
+      <div class="lb-row"><span class="dimmed small">Loading…</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Game modes -->
+<div class="container section">
+  <p class="section-title">Game Modes</p>
+  <div class="modes-grid">
+    <a class="mode-card" href="game.html?mode=marathon">
+      <div class="tag">Solo</div>
+      <h4>Marathon</h4>
+      <p>Play indefinitely. Score as high as you can. Gravity increases every 10 lines.</p>
+    </a>
+    <a class="mode-card" href="game.html?mode=sprint">
+      <div class="tag">Solo / Race</div>
+      <h4>Sprint 40L</h4>
+      <p>Clear 40 lines as fast as possible. Personal best tracker included.</p>
+    </a>
+    <a class="mode-card" href="game.html?mode=versus">
+      <div class="tag">Multiplayer</div>
+      <h4>Versus</h4>
+      <p>Send garbage to your opponent. Last one standing wins. ELO on the line.</p>
+      <span class="badge">Ranked</span>
+    </a>
+    <a class="mode-card" href="game.html?mode=coop">
+      <div class="tag">Multiplayer</div>
+      <h4>Co-op</h4>
+      <p>Work with a friend to clear the target line count together.</p>
+    </a>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="container section">
+  <p class="section-title">Features</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🏆</div>
+      <div class="feature-title">ELO Ranking</div>
+      <div class="feature-desc">From Iron to Challenger - every match updates your rating. 10 rank tiers.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👤</div>
+      <div class="feature-title">Public Profiles</div>
+      <div class="feature-desc">Lifetime stats, match history, custom bio, avatar, and rank badge.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎮</div>
+      <div class="feature-title">Guideline Engine</div>
+      <div class="feature-desc">SRS rotation, 7-bag randomizer, T-spins, B2B, hold, ghost piece, configurable DAS/ARR.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📬</div>
+      <div class="feature-title">Challenge Inbox</div>
+      <div class="feature-desc">Add friends and challenge them to any game mode directly with a room code.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum } from './api.js';
+
+  async function init() {
+    const me = await injectNavUser(null);
+    loadBannerStats();
+    loadLeaderboardPreview();
+  }
+
+  async function loadBannerStats() {
+    try {
+      const [globalData, lbData] = await Promise.all([
+        API.stats.global(),
+        API.leaderboard.get({ limit: 1 }),
+      ]);
+      document.getElementById('sbPlayers').textContent = fmtNum(globalData.total_players || lbData.total);
+      document.getElementById('sbGames').textContent   = fmtNum(globalData.total_games);
+      const totalMins = Math.round((globalData.total_time_ms || 0) / 60000);
+      document.getElementById('sbMinutes').textContent = fmtNum(totalMins);
+      document.getElementById('sbLines').textContent   = fmtNum(globalData.total_lines);
+    } catch {}
+  }
+
+  async function loadLeaderboardPreview() {
+    const body = document.getElementById('lbPreviewBody');
+    try {
+      const data = await API.leaderboard.get({ limit: 5 });
+      if (!data.players?.length) { body.innerHTML = '<div class="lb-row"><span class="dimmed small">No players yet.</span></div>'; return; }
+      body.innerHTML = data.players.map((p, i) => {
+        const rank = getRank(p.elo);
+        const pos  = i + 1;
+        const avSrc = p.avatarUrl
+          ? (p.avatarUrl.startsWith('http') ? p.avatarUrl : API.BASE + p.avatarUrl)
+          : '';
+        const avContent = avSrc
+          ? `<img src="${avSrc}" alt="" onerror="this.style.display='none'">`
+          : p.username.slice(0, 2).toUpperCase();
+        return `
+          <div class="lb-row">
+            <span class="lb-pos${pos <= 3 ? ' gold' : ''}">${pos}</span>
+            <div class="lb-av">${avContent}</div>
+            <span class="lb-name"><a href="profile.html?u=${encodeURIComponent(p.username)}">${p.username}</a></span>
+            <span class="rank-badge ${rank.name}">${rank.name}</span>
+            <span class="lb-elo">${fmtNum(p.elo)}</span>
+          </div>`;
+      }).join('');
+    } catch {
+      body.innerHTML = '<div class="lb-row"><span class="dimmed small">Unable to load leaderboard.</span></div>';
+    }
+  }
+
+  window.logout = async () => {
+    try { await API.auth.logout(); } catch {}
+    location.reload();
+  };
+
+  init();
+</script>
+</body>
+</html>

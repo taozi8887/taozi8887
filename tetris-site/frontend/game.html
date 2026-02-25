@@ -1,82 +1,30 @@
 <!DOCTYPE html>
-<html lang="en" style="cursor:none">
+<html lang="en">
 <head>
-<style>*,*::before,*::after{cursor:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Tetris - Stack & Clear</title>
-
-<!-- ─── SEO ─── -->
-<meta name="description" content="Tetris - stack tetrominoes, clear lines, chase high scores. A browser game by taozi4887.">
-<meta name="keywords" content="tetris, block puzzle, tetrominoes, taozi4887, browser game, stacking game">
-<meta name="author" content="taozi4887">
+<title>Play - Tetris</title>
+<meta name="description" content="Play ranked Tetris - sprint, versus, and co-op modes with real ELO rankings.">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://taozi4887.dev/tetris.html">
-<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="canonical" href="https://tetris.taozi4887.dev/game.html">
 <link rel="icon" type="image/png" href="logo.png">
+<meta property="og:title" content="Play Tetris">
+<meta property="og:description" content="Sprint, versus, and co-op modes with ranked ELO.">
+<meta property="og:url" content="https://tetris.taozi4887.dev/game.html">
 
-<!-- ─── Open Graph ─── -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://taozi4887.dev/tetris.html">
-<meta property="og:title" content="Tetris - Stack & Clear">
-<meta property="og:description" content="Tetris - stack tetrominoes, clear lines, chase high scores.">
-<meta property="og:image" content="https://taozi4887.dev/og-image.png">
-<meta property="og:site_name" content="taozi4887">
-<meta property="og:locale" content="en_US">
-
-<!-- ─── Twitter / X Card ─── -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:url" content="https://taozi4887.dev/tetris.html">
-<meta name="twitter:title" content="Tetris - Stack & Clear">
-<meta name="twitter:description" content="Tetris - stack tetrominoes, clear lines, chase high scores.">
-<meta name="twitter:image" content="https://taozi4887.dev/og-image.png">
-
-<!-- ─── JSON-LD Structured Data ─── -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Tetris",
-  "url": "https://taozi4887.dev/tetris.html",
-  "description": "Tetris - stack tetrominoes, clear lines, chase high scores.",
-  "applicationCategory": "Game",
-  "author": {
-    "@type": "Person",
-    "name": "taozi4887",
-    "url": "https://taozi4887.dev/"
-  }
-}
-</script>
-
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="cursor.js" defer></script>
 <style>
   :root {
-    --bg: #0a0a0b;
-    --surface: #111113;
-    --surface2: #1a1a1d;
-    --surface3: #222226;
-    --border: #252528;
-    --border2: #303035;
-    --text: #e8e8ea;
-    --muted: #666670;
-    --accent: #c8ff4a;
-    --accent2: #ff6b6b;
-    --accent3: #4aff8c;
-    --accent4: #60efff;
-    --radius: 12px;
-    --cell: 28px;
-    --gap: 2px;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
+    /* bridge – rest of tokens come from style.css */
+    --surface:  #111114;
+    --surface2: #1a1a1f;
+    --surface3: #222228;
+    --muted:    var(--text2);
+    --border2:  rgba(255,255,255,.14);
+    --cell:     28px;
+    --opp-cell: 13px;
+    --gap:      2px;
   }
 
   body::before {
@@ -93,32 +41,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
-  header {
+  /* Navbar and footer must span the full viewport width regardless of
+     body's align-items: center (which would otherwise shrink them). */
+  #navbar,
+  #footer {
     width: 100%;
-    max-width: 960px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 28px 24px 0;
-    flex-shrink: 0;
+    align-self: stretch;
   }
-
-  .logo {
-    font-family: 'Instrument Serif', serif;
-    font-size: 22px;
-    letter-spacing: -0.5px;
-    color: var(--text);
-    cursor: pointer;
-    user-select: none;
-    text-decoration: none;
-  }
-  .logo span { color: var(--accent); }
-
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .version { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
 
   .screen {
     display: none;
@@ -126,7 +59,7 @@
     align-items: center;
     width: 100%;
     max-width: 960px;
-    padding: 0 24px 60px;
+    padding: 1.5rem 1.5rem 4rem;
     flex: 1;
   }
   .screen.active { display: flex; animation: fadeIn 0.35s ease both; }
@@ -136,52 +69,21 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .btn {
-    padding: 12px 28px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    user-select: none;
-  }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn.primary { background: var(--accent); color: #0a0a0b; border-color: var(--accent); font-weight: 500; }
-  .btn.primary:hover { background: #d4ff6a; }
-  .btn.sm { padding: 7px 16px; font-size: 11px; border-radius: 8px; }
-
   /* ── HOME ── */
-  #home { justify-content: center; padding-bottom: 80px; }
-  .hero-gap { height: 48px; }
-  .hero-eyebrow {
-    font-size: 11px; color: var(--muted);
-    letter-spacing: 0.16em; text-transform: uppercase;
-    margin-bottom: 20px; text-align: center;
-  }
+  #home { justify-content: center; padding-bottom: 5rem; }
+  .hero-gap { height: 2rem; }
   .hero-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(60px, 11vw, 100px);
-    line-height: 1; letter-spacing: -3px;
-    text-align: center; margin-bottom: 20px;
+    font-family: var(--serif);
+    font-size: clamp(3.5rem, 11vw, 6.5rem);
+    line-height: 1; letter-spacing: -0.04em;
+    text-align: center; margin-bottom: 1.25rem;
   }
   .hero-sub {
-    font-size: 13px; color: var(--muted); text-align: center;
-    letter-spacing: 0.03em; max-width: 380px;
-    line-height: 1.8; margin-bottom: 48px;
+    font-size: .9rem; color: var(--text2); text-align: center;
+    max-width: 400px; line-height: 1.75; margin-bottom: 2.5rem;
   }
 
-  /* Hero tetromino preview */
-  .hero-preview {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 48px;
-    align-items: flex-end;
-  }
+  .hero-preview { display: flex; gap: 1rem; margin-bottom: 2.5rem; align-items: flex-end; }
   .hero-piece {
     display: grid;
     gap: 3px;
@@ -201,46 +103,46 @@
   }
   .hp-b.empty { background: transparent; border-color: transparent; }
 
-  .home-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .home-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
 
   .stats-row {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    justify-content: center; margin-top: 28px;
+    display: flex; gap: .75rem; flex-wrap: wrap;
+    justify-content: center; margin-top: 1.75rem;
   }
   .stat-chip {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 7px 18px;
-    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
-    display: flex; gap: 8px; align-items: center;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 999px; padding: .4rem 1.1rem;
+    font-size: .75rem; color: var(--text2); letter-spacing: .06em;
+    display: flex; gap: .5rem; align-items: center;
   }
   .stat-chip strong { color: var(--text); font-weight: 400; }
 
   /* ── GAME ── */
-  #game { padding-top: 28px; gap: 12px; justify-content: flex-start; }
+  #game { padding-top: 1.5rem; gap: .75rem; justify-content: flex-start; }
 
   .game-bar {
     width: 100%; display: flex; align-items: center;
-    justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    justify-content: space-between; gap: .75rem; flex-wrap: wrap;
   }
   .game-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: 20px; letter-spacing: -0.5px;
+    font-family: var(--serif);
+    font-size: 1.25rem; letter-spacing: -.03em;
   }
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chips { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
   .chip {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 6px 14px;
-    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
-    display: flex; gap: 6px; align-items: center;
-    font-variant-numeric: tabular-nums; transition: all 0.3s;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 999px; padding: .35rem .9rem;
+    font-size: .72rem; color: var(--text2); letter-spacing: .06em;
+    display: flex; gap: .4rem; align-items: center;
+    font-variant-numeric: tabular-nums; transition: all .3s;
   }
-  .chip strong { color: var(--text); font-weight: 400; transition: color 0.3s; }
+  .chip strong { color: var(--text); font-weight: 400; transition: color .3s; }
   .chip.pop strong { color: var(--accent); }
 
   /* Game layout - board + side panels */
   .game-layout {
     display: flex;
-    gap: 16px;
+    gap: 1rem;
     align-items: flex-start;
     justify-content: center;
     width: 100%;
@@ -249,24 +151,24 @@
   .side-panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: .75rem;
     min-width: 100px;
   }
 
   .panel-box {
-    background: var(--surface);
+    background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
+    border-radius: var(--radius-lg);
+    padding: .875rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: .5rem;
   }
   .panel-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.12em;
+    font-size: .65rem;
+    color: var(--text3);
+    letter-spacing: .12em;
     text-transform: uppercase;
   }
 
@@ -296,21 +198,26 @@
   }
 
   .panel-stat {
-    font-family: 'Instrument Serif', serif;
-    font-size: 24px;
-    letter-spacing: -0.5px;
+    font-family: var(--serif);
+    font-size: clamp(.9rem, 2.2vw, 1.5rem);
+    letter-spacing: -.03em;
     color: var(--text);
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+    max-width: 100%;
+    overflow: hidden;
+    text-align: center;
   }
 
   /* Board */
   .board-container {
-    background: var(--surface);
+    background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 8px;
+    border-radius: var(--radius-lg);
+    padding: .5rem;
     position: relative;
     flex-shrink: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .game-board {
@@ -434,24 +341,29 @@
   /* ── OVERLAY ── */
   .game-overlay {
     position: absolute; inset: 0;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: rgba(10,10,11,0.88);
     backdrop-filter: blur(6px);
     display: none;
     flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 16px; z-index: 10;
+    gap: 1rem; z-index: 10;
   }
   .game-overlay.active { display: flex; animation: fadeIn 0.35s ease both; }
   .overlay-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(28px, 6vw, 44px);
-    letter-spacing: -2px; line-height: 1;
+    font-family: var(--serif);
+    font-size: clamp(1.75rem, 6vw, 2.75rem);
+    letter-spacing: -.04em; line-height: 1;
   }
-  .overlay-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .overlay-sub { font-size: .75rem; color: var(--text2); letter-spacing: .05em; }
+  .overlay-score {
+    font-family: var(--serif);
+    font-size: 2rem; letter-spacing: -.04em;
+    color: var(--accent);
+  }
   .mp-score-row { display:flex; justify-content:space-between; gap:28px; font-size:12px; letter-spacing:0.03em; min-width:180px; }
   .mp-score-row .mp-score-name { color:var(--muted); }
-  .mp-score-row .mp-score-val { color:var(--text); font-family:'DM Mono',monospace; }
+  .mp-score-row .mp-score-val { color:var(--text); font-family:var(--mono); }
   .mp-score-row.winner .mp-score-name { color:var(--text); }
   .mp-score-row.winner .mp-score-val { color:var(--accent3); font-weight:600; }
 
@@ -469,37 +381,31 @@
     max-width: 440px; width: 100%;
   }
   .mp-end-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(38px, 8vw, 60px);
-    letter-spacing: -2px; line-height: 1;
+    font-family: var(--serif);
+    font-size: clamp(2.375rem, 8vw, 3.75rem);
+    letter-spacing: -.04em; line-height: 1;
   }
-  .mp-end-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .mp-end-sub { font-size: .75rem; color: var(--text2); letter-spacing: .05em; }
   .mp-end-table {
     width: 100%; border-collapse: collapse;
-    font-size: 12px; letter-spacing: 0.03em;
+    font-size: .75rem; letter-spacing: .03em;
   }
   .mp-end-table th {
-    font-size: 9px; color: var(--muted); letter-spacing: 0.1em;
-    text-transform: uppercase; padding: 0 0 8px; font-weight: 400;
+    font-size: .6rem; color: var(--text2); letter-spacing: .1em;
+    text-transform: uppercase; padding: 0 0 .5rem; font-weight: 400;
     border-bottom: 1px solid var(--border);
   }
   .mp-end-table td {
-    padding: 9px 8px 0; font-family: 'DM Mono', monospace;
+    padding: .5625rem .5rem 0; font-family: var(--mono);
     color: var(--text);
   }
   .mp-end-table tr.winner td { color: var(--accent3); }
   .mp-end-table td:first-child { text-align:left; color:inherit; font-family:inherit; }
-  .mp-end-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-  .overlay-score {
-    font-family: 'Instrument Serif', serif;
-    font-size: 32px; letter-spacing: -1px;
-    color: var(--accent);
-  }
-
+  .mp-end-actions { display:flex; gap: .75rem; flex-wrap:wrap; justify-content:center; }
   /* Pause overlay */
   .pause-overlay {
     position: absolute; inset: 0;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: rgba(10,10,11,0.92);
     backdrop-filter: blur(8px);
     display: none;
@@ -508,18 +414,15 @@
     gap: 14px; z-index: 10;
   }
   .pause-overlay.active { display: flex; animation: fadeIn 0.2s ease both; }
-  .pause-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: 32px; letter-spacing: -1px;
-  }
+  .pause-title { font-family: var(--serif); font-size: 2rem; letter-spacing: -.04em; }
 
   /* ── STATUS ── */
   .status-banner {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 13px 20px;
-    display: flex; align-items: center; gap: 12px;
-    font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
-    transition: border-color 0.3s; min-height: 48px;
+    width: 100%; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .75rem 1.25rem;
+    display: flex; align-items: center; gap: .75rem;
+    font-size: .75rem; color: var(--text2); letter-spacing: .05em;
+    transition: border-color .3s; min-height: 48px;
   }
   .status-banner .dot {
     width: 8px; height: 8px; border-radius: 50%;
@@ -533,121 +436,124 @@
   /* ── MODAL ── */
   .modal-backdrop {
     display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.78); z-index: 100;
+    background: rgba(0,0,0,0.78); z-index: 200;
     align-items: center; justify-content: center;
     backdrop-filter: blur(6px);
   }
   .modal-backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
 
   .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 18px; padding: 44px; max-width: 440px;
-    width: calc(100% - 48px); display: flex; flex-direction: column;
-    align-items: center; gap: 20px; text-align: center;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 2.75rem;
+    max-width: 440px;
+    width: calc(100% - 2rem); display: flex; flex-direction: column;
+    align-items: center; gap: 1.25rem; text-align: center;
   }
 
   .howto-modal { max-width: 520px; align-items: flex-start; text-align: left; gap: 0; }
   .howto-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: 28px; letter-spacing: -1px; margin-bottom: 24px;
+    font-family: var(--serif);
+    font-size: 1.75rem; letter-spacing: -.04em; margin-bottom: 1.5rem;
   }
-  .how-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .how-step { display: flex; gap: .875rem; margin-bottom: 1.1rem; align-items: flex-start; }
   .step-num {
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--surface2); border: 1px solid var(--border);
+    background: var(--bg3); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px; color: var(--accent); flex-shrink: 0; margin-top: 2px;
+    font-size: .65rem; color: var(--accent); flex-shrink: 0; margin-top: 2px;
   }
   .step-text {
-    font-size: 12px; color: var(--muted);
-    line-height: 1.8; letter-spacing: 0.03em;
+    font-size: .78rem; color: var(--text2);
+    line-height: 1.8; letter-spacing: .03em;
   }
   .step-text strong { color: var(--text); font-weight: 400; }
 
   .key-group {
-    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .625rem;
   }
   .key-tag {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 3px 10px;
-    font-size: 10px; color: var(--muted); letter-spacing: 0.06em;
-    font-family: 'DM Mono', monospace;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2px .625rem;
+    font-size: .65rem; color: var(--text2); letter-spacing: .06em;
+    font-family: var(--mono);
   }
   .key-tag strong { color: var(--text); font-weight: 400; }
 
   /* Mobile touch controls */
   .touch-controls {
     display: none;
-    gap: 8px;
+    gap: .5rem;
     justify-content: center;
     align-items: center;
-    margin-top: 8px;
+    margin-top: .5rem;
     flex-wrap: wrap;
   }
   .touch-btn {
     width: 52px; height: 52px;
-    border-radius: 14px;
-    background: var(--surface);
+    border-radius: var(--radius);
+    background: var(--bg2);
     border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 18px;
+    color: var(--text2);
+    font-size: 1.125rem;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     transition: all 0.15s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .touch-btn:active { background: var(--surface2); border-color: var(--accent); color: var(--accent); transform: scale(0.93); }
-  .touch-btn.wide { width: 72px; font-size: 11px; letter-spacing: 0.06em; }
+  .touch-btn:active { background: var(--bg3); border-color: var(--accent); color: var(--accent); transform: scale(0.93); }
+  .touch-btn.wide { width: 72px; font-size: .68rem; letter-spacing: .06em; }
 
-  .touch-row { display: flex; gap: 8px; }
+  .touch-row { display: flex; gap: .5rem; }
 
-  footer {
-    max-width: 960px; width: 100%;
-    margin: auto auto 0; padding: 32px 24px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 11px; color: var(--muted); letter-spacing: 0.05em;
+  /* Game controls bar */
+  .game-controls {
+    width: 100%;
     border-top: 1px solid var(--border);
+    padding-top: .875rem;
+    margin-top: .5rem;
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    align-items: center;
   }
-  footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
-  footer a:hover { color: var(--accent); }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
   /* ── SETTINGS MODAL ── */
-  .settings-modal { max-width: 560px; align-items: flex-start; text-align: left; gap: 0; }
-  .settings-section { width: 100%; margin-bottom: 22px; }
+  .settings-modal { max-width: 640px; align-items: flex-start; text-align: left; gap: 0; max-height: 90vh; overflow-y: auto; }
+  .settings-section { width: 100%; margin-bottom: 1.5rem; }
   .settings-section-title {
-    font-size: 9px; color: var(--muted); letter-spacing: 0.12em;
-    text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border);
-    padding-bottom: 7px; width: 100%;
+    font-size: .65rem; color: var(--text3); letter-spacing: .12em;
+    text-transform: uppercase; margin-bottom: .625rem; border-bottom: 1px solid var(--border);
+    padding-bottom: .4rem; width: 100%;
   }
   .settings-row {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; padding: 5px 0;
+    gap: .625rem; padding: .3rem 0;
   }
-  .settings-label { font-size: 12px; color: var(--muted); letter-spacing: 0.03em; flex: 1; }
+  .settings-label { font-size: .78rem; color: var(--text2); letter-spacing: .03em; flex: 1; }
   .settings-number {
-    width: 68px; background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 8px; padding: 5px 10px; color: var(--text);
-    font-family: 'DM Mono', monospace; font-size: 12px; outline: none; text-align: right;
-    transition: border-color 0.2s;
+    width: 68px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .3rem .625rem; color: var(--text);
+    font-family: var(--mono); font-size: .75rem; outline: none; text-align: right;
+    transition: border-color .2s;
   }
   .settings-number:focus { border-color: var(--accent); }
   .keybind-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 5px 0; border-bottom: 1px solid rgba(37,37,40,0.4);
+    display: flex; align-items: center; gap: .5rem;
+    padding: .3rem 0; border-bottom: 1px solid rgba(255,255,255,.04);
   }
   .keybind-row:last-child { border-bottom: none; }
-  .keybind-action { font-size: 11px; color: var(--muted); width: 110px; flex-shrink: 0; letter-spacing: 0.03em; }
-  .keybind-slots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .keybind-action { font-size: .72rem; color: var(--text2); width: 110px; flex-shrink: 0; letter-spacing: .03em; }
+  .keybind-slots { display: flex; gap: .375rem; flex-wrap: wrap; }
   .kbslot {
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 7px; padding: 4px 10px; font-size: 10px;
-    color: var(--text); font-family: 'DM Mono', monospace; letter-spacing: 0.06em;
-    cursor: pointer; transition: all 0.18s; min-width: 42px; text-align: center;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .25rem .625rem; font-size: .65rem;
+    color: var(--text); font-family: var(--mono); letter-spacing: .06em;
+    cursor: pointer; transition: all .18s; min-width: 42px; text-align: center;
     user-select: none;
   }
   .kbslot:hover { border-color: var(--accent); color: var(--accent); }
@@ -661,35 +567,23 @@
     to   { box-shadow: 0 0 0 4px rgba(74,255,140,0); }
   }
   .toggle-btn {
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 20px; padding: 5px 16px; font-size: 11px;
-    color: var(--muted); font-family: 'DM Mono', monospace; cursor: pointer;
-    transition: all 0.2s; letter-spacing: 0.06em; min-width: 52px; text-align: center;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: .3rem 1rem; font-size: .7rem;
+    color: var(--text2); font-family: var(--mono); cursor: pointer;
+    transition: all .2s; letter-spacing: .06em; min-width: 52px; text-align: center;
     user-select: none;
   }
-  .toggle-btn.on { border-color: var(--accent3); color: var(--accent3); background: rgba(74,255,140,0.07); }
-
-  /* Sound toggle */
-  .sound-btn {
-    background: none; border: 1px solid var(--border);
-    border-radius: 8px; padding: 5px 10px;
-    font-size: 14px; cursor: pointer;
-    transition: all 0.2s;
-    color: var(--muted);
-    line-height: 1;
-  }
-  .sound-btn:hover { border-color: var(--accent); }
-  .sound-btn.on { color: var(--accent); border-color: rgba(200,255,74,0.3); }
+  .toggle-btn.on { border-color: var(--accent3); color: var(--accent3); background: rgba(74,255,140,.07); }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
     :root { --cell: 24px; }
     .side-panel { display: none; }
-    .game-layout { gap: 10px; }
+    .game-layout { gap: .625rem; }
     .touch-controls { display: flex; }
     .mobile-info {
       display: flex !important;
-      gap: 10px;
+      gap: .625rem;
       justify-content: center;
       width: 100%;
     }
@@ -697,15 +591,15 @@
 
   @media (max-width: 480px) {
     :root { --cell: min(8vw, 24px); }
-    .chip { padding: 5px 10px; font-size: 10px; }
-    .chips { gap: 5px; }
-    .hero-sub { font-size: 12px; }
+    .chip { padding: .3rem .625rem; font-size: .65rem; }
+    .chips { gap: .3rem; }
+    .hero-sub { font-size: .8rem; }
     .home-actions { flex-direction: column; align-items: stretch; }
-    .home-actions .btn { text-align: center; }
-    .modal { padding: 28px 20px; margin: 0 16px; }
-    .screen { padding: 0 16px 48px; }
-    .board-container { padding: 6px; }
-    .touch-btn { width: 46px; height: 46px; border-radius: 12px; }
+    .home-actions .btn { text-align: center; justify-content: center; }
+    .modal { padding: 1.75rem 1.25rem; margin: 0 1rem; }
+    .screen { padding: 0 1rem 3rem; }
+    .board-container { padding: .375rem; }
+    .touch-btn { width: 46px; height: 46px; }
   }
 
   @media (min-width: 701px) {
@@ -727,47 +621,51 @@
   :root { --opp-cell: 13px; }
 
   /* Lobby */
-  #lobby { justify-content: flex-start; padding-top: 48px; align-items: center; }
-  .lobby-inner { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 26px; }
-  .lobby-title { font-family: 'Instrument Serif', serif; font-size: 32px; letter-spacing: -1px; margin-bottom: 4px; }
-  .lobby-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; line-height: 1.6; }
+  #lobby { justify-content: flex-start; padding-top: 3rem; align-items: center; }
+  .lobby-inner { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 1.625rem; }
+  .lobby-title { font-family: var(--serif); font-size: 2rem; letter-spacing: -.04em; margin-bottom: .25rem; }
+  .lobby-sub { font-size: .78rem; color: var(--text2); letter-spacing: .04em; line-height: 1.6; }
   .lobby-input {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 10px 14px;
-    color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
-    outline: none; transition: border-color 0.2s; flex: 1; width: 100%;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .625rem .875rem;
+    color: var(--text); font-family: var(--mono); font-size: .8rem;
+    outline: none; transition: border-color .2s; flex: 1; width: 100%;
   }
   .lobby-input:focus { border-color: var(--accent); }
-  .lobby-input::placeholder { color: var(--muted); }
+  .lobby-input::placeholder { color: var(--text3); }
   .lobby-input:disabled { opacity: 0.38; cursor: not-allowed; }
-  .lobby-row { display: flex; gap: 10px; align-items: stretch; padding: 0 5px 20px 0;}
+  .lobby-row { display: flex; gap: .625rem; align-items: stretch; padding: 0 .3rem 1.25rem 0; }
   .lobby-code-row {
-    display: none; align-items: center; gap: 14px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 20px;
+    display: none; align-items: center; gap: .875rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .875rem 1.25rem;
   }
-  .lobby-code-label { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
-  .lobby-code-val { font-family: 'Instrument Serif', serif; font-size: 28px;
-    letter-spacing: 3px; color: var(--accent); flex: 1; }
-  .player-slots { display: flex; flex-direction: column; gap: 8px; }
-  .player-slots-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .lobby-code-label { font-size: .65rem; color: var(--text3); letter-spacing: .12em; text-transform: uppercase; }
+  .lobby-code-val { font-family: var(--serif); font-size: 1.75rem;
+    letter-spacing: .1em; color: var(--accent); flex: 1; }
+  .player-slots { display: flex; flex-direction: column; gap: .5rem; }
+  .player-slots-label { font-size: .65rem; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }
   .lobby-slot {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px 16px;
-    font-size: 12px; letter-spacing: 0.04em; min-height: 44px;
+    display: flex; align-items: center; gap: .75rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .75rem 1rem;
+    font-size: .75rem; letter-spacing: .04em; min-height: 44px;
   }
-  .slot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+  .slot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bg4); flex-shrink: 0; }
   .slot-dot.connected { background: var(--accent3); }
-  .slot-tag { margin-left: auto; font-size: 10px; letter-spacing: 0.08em; color: var(--muted); }
-  .mode-cards { display: flex; gap: 15px; padding: 20px 0;}
+  .slot-tag { margin-left: auto; font-size: .65rem; letter-spacing: .08em; color: var(--text3); flex-shrink: 0; }
+  .slot-identity { display: flex; flex-direction: column; gap: .05rem; min-width: 0; overflow: hidden; flex: 1; }
+  .slot-dispname { font-size: .8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-username { font-size: .65rem; color: var(--text3); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-elo { font-size: .6rem; color: var(--accent); font-variant-numeric: tabular-nums; margin-left: .3rem; opacity: .8; }
+  .mode-cards { display: flex; gap: .9rem; padding: 1.25rem 0; }
   .mode-card {
-    flex: 1; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-    cursor: pointer; transition: all 0.2s; user-select: none;
+    flex: 1; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .875rem 1rem;
+    cursor: pointer; transition: all .2s; user-select: none;
   }
-  .mode-card:hover { border-color: var(--border2); }
-  .mode-card.selected { border-color: var(--accent); background: rgba(200,255,74,0.04); }
+  .mode-card:hover { border-color: rgba(255,255,255,.14); }
+  .mode-card.selected { border-color: var(--accent); background: rgba(200,255,74,.04); }
   /* SP-only controls hidden in MP; MP-only controls hidden in SP */
   .sp-only { display: inline-flex; }
   .mp-only { display: none; }
@@ -776,14 +674,20 @@
   /* Leave-game confirm popup */
   #leaveConfirmPopup {
     display: none; position: absolute; bottom: 44px; left: 0; z-index: 200;
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem;
     min-width: 190px; box-shadow: 0 8px 32px rgba(0,0,0,0.55);
   }
-  .mode-card-name { font-size: 13px; color: var(--text); margin-bottom: 5px; }
-  .mode-card-desc { font-size: 10px; color: var(--muted); line-height: 1.55; letter-spacing: 0.02em; }
-  #lobbyStatus { font-size: 12px; color: var(--muted); min-height: 18px; letter-spacing: 0.03em; }
-  #lobbyExpiry { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.04em; margin-top: 5px; min-height: 15px; transition: color 0.3s; }
+  .mode-card-name { font-size: .8rem; color: var(--text); margin-bottom: .3rem; }
+  .mode-card-desc { font-size: .65rem; color: var(--text2); line-height: 1.55; letter-spacing: .02em; }
+  .mode-card-badge {
+    display: inline-block; margin-top: .5rem;
+    font-size: .58rem; padding: .15rem .5rem;
+    border-radius: 999px; border: 1px solid rgba(200,255,74,.3);
+    color: var(--accent); letter-spacing: .08em; text-transform: uppercase;
+  }
+  #lobbyStatus { font-size: .75rem; color: var(--text2); min-height: 18px; letter-spacing: .03em; }
+  #lobbyExpiry { font-size: .7rem; color: var(--text2); font-family: var(--mono); letter-spacing: .04em; margin-top: .3rem; min-height: 15px; transition: color .3s; }
   #lobbyExpiry.warn   { color: var(--accent3); }
   #lobbyExpiry.urgent { color: var(--accent2); }
 
@@ -802,21 +706,141 @@
     min-width: 130px;
   }
   body.mp .mp-panel { display: flex; }
+  /* MP stats panel - 4th column, opponent score/lines/garbage */
+  #mpStatsPanel { display: none; }
+  body.mp #mpStatsPanel { display: flex; flex-direction: column; gap: var(--panel-gap, .5rem); }
+  /* ELO section in ranked end screen */
+  .mp-elo-section {
+    display: flex; flex-direction: column; align-items: stretch;
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: .75rem 1.25rem; gap: .4rem; width: 100%; max-width: 320px;
+  }
+  .mp-elo-row {
+    display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  }
+  .mp-elo-row .elo-player { font-size: .72rem; color: var(--text2); }
+  .mp-elo-row .elo-delta {
+    font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em;
+  }
+  .mp-elo-row .elo-delta.pos { color: var(--accent3); }
+  .mp-elo-row .elo-delta.neg { color: var(--accent2); }
+  .mp-elo-row .elo-delta.neu { color: var(--text3); }
+  .mp-elo-divider { height: 1px; background: var(--border); align-self: stretch; }
+  /* Lobby name readonly */
+  #lobbyName[readonly] { cursor: default; opacity: .75; pointer-events: none; }
+
+  /* ── Matchmaking Lobby ─────────────────────────────────── */
+  .queue-card-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .875rem;
+  }
+  @media (max-width: 500px) { .queue-card-grid { grid-template-columns: 1fr; } }
+
+  .queue-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem;
+    cursor: pointer; text-align: left; transition: border-color .18s, background .18s, transform .12s;
+    display: flex; flex-direction: column; gap: .5rem;
+    appearance: none; color: inherit; font-family: inherit;
+  }
+  .queue-card:hover { border-color: var(--accent); background: rgba(200,255,74,.04); transform: translateY(-2px); }
+  .queue-card.casual:hover { border-color: var(--accent4, #60efff); background: rgba(96,239,255,.04); }
+
+  .qc-top { display: flex; justify-content: space-between; align-items: center; }
+  .qc-name { font-family: var(--serif); font-size: 1.25rem; letter-spacing: -.03em; }
+  .qc-badge {
+    font-size: .6rem; padding: .2rem .55rem; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .1em;
+    background: rgba(200,255,74,.12); color: var(--accent); border: 1px solid rgba(200,255,74,.25);
+  }
+  .qc-badge.unranked { background: rgba(255,255,255,.04); color: var(--text3); border-color: var(--border); }
+  .qc-desc { font-size: .78rem; color: var(--text2); line-height: 1.65; }
+  .qc-elo { font-family: var(--mono); font-size: .78rem; color: var(--accent); letter-spacing: .04em; }
+  .qc-cta { font-size: .7rem; color: var(--text3); letter-spacing: .06em; margin-top: .25rem; }
+  .queue-card:hover .qc-cta { color: var(--accent); }
+  .queue-card.casual:hover .qc-cta { color: var(--accent4, #60efff); }
+
+  .mq-divider {
+    display: flex; align-items: center; gap: .75rem;
+    color: var(--text3); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; margin: 1rem 0;
+  }
+  .mq-divider div { flex: 1; height: 1px; background: var(--border); }
+
+  .mq-auth-wall {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.5rem;
+    display: flex; flex-direction: column; gap: .875rem;
+  }
+  .mq-auth-wall p { font-size: .85rem; color: var(--text2); margin: 0; line-height: 1.65; }
+  .mq-auth-wall .btn { align-self: flex-start; }
+
+  .mq-friend-row {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .625rem;
+    margin-top: .875rem; padding: .875rem 1rem;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  }
+  .mq-friend-label { font-size: .8rem; color: var(--text2); }
+
+  /* Shared centred panel for searching / found / waiting */
+  .mq-center-panel {
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    padding: 2.5rem 1rem 2rem; width: 100%; max-width: 400px; margin: 0 auto; text-align: center;
+  }
+  .mq-mode-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .14em; color: var(--text3); }
+  .mq-rank-row { display: flex; gap: .625rem; align-items: center; }
+  .mq-elo-val { font-family: var(--mono); font-size: .85rem; color: var(--text2); }
+
+  /* Searching spinner */
+  .mq-spinner { position: relative; width: 64px; height: 64px; }
+  .mq-spinner-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 3px solid rgba(200,255,74,.15); border-top-color: var(--accent);
+    animation: mqSpin 0.9s linear infinite;
+  }
+  @keyframes mqSpin { to { transform: rotate(360deg); } }
+  .mq-spinner-dot {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .mq-searching-text { font-size: .875rem; color: var(--text2); letter-spacing: .03em; }
+  .mq-range-row { display: flex; align-items: center; gap: .5rem; font-size: .78rem; }
+  .mq-range-label { color: var(--text3); }
+  .mq-range-val { font-family: var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .mq-wait-row { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+
+  /* Match found */
+  .mq-found-title {
+    font-family: var(--serif); font-size: 2rem; letter-spacing: -.03em; color: var(--accent);
+    animation: mqFoundPop .4s cubic-bezier(.175,.885,.32,1.275) both;
+  }
+  @keyframes mqFoundPop { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:scale(1); } }
+  .mq-found-vs { display: flex; align-items: center; gap: 1.5rem; justify-content: center; padding: .75rem 0; }
+  .mq-found-player { display: flex; flex-direction: column; gap: .25rem; min-width: 90px; }
+  .mq-found-name { font-family: var(--serif); font-size: 1.1rem; letter-spacing: -.02em; }
+  .mq-found-elo { font-family: var(--mono); font-size: .75rem; color: var(--text3); }
+  .mq-found-vs-divider { font-family: var(--serif); font-size: 1.5rem; color: var(--text3); flex-shrink: 0; }
+  .mq-found-type { font-size: .65rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text3); }
+  .mq-found-countdown { font-family: var(--mono); font-size: 1rem; color: var(--text2); }
+  .mq-found-countdown span { color: var(--accent); font-size: 1.3rem; }
+
+  /* Waiting room player slots (minimal) */
+  .lobby-waiting-inner { display: flex; flex-direction: column; gap: .875rem; width: 100%; }
 
   .opp-board {
     display: grid;
     grid-template-columns: repeat(10, var(--opp-cell));
     grid-template-rows: repeat(20, var(--opp-cell));
     gap: 1px;
-    background: var(--surface2);
-    border-radius: 6px;
+    background: var(--bg3);
+    border-radius: var(--radius);
     padding: 3px;
   }
   .opp-cell {
     width: var(--opp-cell); height: var(--opp-cell);
     border-radius: 2px;
-    background: var(--surface3);
-    border: 1px solid rgba(37,37,40,0.4);
+    background: var(--bg4);
+    border: 1px solid var(--border);
   }
   .opp-cell.opp-locked-I { background:rgba(50,220,255,.55); border-color:rgba(50,220,255,.3); }
   .opp-cell.opp-locked-O { background:rgba(255,220,50,.55);  border-color:rgba(255,220,50,.3); }
@@ -830,11 +854,16 @@
   /* Garbage bar - right edge of board container */
   .garbage-bar-wrap {
     position: absolute; right: -12px; top: 8px; bottom: 8px;
-    width: 7px; background: var(--surface2); border-radius: 4px;
+    width: 7px; background: var(--bg3); border-radius: 4px;
     overflow: hidden; display: none; flex-direction: column-reverse;
     border: 1px solid var(--border); z-index: 5;
   }
   body.mp .garbage-bar-wrap { display: flex; }
+  /* Hide garbage UI in co-op and sprint modes */
+  body.mp.coop .garbage-bar-wrap,
+  body.mp.coop .garbage-warn,
+  body.mp.sprint .garbage-bar-wrap,
+  body.mp.sprint .garbage-warn { display: none !important; }
   #garbageBar {
     width: 100%; height: 0%; background: var(--accent2); border-radius: 3px;
     transition: height 0.25s ease, background 0.25s, box-shadow 0.25s;
@@ -846,8 +875,8 @@
     position: absolute; left: 50%; bottom: 18px;
     transform: translateX(-50%) scale(0.8);
     background: linear-gradient(135deg, #ff3a3a, #ff7043);
-    color: #fff; font-family: 'Instrument Serif', serif;
-    font-size: 22px; letter-spacing: -0.5px;
+    color: #fff; font-family: var(--serif);
+    font-size: 1.375rem; letter-spacing: -.03em;
     padding: 8px 22px; border-radius: 30px;
     box-shadow: 0 0 24px rgba(255,60,60,0.7);
     opacity: 0; pointer-events: none; z-index: 20;
@@ -874,7 +903,7 @@
   .atk-bubble {
     background: linear-gradient(135deg, #3ddc84, #00bfa5);
     color: #0a0a0b;
-    font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700;
+    font-family: var(--mono); font-size: .875rem; font-weight: 700;
     padding: 4px 11px; border-radius: 20px; white-space: nowrap;
     box-shadow: 0 0 12px rgba(61,220,132,0.5);
     animation: atkFly 1.5s ease forwards;
@@ -904,85 +933,129 @@
   }
   .opp-board.hit { animation: oppBoardHit 0.5s ease forwards; }
 
+  /* Opponent profile card in the MP side panel */
+  .opp-card { width: 100%; }
+  .opp-card-name { font-size: .82rem; color: var(--text); font-weight: 500; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opp-card-username { font-size: .65rem; color: var(--text3); margin-bottom: .35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opp-card-elo { display: flex; align-items: center; gap: .35rem; margin-bottom: .45rem; flex-wrap: wrap; }
+  .opp-card-elo .elo-val { font-size: .75rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .opp-card-stats { display: grid; grid-template-columns: auto 1fr; gap: .15rem .5rem; font-size: .62rem; }
+  .opp-card-stats .sk { color: var(--text3); }
+  .opp-card-stats .sv { color: var(--text); font-variant-numeric: tabular-nums; }
+
   /* MP mode banner row */
   .mp-mode-banner {
     display: none; width: 100%;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 20px;
-    font-size: 11px; letter-spacing: 0.08em; text-align: center;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .5rem 1.25rem;
+    font-size: .68rem; letter-spacing: .08em; text-align: center;
   }
   body.mp .mp-mode-banner { display: block; }
-  .mp-banner-vs { color: var(--muted); }
+  .mp-banner-vs { color: var(--text2); }
   .mp-banner-mode { color: var(--accent); }
   .mp-banner-name { color: var(--text); }
 
   /* Co-op progress */
   .coop-progress-row {
-    display: none; align-items: center; gap: 12px; width: 100%;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 9px 16px;
-    font-size: 11px; letter-spacing: 0.06em; color: var(--muted);
+    display: none; align-items: center; gap: .75rem; width: 100%;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .5625rem 1rem;
+    font-size: .68rem; letter-spacing: .06em; color: var(--text2);
   }
   body.mp .coop-progress-row { display: flex; }
-  .coop-bar-outer { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .coop-bar-outer { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
   #coopProgressBar { height: 100%; background: var(--accent3); border-radius: 2px; width: 0%; transition: width 0.3s; }
 
   /* Chat */
-  .mp-chat { display: none; flex-direction: column; gap: 6px; width: 100%; margin-top: 4px; }
+  .mp-chat { display: none; flex-direction: column; gap: .375rem; width: 100%; margin-top: .25rem; }
   body.mp .mp-chat { display: flex; }
   #chatLog {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 12px;
-    font-size: 11px; color: var(--muted); height: 150px;
-    overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
-    margin: 20px 0;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .5rem .75rem;
+    font-size: .7rem; color: var(--text2); height: 150px;
+    overflow-y: auto; display: flex; flex-direction: column; gap: .2rem;
+    margin: 1.25rem 0;
   }
-  .chat-msg strong { color: var(--accent); font-weight: 400; margin-right: 5px; }
-  .chat-row { display: flex; gap: 8px; }
+  .chat-msg strong { color: var(--accent); font-weight: 400; margin-right: .3rem; }
+  .chat-row { display: flex; gap: .5rem; }
   #chatInput {
-    flex: 1; background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 7px 12px;
-    color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+    flex: 1; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .4375rem .75rem;
+    color: var(--text); font-family: var(--mono); font-size: .75rem;
     outline: none;
-    transition: border 0.2s ease;
+    transition: border .2s ease;
   }
   #chatInput:focus { border-color: var(--accent); }
-  #chatInput::placeholder { color: var(--muted); }
+  #chatInput::placeholder { color: var(--text3); }
+
+  /* ── Visual polish ── */
+
+  /* Home screen: subtle accent radial glow from top - matches index.html hero depth */
+  #home {
+    background: radial-gradient(ellipse 90% 55% at 50% -5%, rgba(200,255,74,.055) 0%, transparent 68%);
+  }
+  .hero-title { text-shadow: 0 0 120px rgba(200,255,74,.09); }
+  .hero-sub { max-width: 460px; }
+
+  /* Game bar: separate cleanly from the board */
+  .game-bar {
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Side panel labels: match the subtle section heading style on index */
+  .panel-label {
+    letter-spacing: .14em;
+  }
+
+  /* Board container: ambient depth shadow */
+  .board-container {
+    box-shadow: 0 8px 40px rgba(0,0,0,.45);
+  }
+
+  /* Lobby: give mode cards a slightly warmer hover */
+  .mode-card:hover {
+    background: var(--bg3);
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    transform: translateY(-1px);
+  }
+  .mode-card { transition: all .2s cubic-bezier(.23,1,.32,1); }
+
+  /* Home stats chips: slightly more breathing room */
+  .stats-row { margin-top: 2rem; }
+
+  /* Game overlay title: match the large serif display style */
+  .overlay-title { line-height: .95; }
+
+  /* MP end screen: breathing room */
+  .mp-end-inner { gap: 1.5rem; }
 </style>
 </head>
-<body style="cursor:none">
+<body>
 <div id="_pg-curtain" style="position:fixed;inset:0;z-index:99995;background:#0a0a0b;pointer-events:none"></div>
 
-<header>
-  <a class="logo" href="index.html">taozi<span>.</span></a>
-  <div class="header-right">
-    <span class="version">v1.0</span>
-    <button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Toggle sound">🔇</button>
-    <button class="btn sm" onclick="openSettingsModal()">Settings</button>
-    <button class="btn sm" onclick="openModal('howto')">Controls</button>
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Tetris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html" class="active">Play</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+      <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="gameLogout()">Sign out</button>
+      <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="openSettingsModal()">Settings</button>
+    </div>
   </div>
-</header>
-
-<!-- ══ HOME ══ -->
-<div id="home" class="screen active">
-  <div class="hero-gap"></div>
-  <p class="hero-eyebrow">Stack & clear</p>
-  <h1 class="hero-title">Tet<em>ris<span style="color:var(--accent)">.</span></em></h1>
-  <p class="hero-sub">Stack falling tetrominoes on the board. Complete full rows to clear them and score points. The game speeds up as you level up.</p>
-
-  <div class="hero-preview" id="heroPreview"></div>
-
-  <div class="home-actions">
-    <button class="btn primary" onclick="startGame()">Start Game</button>
-    <button class="btn" onclick="nav('lobby')">Multiplayer</button>
-    <button class="btn" onclick="openModal('howto')">How to Play</button>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat-chip">best <strong id="homeBest">0</strong></div>
-    <div class="stat-chip">lines <strong id="homeLines">0</strong></div>
-  </div>
-</div>
+</nav>
 
 <!-- ══ GAME ══ -->
 <div id="game" class="screen">
@@ -1021,10 +1094,6 @@
         <span class="panel-label">Level</span>
         <span class="panel-stat" id="sideLevelVal">1</span>
       </div>
-      <div class="panel-box">
-        <span class="panel-label">Best</span>
-        <span class="panel-stat" id="sideBestVal">0</span>
-      </div>
       <!-- Attack sent indicator (MP only) -->
       <div class="panel-box" id="attackSentPanel" style="display:none;">
         <span class="panel-label">Sent</span>
@@ -1047,9 +1116,10 @@
         <div class="overlay-score" id="overlayScore">0</div>
         <div class="overlay-sub" id="overlaySub"></div>
         <div id="overlayMPScoreList" style="display:none;flex-direction:column;gap:6px;"></div>
+        <div id="overlayXpPanel" class="xp-gain-panel" style="display:none;margin-top:8px;"></div>
         <div id="overlaySPBtns" style="display:flex;gap:10px;margin-top:4px;">
           <button class="btn primary" onclick="startGame()">Play Again</button>
-          <button class="btn" onclick="nav('home')">Menu</button>
+          <button class="btn" onclick="nav('lobby')">Menu</button>
         </div>
         <div id="overlayMPBtns" style="display:none;gap:10px;margin-top:4px;">
           <button class="btn primary" onclick="mpBackToLobby()">Back to Lobby</button>
@@ -1081,10 +1151,21 @@
 
     <!-- MP: Opponent panel (hidden in single-player) -->
     <div class="mp-panel" id="mpOpponentPanel">
+      <div class="panel-box" id="oppCard" style="display:none">
+        <div class="opp-card">
+          <div class="opp-card-name" id="oppCardName">-</div>
+          <div class="opp-card-username" id="oppCardUsername"></div>
+          <div class="opp-card-elo" id="oppCardElo"></div>
+          <div class="opp-card-stats" id="oppCardStats"></div>
+        </div>
+      </div>
       <div class="panel-box">
         <span class="panel-label" id="oppName">Opponent</span>
         <div id="oppBoard" class="opp-board"></div>
       </div>
+    </div>
+    <!-- MP stats (score + lines for opponent, shown in separate column) -->
+    <div class="mp-panel" id="mpStatsPanel">
       <div class="panel-box">
         <span class="panel-label">Their score</span>
         <span class="panel-stat" id="oppScore">0</span>
@@ -1092,6 +1173,10 @@
       <div class="panel-box">
         <span class="panel-label">Their lines</span>
         <span class="panel-stat" id="oppLines">0</span>
+      </div>
+      <div class="panel-box" id="oppGarbageSentPanel" style="display:none">
+        <span class="panel-label">Garbage sent</span>
+        <span class="panel-stat" id="oppGarbageSent">0</span>
       </div>
     </div>
   </div>
@@ -1139,11 +1224,13 @@
   </div>
 
   <div style="position:relative;">
-    <div style="display:flex;gap:10px;margin-top:4px;">
+    <div class="game-controls">
       <button class="btn sm sp-only" onclick="startGame()">New Game</button>
       <button class="btn sm sp-only" onclick="togglePause()">Pause</button>
-      <button class="btn sm sp-only" onclick="nav('home')">Menu</button>
+      <button class="btn sm sp-only" onclick="nav('lobby')">Menu</button>
       <button class="btn sm mp-only" onclick="confirmLeaveGame()">Leave Game</button>
+      <button class="btn sm ghost" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toggle fullscreen">&#x26F6;</button>
+      <a href="index.html" class="btn sm ghost">&#8592; Home</a>
     </div>
     <div id="leaveConfirmPopup">
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Leave the match?<br><span style="font-size:10px;">Your opponent will win by default.</span></div>
@@ -1160,11 +1247,19 @@
   <div class="mp-end-inner">
     <div class="mp-end-title" id="mpEndTitle"></div>
     <div class="mp-end-sub" id="mpEndSub"></div>
+    <!-- Ranked ELO change section -->
+    <div class="mp-elo-section" id="mpEndEloSection" style="display:none">
+      <div class="mp-elo-row" id="mpEndMyEloRow"></div>
+      <div class="mp-elo-divider"></div>
+      <div class="mp-elo-row opp" id="mpEndOppEloRow"></div>
+    </div>
     <table class="mp-end-table" id="mpEndTable" style="display:none">
       <thead><tr>
         <th style="text-align:left">Player</th>
         <th>Score</th>
         <th>Lines</th>
+        <th id="mpEndGarbageHdr" style="display:none">Garbage</th>
+        <th id="mpEndEloDeltaHdr" style="display:none">ELO Δ</th>
       </tr></thead>
       <tbody id="mpEndTableBody"></tbody>
     </table>
@@ -1176,69 +1271,152 @@
 </div>
 
 <!-- ══ LOBBY ══ -->
-<div id="lobby" class="screen">
+<div id="lobby" class="screen active">
   <div class="lobby-inner">
-    <div>
-      <div class="lobby-title">Multi<em>player<span style="color:var(--accent)">.</span></em></div>
-      <p class="lobby-sub">Create a room or join one with a room code. Share the code with your opponent.</p>
-    </div>
 
-    <div class="lobby-form">
-      <input class="lobby-input" id="lobbyName" placeholder="Your name" maxlength="20">
+    <!-- HOME: mode selection -->
+    <div id="mqHome">
+      <div>
+        <div class="lobby-title">Play<em>.</em></div>
+        <p class="lobby-sub">Solo marathon or queue for a ranked multiplayer match.</p>
+      </div>
 
-      <div class="mode-cards">
-        <div class="mode-card selected" data-mode="versus" onclick="selectMode(this)">
-          <div class="mode-card-name">Versus</div>
-          <div class="mode-card-desc">Clear lines, send garbage. Last board standing wins.</div>
-        </div>
-        <div class="mode-card" data-mode="sprint" onclick="selectMode(this)">
-          <div class="mode-card-name">Sprint Race</div>
-          <div class="mode-card-desc">Same pieces, same board. First to clear 40 lines wins.</div>
-        </div>
-        <div class="mode-card" data-mode="coop" onclick="selectMode(this)">
-          <div class="mode-card-name">Co-op</div>
-          <div class="mode-card-desc">Work together to clear 150 lines before time&nbsp;runs out.</div>
+      <!-- Solo section -->
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);">Solo</div>
+        <div style="display:flex;gap:.625rem;flex-wrap:wrap;">
+          <button class="btn primary" onclick="startGame()">Marathon</button>
+          <a href="controls.html" class="btn ghost">How to Play</a>
         </div>
       </div>
 
-      <div class="lobby-row">
-        <input class="lobby-input" id="lobbyCodeInput" placeholder="Room code (join existing)" maxlength="8"
-          oninput="this.value=this.value.toUpperCase()">
+      <div class="mq-divider"><div></div><span>Multiplayer</span><div></div></div>
+
+      <!-- Auth wall (hidden when signed in) -->
+      <div id="mqAuthWall" class="mq-auth-wall hidden">
+        <p>Sign in to play multiplayer, challenge friends, and earn a rank.</p>
+        <div style="display:flex;gap:.625rem;flex-wrap:wrap;">
+          <a href="login.html?redir=game.html" class="btn primary">Sign in</a>
+          <a href="register.html?redir=game.html" class="btn ghost">Create account</a>
+        </div>
       </div>
-      <div class="lobby-row">
-        <button class="btn primary" id="lobbyCreateBtn" onclick="lobbyCreateRoom()">Create Room</button>
-        <button class="btn" id="lobbyJoinBtn" onclick="lobbyJoinRoom()">Join Room</button>
-        <button class="btn sm" id="lobbyBackBtn" onclick="lobbyGoBack()">Back</button>
-        <button class="btn" id="lobbyLeaveBtn" onclick="lobbyLeave()" style="display:none">Leave Room</button>
+
+      <!-- Queue mode cards (visible when signed in) -->
+      <div id="mqQueueBtns" class="hidden">
+        <div class="queue-card-grid">
+          <button class="queue-card ranked" onclick="enterQueue('ranked-versus')">
+            <div class="qc-top">
+              <span class="qc-name">Ranked</span>
+              <span class="qc-badge" id="qMyRankBadge">Unranked</span>
+            </div>
+            <div class="qc-desc">ELO-matched versus. Win or lose, your rank changes.</div>
+            <div class="qc-elo" id="qMyElo">1000 ELO</div>
+            <div class="qc-cta">Find Match →</div>
+          </button>
+          <button class="queue-card casual" onclick="enterQueue('casual-versus')">
+            <div class="qc-top">
+              <span class="qc-name">Casual</span>
+              <span class="qc-badge unranked">Unranked</span>
+            </div>
+            <div class="qc-desc">Play for fun. No ELO at stake - queues with anyone.</div>
+            <div class="qc-elo" style="color:var(--text3)">No ranking</div>
+            <div class="qc-cta">Find Match →</div>
+          </button>
+          <button class="queue-card" onclick="enterQueue('sprint')">
+            <div class="qc-top">
+              <span class="qc-name">Sprint Race</span>
+              <span class="qc-badge unranked">Unranked</span>
+            </div>
+            <div class="qc-desc">First to clear 40 lines wins. No ELO at stake.</div>
+            <div class="qc-elo" style="color:var(--text3)">No ranking</div>
+            <div class="qc-cta">Find Match →</div>
+          </button>
+          <button class="queue-card" onclick="enterQueue('coop')">
+            <div class="qc-top">
+              <span class="qc-name">Co-op</span>
+              <span class="qc-badge unranked">Unranked</span>
+            </div>
+            <div class="qc-desc">Team up with a random partner to clear 150 lines together. No ELO.</div>
+            <div class="qc-elo" style="color:var(--text3)">No ranking</div>
+            <div class="qc-cta">Find Match →</div>
+          </button>
+        </div>
+        <div class="mq-friend-row">
+          <span class="mq-friend-label">Challenge a specific friend?</span>
+          <a href="friends.html" class="btn sm ghost">Friends ↗</a>
+        </div>
+        <p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
       </div>
     </div>
 
-    <div class="lobby-code-row" id="lobbyCodeRow">
-      <span class="lobby-code-label">Room code</span>
-      <span class="lobby-code-val" id="lobbyCodeDisplay">______</span>
-      <button class="btn sm" id="copyCodeBtn" onclick="copyRoomCode()">Copy</button>
-      <button class="btn sm" id="copyInviteBtn" onclick="copyInviteLink()">Invite Link</button>
+    <!-- SEARCHING STATE -->
+    <div id="mqSearching" class="hidden">
+      <div class="mq-center-panel">
+        <div class="mq-mode-label" id="mqModeLabel">Ranked Versus</div>
+        <div class="mq-rank-row">
+          <span class="rank-badge" id="mqSearchRankBadge">Unranked</span>
+          <span class="mq-elo-val" id="mqSearchElo">1000 ELO</span>
+        </div>
+        <div class="mq-spinner">
+          <div class="mq-spinner-ring"></div>
+          <div class="mq-spinner-dot"></div>
+        </div>
+        <div class="mq-searching-text">Searching for opponent…</div>
+        <div class="mq-range-row" id="mqRangeRow">
+          <span class="mq-range-label">ELO range</span>
+          <span class="mq-range-val" id="mqRangeDisplay">±100</span>
+        </div>
+        <div class="mq-wait-row"><span id="mqWaitTime">0:00</span> elapsed</div>
+        <button class="btn sm ghost" onclick="cancelQueue()" style="margin-top:.25rem">Cancel</button>
+      </div>
     </div>
 
-    <div class="player-slots">
-      <div class="player-slots-label">Players</div>
-      <div class="lobby-slot" id="lobbySlot0">
-        <span class="slot-dot"></span>
-        <span style="color:var(--muted)">Empty</span>
-      </div>
-      <div class="lobby-slot" id="lobbySlot1">
-        <span class="slot-dot"></span>
-        <span style="color:var(--muted)">Empty</span>
+    <!-- MATCH FOUND STATE -->
+    <div id="mqMatchFound" class="hidden">
+      <div class="mq-center-panel">
+        <div class="mq-found-title">Match Found!</div>
+        <div class="mq-found-vs">
+          <div class="mq-found-player">
+            <div class="mq-found-name" id="mqMyName">You</div>
+            <div class="mq-found-elo" id="mqMyFoundElo">- ELO</div>
+          </div>
+          <div class="mq-found-vs-divider">VS</div>
+          <div class="mq-found-player">
+            <div class="mq-found-name" id="mqOppName">Opponent</div>
+            <div class="mq-found-elo" id="mqOppFoundElo">- ELO</div>
+          </div>
+        </div>
+        <div class="mq-found-type" id="mqFoundType">Ranked Versus</div>
+        <div class="mq-found-countdown">Starting in <span id="mqFoundCountdown">10</span>…</div>
       </div>
     </div>
 
-    <div style="display:flex;gap:10px;align-items:center;">
-      <button class="btn primary" id="lobbyReadyBtn" onclick="lobbyReady()" disabled>Ready</button>
-      <span id="lobbyStatus">Enter your name and create or join a room.</span>
+    <!-- WAITING ROOM (friend challenges + brief post-match-found wait) -->
+    <div id="mqWaiting" class="hidden">
+      <div class="mq-center-panel">
+        <div class="mq-mode-label" id="mqWaitModeLabel">Versus</div>
+        <div class="player-slots" style="width:100%;max-width:400px;">
+          <div class="player-slots-label">Players</div>
+          <div class="lobby-slot" id="lobbySlot0">
+            <span class="slot-dot"></span>
+            <span style="color:var(--muted)">Empty</span>
+          </div>
+          <div class="lobby-slot" id="lobbySlot1">
+            <span class="slot-dot"></span>
+            <span style="color:var(--muted)">Empty</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn primary" id="lobbyReadyBtn" onclick="lobbyReady()" disabled>Ready</button>
+          <span id="lobbyStatus">Connecting…</span>
+        </div>
+        <div id="lobbyExpiry"></div>
+        <button class="btn sm ghost" id="lobbyLeaveBtn" onclick="lobbyLeave()" style="display:none;margin-top:.25rem">Leave Room</button>
+      </div>
     </div>
-    <div id="lobbyExpiry"></div>
-  </div>
-</div>
+
+  </div><!-- /lobby-inner -->
+</div><!-- /lobby -->
 <div class="modal-backdrop" id="howtoBackdrop" onclick="closeModal('howto')">
   <div class="modal howto-modal" onclick="event.stopPropagation()">
     <div class="howto-title">How to Play</div>
@@ -1324,9 +1502,10 @@
   </div>
 </div>
 
-<footer>
-  <span>© 2026 taozi4887 · <a href="https://www.instagram.com/taozi4887/" target="_blank" rel="noopener">Instagram</a> · <a href="https://github.com/taozi8887" target="_blank" rel="noopener">GitHub</a></span>
-  <span>Made with love · Tetris v1.0<span style="color:var(--accent)">.</span></span>
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+  </div>
 </footer>
 
 <script>
@@ -1474,6 +1653,8 @@ function handleRebindKeypress(key) {
 
 function toggleSfxInSettings() {
   soundEnabled = !soundEnabled;
+  if (soundEnabled) initAudio(); // initialize AudioContext on user gesture
+  saveSettingsToStorage();       // persist immediately so it survives page reload
   const sfxBtn = document.getElementById('sfxToggleBtn');
   if (sfxBtn) { sfxBtn.textContent = soundEnabled ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', soundEnabled); }
   const headerBtn = document.getElementById('soundBtn');
@@ -1508,21 +1689,37 @@ let audioCtx = null;
 let soundEnabled = false;
 
 function initAudio() {
-  if (audioCtx) return;
+  if (audioCtx) { audioCtx.resume().catch(() => {}); return; }
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.resume().catch(() => {});
 }
 
 function toggleSound() {
   initAudio();
   soundEnabled = !soundEnabled;
+  saveSettingsToStorage();
   const btn = document.getElementById('soundBtn');
-  btn.textContent = soundEnabled ? '🔊' : '🔇';
-  btn.classList.toggle('on', soundEnabled);
+  if (btn) { btn.textContent = soundEnabled ? '🔊' : '🔇'; btn.classList.toggle('on', soundEnabled); }
   if (soundEnabled) sfx.move();
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+      .call(document.documentElement).catch(() => {});
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
+  }
+  // Update button icon after state change
+  setTimeout(() => {
+    const btn = document.getElementById('fullscreenBtn');
+    if (btn) btn.textContent = document.fullscreenElement ? '⊠' : '⛶';
+  }, 150);
 }
 
 function playTone(freq, duration, type = 'square', vol = 0.08, decay = true) {
   if (!soundEnabled || !audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type;
@@ -1720,6 +1917,7 @@ let level = 1;
 let lines = 0;
 let bestScore = 0;
 let bestLines = 0;
+let soloStartTime = 0; // ms timestamp when current solo game started
 let gameStatus = 'idle'; // idle, playing, paused, over
 let dropTimer = null;
 let lockTimer = null;
@@ -1735,9 +1933,19 @@ let rng = null;            // seeded PRNG for MP (null = Math.random in SP)
 // ── Multiplayer state (see MP ENGINE section) ──
 let mpWs = null; let mpPlayerId = null; let mpRoomCode = null;
 let mpMode = 'versus'; let mpIsActive = false; let mpSeed = null;
+let mpIsRanked    = true;   // was this game from a ranked queue?
+let mpAutoReady   = false;  // auto-send 'ready' when joined (matchmaking/challenge flows)
+
+// ── Matchmaking queue state ───────────────────────────────────────
+let mqWs          = null;
+let mqMode        = null;
+let mqSearchStart = null;
+let mqWaitTimer   = null;
+let _mqReadyTimeout = null; // timeout to send 'ready' after countdown
 let mpPlayerName = ''; let mpSprintTarget = 40; let mpCoopTarget = 150;
 let mpCoopLines = 0; let mpSprintStart = 0; let mpPendingGarbage = 0;
-let mpOpponentData = { name: '', score: 0, lines: 0 };
+let mpCoopSpectating = false; // true after we die in coop - mirrors opp board to main board
+let mpOpponentData = { name: '', username: '', displayName: '', elo: null, xp: null, score: 0, lines: 0 };
 let mpLocksSinceUpdate = 0; let mpGarbageAnimTimer = null; let oppCells = null;
 let mpPendingGarbageRows = [];  // server-authoritative hole positions, applied at next spawn
 let dasTimer = null;
@@ -1752,6 +1960,10 @@ let lastWasSpin = false;
 let lastKickIdx = 0;
 let lowestY = 0;
 let softDropTimer = null;
+
+// ── Local stat counters (solo games + MP for sync) ──
+let localTetrises = 0, localTSpins = 0, localB2bChain = 0, localB2bMax = 0, localMaxCombo = 0;
+let mpHeartbeatTimer = null;
 
 // DOM refs
 let boardEl, cells;
@@ -2161,6 +2373,12 @@ function lockPiece() {
   // boardSnapshot is the full board state with this piece already locked in (pre-clear).
   // The server uses it to keep its simulation in sync with the client so the opponent
   // always sees the correct board, even if server + client boards would otherwise drift.
+  // Pre-detect cleared rows so we can include the count in the MP event
+  const clearedRows = [];
+  for (let r = 0; r < TOTAL; r++) {
+    if (board[r].every(c => c !== EMPTY)) clearedRows.push(r);
+  }
+
   if (mpIsActive && mpWs && gameStatus === 'playing') {
     mpSend({
       type:          'event',
@@ -2171,14 +2389,10 @@ function lockPiece() {
       tSpin:         tSpin,  // hint - server validates with its own corner check
       boardSnapshot: encodeBoardSnapshot(), // post-lock board - server adopts as truth
       score,
+      lines:         clearedRows.length,    // lines cleared this piece (server accumulates)
       perfectClear:  false,
       elapsed:       mpSprintStart ? Math.round((Date.now() - mpSprintStart) / 1000) : 0,
     });
-  }
-
-  const clearedRows = [];
-  for (let r = 0; r < TOTAL; r++) {
-    if (board[r].every(c => c !== EMPTY)) clearedRows.push(r);
   }
 
   if (clearedRows.length > 0) {
@@ -2202,13 +2416,14 @@ function handleLineClear(rows, tSpin) {
     isDifficult = true;
     sfx.tSpin();
     baseScore = [0, 800, 1200, 1600][n] || 0;
+    localTSpins++;           // track for solo stats / global counter
   } else if (tSpin === 'mini') {
     isDifficult = true;
     sfx.tSpin();
     baseScore = n === 1 ? 200 : 1200;
   } else {
     baseScore = SCORE_TABLE[n];
-    if (n === 4) { isDifficult = true; sfx.tetris(); }
+    if (n === 4) { isDifficult = true; sfx.tetris(); localTetrises++; }
     else if (n === 3) sfx.clear3();
     else if (n === 2) sfx.clear2();
     else sfx.clear1();
@@ -2219,23 +2434,31 @@ function handleLineClear(rows, tSpin) {
   if (isDifficult) {
     if (b2bCount >= 0) b2bBonus = Math.floor(baseScore * level * 0.5);
     b2bCount++;
+    localB2bChain++;
+    if (localB2bChain > localB2bMax) localB2bMax = localB2bChain;
   } else {
     b2bCount = -1;
+    localB2bChain = 0;
   }
 
   const comboBonus = comboCount > 0 ? 50 * comboCount * level : 0;
+  if (comboCount > localMaxCombo) localMaxCombo = comboCount;
   score += baseScore * level + b2bBonus + comboBonus;
   lines += n;
   // (MP attack routing is handled server-side via the piecePlaced event)
 
-  const newLevel = Math.floor(lines / 10) + 1;
-  if (newLevel > level) {
-    level = newLevel;
-    sfx.levelUp();
-    updateStatus('levelup');
-    // Restart drop timer immediately so new gravity applies on the current piece
-    clearDropTimer();
-    startDropTimer();
+  // In versus, the server broadcasts a shared level (gravitySync). Don't change
+  // drop speed locally — wait for the server's authoritative level message.
+  if (!mpIsActive || mpMode !== 'versus') {
+    const newLevel = Math.floor(lines / 10) + 1;
+    if (newLevel > level) {
+      level = newLevel;
+      sfx.levelUp();
+      updateStatus('levelup');
+      // Restart drop timer immediately so new gravity applies on the current piece
+      clearDropTimer();
+      startDropTimer();
+    }
   }
 
   updateScores();
@@ -2492,7 +2715,8 @@ function updateScores() {
     bestLines = lines;
     try { localStorage.setItem('tetrisBestLines', bestLines); } catch(e) {}
   }
-  document.getElementById('sideBestVal').textContent = bestScore;
+  const _sbv1 = document.getElementById('sideBestVal');
+  if (_sbv1) _sbv1.textContent = bestScore;
 }
 
 function loadBest() {
@@ -2500,9 +2724,12 @@ function loadBest() {
     bestScore = parseInt(localStorage.getItem('tetrisBest')) || 0;
     bestLines = parseInt(localStorage.getItem('tetrisBestLines')) || 0;
   } catch(e) {}
-  document.getElementById('homeBest').textContent = bestScore;
-  document.getElementById('homeLines').textContent = bestLines;
-  document.getElementById('sideBestVal').textContent = bestScore;
+  const hmb = document.getElementById('homeBest');
+  const hml = document.getElementById('homeLines');
+  if (hmb) hmb.textContent = bestScore;
+  if (hml) hml.textContent = bestLines;
+  const _sbv2 = document.getElementById('sideBestVal');
+  if (_sbv2) _sbv2.textContent = bestScore;
 }
 
 function updateStatus(type, val) {
@@ -2547,6 +2774,8 @@ function nav(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   loadBest();
+  // When going back to lobby, always show the home/queue state
+  if (id === 'lobby' && typeof showQueueState === 'function') showQueueState('home');
 }
 
 function openModal(id) { document.getElementById(id + 'Backdrop').classList.add('open'); }
@@ -2590,6 +2819,8 @@ function initGame(sharedSeed) {
   nextQueue = [];
   canHold = true;
   bag = [];
+  soloStartTime = Date.now();
+  localTetrises = 0; localTSpins = 0; localB2bChain = 0; localB2bMax = 0; localMaxCombo = 0;
   rng = (sharedSeed !== undefined) ? mulberry32(sharedSeed) : null;
   gameStatus = 'playing';
   keysDown = {};
@@ -2652,6 +2883,28 @@ function gameOver() {
     try { localStorage.setItem('tetrisBestLines', bestLines); } catch(e) {}
   }
 
+  // Record solo game stats to DB if logged in; update XP overlay when response arrives
+  const _soloXpP = window.recordSoloGame?.({
+    mode: window._soloMode || 'marathon', score, lines, level,
+    timeMs: Date.now() - soloStartTime,
+    tetrises: localTetrises, tSpins: localTSpins,
+    b2bMax: localB2bMax, maxCombo: localMaxCombo,
+  });
+  if (_soloXpP && typeof _soloXpP.then === 'function') {
+    _soloXpP.then(xpResult => {
+      if (!xpResult) return;
+      const xpEl = document.getElementById('overlayXpPanel');
+      if (!xpEl) return;
+      const lvUpHTML = xpResult.leveledUp
+        ? `<div class="xp-level-up-banner">\u2605 Level Up! \u2192 ${xpResult.level} \u2605</div>` : '';
+      xpEl.innerHTML =
+        `<div class="xp-gain-amount">+${xpResult.xpGained} XP</div>` +
+        `<div style="font-size:.7rem;color:var(--text3)">Level ${xpResult.level}</div>` +
+        lvUpHTML;
+      xpEl.style.display = 'flex';
+    }).catch(() => {});
+  }
+
   const overlay = document.getElementById('overlay');
   document.getElementById('overlayTitle').textContent = 'Game Over';
   document.getElementById('overlayTitle').style.color = '';
@@ -2660,6 +2913,8 @@ function gameOver() {
   document.getElementById('overlaySPBtns').style.display    = 'flex';
   document.getElementById('overlayMPBtns').style.display    = 'none';
   document.getElementById('overlayMPScoreList').style.display = 'none';
+  const _xpPanelEl = document.getElementById('overlayXpPanel');
+  if (_xpPanelEl) { _xpPanelEl.innerHTML = ''; _xpPanelEl.style.display = 'none'; }
   overlay.classList.add('active');
 }
 
@@ -2724,6 +2979,9 @@ function clearDAS() {
 }
 
 document.addEventListener('keydown', (e) => {
+  // Initialize audio on first user gesture if sound was previously enabled
+  if (soundEnabled && !audioCtx) initAudio();
+
   // If a keybind slot is listening, capture the key
   if (_bindingSlot) { e.preventDefault(); handleRebindKeypress(e.key); return; }
 
@@ -3115,8 +3373,8 @@ function updateParticles() {
 // ── Config ── Set these to your deployed Cloudflare Worker URL ──
 // Auto-detect local vs production - no manual URL switching needed
 const _IS_LOCAL      = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const MP_SERVER_HTTP = _IS_LOCAL ? 'http://localhost:8787' : 'https://tetris-mp.inlowik.workers.dev';
-const MP_SERVER_WS   = _IS_LOCAL ? 'ws://localhost:8787'  : 'wss://tetris-mp.inlowik.workers.dev';
+const MP_SERVER_HTTP = _IS_LOCAL ? `http://${location.hostname}:8787` : 'https://tetris-mp.inlowik.workers.dev';
+const MP_SERVER_WS   = _IS_LOCAL ? `ws://${location.hostname}:8787`   : 'wss://tetris-mp.inlowik.workers.dev';
 
 // ─────────────────────────────────────────────────────────────────
 //  Opponent board rendering
@@ -3141,14 +3399,46 @@ function buildOpponentBoard() {
 
 function renderOpponentSnapshot(snapshot) {
   if (!oppCells || !snapshot) return;
+  const SNAP_BUFFER = 4; // skip invisible buffer rows (same as BUFFER constant)
   for (let r = 0; r < OPP_ROWS; r++) {
     for (let c = 0; c < OPP_COLS; c++) {
-      const ch = snapshot[r * OPP_COLS + c];
+      const ch = snapshot[(r + SNAP_BUFFER) * OPP_COLS + c];
       const cell = oppCells[r][c];
       cell.className = 'opp-cell';
       if (ch && ch !== '.') cell.classList.add('opp-locked-' + ch);
     }
   }
+  // In coop spectate mode, also mirror the teammate's board onto our main board
+  if (mpCoopSpectating && cells) {
+    for (let r = 0; r < OPP_ROWS && r < ROWS; r++) {
+      for (let c = 0; c < OPP_COLS && c < COLS; c++) {
+        const ch = snapshot[(r + SNAP_BUFFER) * OPP_COLS + c];
+        const cell = cells[r][c];
+        cell.className = 'cell';
+        if (ch && ch !== '.') cell.classList.add('locked-' + ch);
+      }
+    }
+  }
+}
+
+// Encode current board overlaid with the active falling piece (for live heartbeat).
+function encodeBoardSnapshotWithActive() {
+  const flat = [];
+  for (let r = 0; r < TOTAL; r++)
+    for (let c = 0; c < COLS; c++)
+      flat.push(board[r][c] || '.');
+  // Overlay the active falling piece so the opponent sees it moving in real time
+  if (currentType && (gameStatus === 'playing' || gameStatus === 'paused')) {
+    const shape = getShape(currentType, currentRotation);
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++) {
+        if (!shape[r][c]) continue;
+        const ny = currentY + r, nx = currentX + c;
+        if (ny >= 0 && ny < TOTAL && nx >= 0 && nx < COLS)
+          flat[ny * COLS + nx] = currentType;
+      }
+  }
+  return flat.join('');
 }
 
 // Encode the full board (all TOTAL rows including buffer zone) as a 240-char string.
@@ -3255,6 +3545,22 @@ function applyPendingGarbage() {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  Board heartbeat — sends board+active piece every 150ms so the
+//  opponent sees continuous movement, not just post-lock snapshots.
+// ─────────────────────────────────────────────────────────────────
+function startMPHeartbeat() {
+  stopMPHeartbeat();
+  mpHeartbeatTimer = setInterval(() => {
+    if (!mpIsActive || !mpWs || mpWs.readyState !== WebSocket.OPEN || gameStatus !== 'playing') return;
+    mpSend({ type: 'event', kind: 'boardHeartbeat', score, snapshot: encodeBoardSnapshotWithActive() });
+  }, 150);
+}
+
+function stopMPHeartbeat() {
+  if (mpHeartbeatTimer) { clearInterval(mpHeartbeatTimer); mpHeartbeatTimer = null; }
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  Hooks called by existing game functions
 // ─────────────────────────────────────────────────────────────────
 function mpOnGameOver() {
@@ -3272,7 +3578,7 @@ window.mpHooks = {
 // ─────────────────────────────────────────────────────────────────
 //  WebSocket client
 // ─────────────────────────────────────────────────────────────────
-function mpConnect(roomCode, playerName, mode) {
+function mpConnect(roomCode, playerName, mode, isRanked = true) {
   return new Promise((resolve, reject) => {
     if (mpWs) { mpWs.close(); mpWs = null; }
     mpWs = new WebSocket(`${MP_SERVER_WS}/room/${roomCode}`);
@@ -3283,7 +3589,15 @@ function mpConnect(roomCode, playerName, mode) {
     }, 8000);
 
     mpWs.onopen = () => {
-      mpSend({ type: 'join', name: playerName, mode });
+      const u = window._authUser || {};
+      mpSend({ type: 'join', name: playerName, mode,
+        isRanked,
+        userId:      u.id          || null,
+        username:    u.username    || '',
+        displayName: u.display_name || '',
+        elo:         typeof u.elo === 'number' ? u.elo : null,
+        xp:          typeof u.xp  === 'number' ? u.xp  : null,
+      });
     };
 
     mpWs.onmessage = (e) => {
@@ -3307,11 +3621,18 @@ function mpConnect(roomCode, playerName, mode) {
       if (mpIsActive) {
         showMPStatus('Server disconnected.', 'error');
         mpIsActive = false;
+      } else if (window._mqInFoundPhase) {
+        // Server dropped us during the match-found countdown — cancel and re-queue
+        if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
+        if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
+        window._mqInFoundPhase = false;
+        mpWs = null;
+        const _requeueMode = mqMode;
+        if (_requeueMode) setTimeout(() => enterQueue(_requeueMode), 600);
+        else showQueueState('home');
       } else if (mpWs !== null) {
-        // mpWs is null when we already cleaned up (e.g. lobbyClosed / lobbyLeave)
-        lobbySetConnected(false);
-        const _rb2 = document.getElementById('lobbyReadyBtn');
-        if (_rb2) { _rb2.disabled = true; _rb2.textContent = 'Ready'; }
+        // Unexpected disconnect while in waiting room - show home
+        showQueueState('home');
         mpUpdateLobbyStatus('Disconnected.');
       }
     };
@@ -3354,17 +3675,38 @@ function handleMPMessage(msg) {
       setTimeout(() => mpUpdateLobbyStatus('Server restarted - please create a new room.', 'error'), 50);
       break;
 
+    case 'gravitySync':
+      // Server broadcasts shared gravity level in versus so both players experience the same speed
+      if (mpIsActive && mpMode === 'versus') {
+        const newLvl = msg.level || 1;
+        if (newLvl > level) {
+          level = newLvl;
+          clearDropTimer();
+          startDropTimer();
+          sfx.levelUp();
+          updateStatus('levelup');
+        }
+      }
+      break;
+
     case 'pong': break;  // keepalive response, no-op
 
     case 'joined':
       mpPlayerId = msg.playerId;
       mpMode     = msg.mode;
       updateLobbyPlayers(msg.players);
-      mpUpdateLobbyMode(msg.mode);
-      if (msg.playerId !== 0) mpDisableModeSelect();
-      // Host gets "Close Lobby" (kicks everyone), joiner gets "Leave Room"
+      // Auto-ready (matchmaking / auto-join challenge flows)
+      if (mpAutoReady) {
+        mpAutoReady = false;
+        setTimeout(() => mpSend({ type: 'ready' }), 150);
+      } else {
+        const rb = document.getElementById('lobbyReadyBtn');
+        if (rb) rb.disabled = false;
+        mpUpdateLobbyStatus('Connected - press Ready to start.');
+        lobbyStartExpiryCountdown();
+      }
       { const lb = document.getElementById('lobbyLeaveBtn');
-        if (lb) { lb.textContent = msg.playerId === 0 ? 'Close Lobby' : 'Leave Room';
+        if (lb) { lb.style.display = ''; lb.textContent = msg.playerId === 0 ? 'Close Lobby' : 'Leave Room';
                   lb.onclick = msg.playerId === 0 ? lobbyCloseLobby : lobbyLeave; } }
       break;
 
@@ -3377,15 +3719,23 @@ function handleMPMessage(msg) {
       break;
 
     case 'lobbyClosed':
-      // Host closed the room - clean up and return to lobby
+      // Host closed the room - clean up and return to lobby home
       mpFullReset();
-      nav('lobby');
       setTimeout(() => mpUpdateLobbyStatus('The host closed the lobby.'), 30);
       break;
 
     case 'playerLeft':
       updateLobbyPlayers(msg.players || []);
-      if (!mpIsActive) {
+      if (window._mqInFoundPhase) {
+        // Opponent bailed during the match-found countdown — cancel ready timer and re-queue
+        if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
+        if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
+        window._mqInFoundPhase = false;
+        mpDisconnect();
+        const _rejoinMode = mqMode;
+        if (_rejoinMode) setTimeout(() => enterQueue(_rejoinMode), 600);
+        else showQueueState('home');
+      } else if (!mpIsActive) {
         // Still in lobby - re-enable ready so the remaining player can wait for a new joiner
         mpUpdateLobbyStatus(msg.name + ' left the room. Waiting for a new player…');
         const _rb = document.getElementById('lobbyReadyBtn');
@@ -3397,12 +3747,16 @@ function handleMPMessage(msg) {
       break;
 
     case 'start':
+      // Clear the post-ready start timeout — game is actually beginning
+      if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
       mpSeed         = msg.seed;
       mpMode         = msg.mode;
+      if (typeof msg.isRanked === 'boolean') mpIsRanked = msg.isRanked;
       mpSprintTarget = msg.sprintTarget || 40;
       mpCoopTarget   = msg.coopTarget   || 150;
       mpCoopLines    = 0;
       mpSprintStart  = Date.now();
+      _storeOppFromPlayers(msg.players);
       lobbyStopExpiryCountdown();
       startMPGame();
       break;
@@ -3450,6 +3804,13 @@ function handleMPMessage(msg) {
           clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
           gameStatus = 'over';
         }
+      } else if (mpMode === 'coop') {
+        // We died in co-op — enter spectate mode: dismiss overlay, mirror teammate's board
+        mpCoopSpectating = true;
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.classList.remove('active');
+        const oppName = mpOpponentData.displayName || mpOpponentData.name || 'teammate';
+        showMPStatus('You topped out \u2014 spectating ' + oppName + '\u2026', 'error');
       }
       break;
 
@@ -3467,71 +3828,233 @@ function handleMPMessage(msg) {
       break;
 
     case 'reset':
-      updateLobbyPlayers(msg.players || []);
-      showLobbyReady();
+      // Game ended and server reset for potential rematch.
+      // Just go back to home - matchmaking handles finding new opponents.
+      mpFullReset();
       break;
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Lobby UI
+//  Matchmaking Queue
 // ─────────────────────────────────────────────────────────────────
-function lobbyCreateRoom() {
-  const name = document.getElementById('lobbyName').value.trim() || 'Player 1';
-  const mode = document.querySelector('.mode-card.selected')?.dataset.mode || 'versus';
-  mpPlayerName = name;
-  mpUpdateLobbyStatus('Creating room\u2026');
-  lobbySetConnected(true);
 
-  fetch(`${MP_SERVER_HTTP}/create`)
-    .then(r => r.json())
-    .then(data => {
-      mpRoomCode = data.roomCode;
-      document.getElementById('lobbyCodeDisplay').textContent = mpRoomCode;
-      document.getElementById('lobbyCodeRow').style.display   = 'flex';
-      mpUpdateLobbyStatus('Room created! Waiting for opponent\u2026');
-      return mpConnect(mpRoomCode, name, mode);
-    })
-    .then(() => {
-      document.getElementById('lobbyReadyBtn').disabled = false;
-      mpUpdateLobbyStatus('Connected \u2014 share the code, then press Ready.');
-      lobbyStartExpiryCountdown();
-    })
-    .catch(err => {
-      const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
-      mpUpdateLobbyStatus(noServer
-        ? 'Cannot reach server \u2014 run: cd server && npx wrangler dev'
-        : 'Error: ' + err.message, 'error');
-      lobbySetConnected(false);
-    });
+function showQueueState(state) {
+  // state: 'home' | 'searching' | 'found' | 'waiting'
+  document.getElementById('mqHome').classList.toggle('hidden',        state !== 'home');
+  document.getElementById('mqSearching').classList.toggle('hidden',   state !== 'searching');
+  document.getElementById('mqMatchFound').classList.toggle('hidden',  state !== 'found');
+  document.getElementById('mqWaiting').classList.toggle('hidden',     state !== 'waiting');
 }
 
-function lobbyJoinRoom() {
-  const name = document.getElementById('lobbyName').value.trim() || 'Player 2';
-  const code = document.getElementById('lobbyCodeInput').value.trim().toUpperCase();
-  if (code.length < 4) { mpUpdateLobbyStatus('Enter a valid room code.', 'error'); return; }
-  mpPlayerName = name;
-  mpRoomCode   = code;
-  document.getElementById('lobbyCodeDisplay').textContent = code;
-  document.getElementById('lobbyCodeRow').style.display   = 'flex';
-  mpUpdateLobbyStatus('Joining ' + code + '\u2026');
-  lobbySetConnected(true);
+function updateQueueCards() {
+  const u = window._authUser;
+  const authWall  = document.getElementById('mqAuthWall');
+  const queueBtns = document.getElementById('mqQueueBtns');
+  if (!u) {
+    authWall?.classList.remove('hidden');
+    queueBtns?.classList.add('hidden');
+    return;
+  }
+  authWall?.classList.add('hidden');
+  queueBtns?.classList.remove('hidden');
 
-  mpConnect(code, name, 'versus')
-    .then(() => {
-      document.getElementById('lobbyReadyBtn').disabled = false;
-      mpUpdateLobbyStatus('Connected \u2014 press Ready to start.');
-      lobbyStartExpiryCountdown();
-    })
-    .catch(err => {
-      const noServer = err.message === 'Failed to fetch' || err.message.includes('NetworkError');
-      mpUpdateLobbyStatus(noServer
-        ? 'Cannot reach server \u2014 run: cd server && npx wrangler dev'
-        : 'Error: ' + err.message, 'error');
-      document.getElementById('lobbyCodeRow').style.display = 'none';
-      lobbySetConnected(false);
-    });
+  const elo      = typeof u.elo === 'number' ? u.elo : 1000;
+  const rankName = window._getRankName?.(elo) || 'Unranked';
+
+  const eloEl   = document.getElementById('qMyElo');
+  const badgeEl = document.getElementById('qMyRankBadge');
+  if (eloEl)   eloEl.textContent   = elo + ' ELO';
+  if (badgeEl) { badgeEl.textContent = rankName; badgeEl.className = 'qc-badge ' + rankName; }
+
+  // Keep searching panel in sync
+  const sBadge = document.getElementById('mqSearchRankBadge');
+  const sElo   = document.getElementById('mqSearchElo');
+  if (sBadge) { sBadge.textContent = rankName; sBadge.className = 'rank-badge ' + rankName; }
+  if (sElo)   sElo.textContent = elo + ' ELO';
+
+  const myNameEl = document.getElementById('mqMyName');
+  if (myNameEl) myNameEl.textContent = u.display_name || u.username || 'You';
+  const myFoundEloEl = document.getElementById('mqMyFoundElo');
+  if (myFoundEloEl) myFoundEloEl.textContent = elo + ' ELO';
 }
+
+function enterQueue(mode) {
+  const u = window._authUser;
+  if (!u) { location.href = 'login.html?redir=game.html'; return; }
+
+  mqMode        = mode;
+  mqSearchStart = Date.now();
+  mpIsRanked    = mode === 'ranked-versus';
+
+  // Update searching panel
+  const modeLabelMap = {
+    'ranked-versus': 'Ranked Versus',
+    'casual-versus': 'Casual Versus',
+    'sprint':        'Sprint Race',
+    'coop':          'Co-op',
+  };
+  const modeLabel = modeLabelMap[mode] || mode;
+  const rangeRow  = document.getElementById('mqRangeRow');
+  if (rangeRow) rangeRow.style.display = mpIsRanked ? 'flex' : 'none';
+  const ml = document.getElementById('mqModeLabel');
+  if (ml) ml.textContent = modeLabel;
+
+  showQueueState('searching');
+
+  // Reset wait time display immediately
+  const _wtEl = document.getElementById('mqWaitTime');
+  if (_wtEl) _wtEl.textContent = '0:00';
+
+  // Start elapsed timer
+  mqWaitTimer = setInterval(() => {
+    const secs = Math.floor((Date.now() - mqSearchStart) / 1000);
+    const m    = Math.floor(secs / 60);
+    const s    = String(secs % 60).padStart(2, '0');
+    const wt   = document.getElementById('mqWaitTime');
+    if (wt) wt.textContent = m + ':' + s;
+  }, 1000);
+
+  mqWs = new WebSocket(`${MP_SERVER_WS}/matchmaking/${mode}`);
+
+  mqWs.onopen = () => {
+    mqWs.send(JSON.stringify({
+      type:        'enqueue',
+      sessionId:   crypto.randomUUID(),
+      userId:      u.id,
+      username:    u.username    || '',
+      displayName: u.display_name || '',
+      elo:         typeof u.elo === 'number' ? u.elo : 1000,
+      xp:          typeof u.xp  === 'number' ? u.xp  : 0,
+      mode,
+    }));
+  };
+
+  mqWs.onmessage = (e) => {
+    let data;
+    try { data = JSON.parse(e.data); } catch { return; }
+
+    if (data.type === 'queueUpdate' && mpIsRanked) {
+      const rangeEl = document.getElementById('mqRangeDisplay');
+      if (rangeEl) rangeEl.textContent = '\u00b1' + (data.eloDelta || 100);
+    }
+
+    if (data.type === 'matchFound') {
+      clearInterval(mqWaitTimer); mqWaitTimer = null;
+      const { roomCode, isRanked, opponent, gameMode } = data;
+      // Trust the local mode first — server may omit isRanked
+      mpIsRanked  = isRanked != null ? !!isRanked : (mqMode === 'ranked-versus');
+      mpAutoReady = false; // will send ready after the countdown completes
+
+      // Populate match-found panel
+      const myName  = u.display_name || u.username || 'You';
+      const myElo   = typeof u.elo === 'number' ? u.elo : 1000;
+      const oppName = opponent?.displayName || opponent?.username || 'Opponent';
+      const oppElo  = typeof opponent?.elo === 'number' ? opponent.elo : null;
+      const resolvedMode = gameMode || 'versus';
+      const foundTypeLabel = mpIsRanked ? (resolvedMode === 'sprint' ? 'Sprint Race (Ranked)' : 'Ranked Versus')
+                                        : (resolvedMode === 'coop'   ? 'Co-op'
+                                        : resolvedMode === 'sprint'  ? 'Sprint Race'
+                                        : 'Casual Versus');
+
+      const myXp  = typeof u.xp === 'number' ? u.xp : 0;
+      const oppXp = typeof opponent?.xp === 'number' ? opponent.xp : 0;
+      document.getElementById('mqMyName').innerHTML      = (window._levelBadgeHTML?.(window._getLevel?.(myXp)  || 1) || '') + ' ' + myName;
+      document.getElementById('mqMyFoundElo').textContent = myElo + ' ELO';
+      document.getElementById('mqOppName').innerHTML     = (window._levelBadgeHTML?.(window._getLevel?.(oppXp) || 1) || '') + ' ' + oppName;
+      document.getElementById('mqOppFoundElo').textContent = oppElo !== null ? oppElo + ' ELO' : '\u2014 ELO';
+      document.getElementById('mqFoundType').textContent  = foundTypeLabel;
+      showQueueState('found');
+
+      // Restore countdown HTML (may have been replaced by 'Connecting...' from a previous match)
+      const cdParentReset = document.querySelector('.mq-found-countdown');
+      if (cdParentReset) cdParentReset.innerHTML = 'Starting in <span id="mqFoundCountdown">10</span>…';
+
+      // Countdown display
+      let countdown = 10;
+      const cdEl = document.getElementById('mqFoundCountdown');
+      let _mqFoundCdInterval = null;
+      _mqFoundCdInterval = setInterval(() => {
+        countdown--;
+        if (cdEl) cdEl.textContent = countdown;
+        if (countdown <= 0) clearInterval(_mqFoundCdInterval);
+      }, 1000);
+
+      // Track that we are in the found/countdown phase for visibility handling
+      window._mqInFoundPhase = true;
+      window._mqFoundRejoin  = () => { enterQueue(mqMode || mode); };
+
+      // Connect to game room; send ready after the countdown so the game actually starts in ~10s
+      mpConnect(roomCode, myName, resolvedMode, mpIsRanked)
+        .then(() => {
+          if (_mqReadyTimeout) clearTimeout(_mqReadyTimeout);
+          _mqReadyTimeout = setTimeout(() => {
+            _mqReadyTimeout = null;
+            window._mqInFoundPhase = false;
+            // Update found panel to show connecting status instead of switching to lobby
+            const cdParent = document.querySelector('.mq-found-countdown');
+            if (cdParent) cdParent.innerHTML = 'Connecting to game…';
+            mpSend({ type: 'ready' });
+            // If the server never sends 'start' (e.g. opponent dropped), re-queue after 15s
+            window._mqStartTimeout = setTimeout(() => {
+              window._mqStartTimeout = null;
+              if (!mpIsActive) {
+                mpDisconnect();
+                if (mqMode) setTimeout(() => enterQueue(mqMode), 400);
+                else showQueueState('home');
+              }
+            }, 15000);
+          }, 10000);
+        })
+        .catch(err => {
+          clearInterval(_mqFoundCdInterval);
+          window._mqInFoundPhase = false;
+          showQueueState('home');
+          mpUpdateLobbyStatus('Could not connect: ' + err.message, 'error');
+        });
+
+      mqWs.close(); mqWs = null;
+    }
+
+    if (data.type === 'error') {
+      cancelQueue();
+      mpUpdateLobbyStatus(data.reason || 'Queue error.', 'error');
+    }
+  };
+
+  mqWs.onerror = () => {
+    cancelQueue();
+    mpUpdateLobbyStatus('Could not reach matchmaking server.', 'error');
+  };
+
+  // Unexpected close after enqueue
+  mqWs.onclose = () => {
+    if (mqWs !== null && mqMode !== null) {
+      mqWs = null;
+      cancelQueue();
+    }
+  };
+}
+
+function cancelQueue() {
+  clearInterval(mqWaitTimer); mqWaitTimer = null;
+  if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
+  if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
+  window._mqInFoundPhase = false;
+  if (mqWs) {
+    try { mqWs.send(JSON.stringify({ type: 'leave' })); } catch {}
+    mqWs.close(); mqWs = null;
+  }
+  mqMode        = null;
+  mqSearchStart = null;
+  showQueueState('home');
+}
+
+// (visibility-based re-queue removed — tab switches should not abort a found match)
+
+// ─────────────────────────────────────────────────────────────────
+//  Lobby UI (friend-challenge / waiting-room helpers)
+// ─────────────────────────────────────────────────────────────────
 
 function lobbyReady() {
   mpSend({ type: 'ready' });
@@ -3540,38 +4063,19 @@ function lobbyReady() {
   mpUpdateLobbyStatus('Waiting for opponent to ready up\u2026');
 }
 
-// Lock/unlock the pre-connection lobby controls.
-function lobbySetConnected(connected) {
-  document.getElementById('lobbyName').disabled      = connected;
-  document.getElementById('lobbyCodeInput').disabled = connected;
-  document.querySelectorAll('.mode-card').forEach(c => {
-    c.style.pointerEvents = connected ? 'none' : '';
-    c.style.opacity = (connected && !c.classList.contains('selected')) ? '0.3' : '';
-  });
-  const hideCreate = connected ? 'none' : '';
-  document.getElementById('lobbyCreateBtn').style.display = hideCreate;
-  document.getElementById('lobbyJoinBtn').style.display   = hideCreate;
-  document.getElementById('lobbyBackBtn').style.display   = hideCreate;
-  document.getElementById('lobbyLeaveBtn').style.display  = connected ? '' : 'none';
-}
-
 function lobbyCloseLobby() {
   mpSend({ type: 'closeLobby' });
   mpFullReset();
-  nav('lobby');
 }
 
 function lobbyLeave() {
   mpDisconnect();
-  lobbySetConnected(false);
   mpPlayerId = null; mpRoomCode = null;
-  document.getElementById('lobbyCodeInput').value        = '';
-  document.getElementById('lobbyCodeDisplay').textContent = '______';
-  document.getElementById('lobbyCodeRow').style.display   = 'none';
   const rb = document.getElementById('lobbyReadyBtn');
   if (rb) { rb.disabled = true; rb.textContent = 'Ready'; }
   updateLobbyPlayers([]);
   mpUpdateLobbyStatus('Left the room.');
+  showQueueState('home');
 }
 
 function mpUpdateLobbyStatus(text, t) {
@@ -3612,16 +4116,22 @@ function lobbyStopExpiryCountdown() {
 }
 
 function mpUpdateLobbyMode(mode) {
-  document.querySelectorAll('.mode-card').forEach(c =>
-    c.classList.toggle('selected', c.dataset.mode === mode)
-  );
+  // No-op: mode is set by matchmaking queue, not user-selectable
 }
 
 function mpDisableModeSelect() {
-  document.querySelectorAll('.mode-card').forEach(c => {
-    c.style.pointerEvents = 'none';
-    c.style.opacity = c.classList.contains('selected') ? '1' : '0.3';
-  });
+  // No-op: mode selection removed from lobby
+}
+
+function _storeOppFromPlayers(players) {
+  if (!Array.isArray(players) || mpPlayerId === null) return;
+  const opp = players.find(p => p.id !== mpPlayerId);
+  if (!opp) return;
+  mpOpponentData.username    = opp.username    || '';
+  mpOpponentData.displayName = opp.displayName || opp.name || 'Opponent';
+  mpOpponentData.name        = opp.displayName || opp.name || 'Opponent';
+  mpOpponentData.elo         = opp.elo ?? null;
+  mpOpponentData.xp          = opp.xp  ?? null;
 }
 
 function updateLobbyPlayers(players) {
@@ -3630,9 +4140,12 @@ function updateLobbyPlayers(players) {
     if (!slot) continue;
     const p = players[i];  // use position - IDs can be non-sequential after reconnects
     if (p) {
+      const dispName  = p.displayName || p.name;
+      const userTag   = p.username ? `<span class="slot-username">@${p.username}</span>` : '';
+      const lvlBadge  = window._levelBadgeHTML?.(window._getLevel?.(p.xp || 0) || 1) || '';
       slot.innerHTML =
         `<span class="slot-dot connected"></span>` +
-        `<span>${p.name}</span>` +
+        `<span class="slot-identity"><span class="slot-dispname">${lvlBadge} ${dispName}</span>${userTag}</span>` +
         `<span class="slot-tag">${p.ready ? '\u2713 READY' : 'waiting'}</span>`;
     } else {
       slot.innerHTML = `<span class="slot-dot"></span><span style="color:var(--muted)">Empty</span>`;
@@ -3645,81 +4158,108 @@ function showLobbyReady() {
   if (btn) { btn.disabled = false; btn.textContent = 'Ready'; }
 }
 
-function selectMode(el) {
-  if (mpPlayerId !== null && mpPlayerId !== 0) return; // only host picks mode
-  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-function copyRoomCode() {
-  if (!mpRoomCode) return;
-  navigator.clipboard.writeText(mpRoomCode).then(() => {
-    const btn = document.getElementById('copyCodeBtn');
-    const old = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = old; }, 1500);
-  });
-}
-
-function copyInviteLink() {
-  if (!mpRoomCode) return;
-  const base = location.origin + location.pathname;
-  const link = base + '?join=' + mpRoomCode;
-  navigator.clipboard.writeText(link).then(() => {
-    const btn = document.getElementById('copyInviteBtn');
-    const old = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = old; }, 1500);
-  });
-}
-
 // ─────────────────────────────────────────────────────────────────
 //  MP game start  (called when server sends 'start')
 // ─────────────────────────────────────────────────────────────────
 function startMPGame() {
+  window._mqInFoundPhase = false;
   // Transition to game screen
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
   document.body.classList.add('mp');
 
-  // Resolve opponent name from lobby slots
-  for (let i = 0; i < 2; i++) {
-    if (i === mpPlayerId) continue;
-    const slot = document.getElementById('lobbySlot' + i);
-    const nameEl = slot?.querySelector('span:nth-child(2)');
-    mpOpponentData.name = nameEl?.textContent || 'Opponent';
+  // Opponent identity is already stored in mpOpponentData by _storeOppFromPlayers()
+  // Fallback: read from lobby slot text if data wasn't in the start message
+  if (!mpOpponentData.displayName && !mpOpponentData.name) {
+    for (let i = 0; i < 2; i++) {
+      if (i === mpPlayerId) continue;
+      const slot = document.getElementById('lobbySlot' + i);
+      const nameEl = slot?.querySelector('.slot-dispname') || slot?.querySelector('span:nth-child(2)');
+      mpOpponentData.name = nameEl?.textContent || 'Opponent';
+    }
   }
 
+  const oppDisplayed = mpOpponentData.displayName || mpOpponentData.name || 'Opponent';
   const oppNameEl = document.getElementById('oppName');
-  if (oppNameEl) oppNameEl.textContent = mpOpponentData.name;
+  if (oppNameEl) oppNameEl.textContent = oppDisplayed;
   const oppNameInGame = document.getElementById('oppNameInGame');
-  if (oppNameInGame) oppNameInGame.textContent = mpOpponentData.name;
+  if (oppNameInGame) oppNameInGame.textContent = oppDisplayed;
+
+  // Populate opponent profile card (ranked/versus only)
+  const oppCard = document.getElementById('oppCard');
+  if (oppCard) {
+    if (mpMode !== 'versus') {
+      oppCard.style.display = 'none';
+    } else {
+    const oppLvl = window._getLevel?.(mpOpponentData.xp || 0) || 1;
+    document.getElementById('oppCardName').innerHTML = (window._levelBadgeHTML?.(oppLvl) || '') + ' ' + oppDisplayed;
+    const un = mpOpponentData.username;
+    document.getElementById('oppCardUsername').textContent = un ? '@' + un : '';
+    const eloEl = document.getElementById('oppCardElo');
+    if (mpOpponentData.elo !== null && mpOpponentData.elo !== undefined) {
+      const rankName = (window._getRankName || function(e){return e>=2600?'Challenger':e>=2200?'Grandmaster':e>=2000?'Master':e>=1800?'Diamond':e>=1600?'Platinum':e>=1400?'Gold':e>=1200?'Silver':e>=1000?'Bronze':e>=800?'Iron':'Unranked';})(mpOpponentData.elo);
+      eloEl.innerHTML = `<span class="rank-badge ${rankName}">${rankName}</span><span class="elo-val">${mpOpponentData.elo}</span>`;
+    } else {
+      eloEl.textContent = '';
+    }
+    document.getElementById('oppCardStats').innerHTML = '';
+    oppCard.style.display = '';
+    // Fetch full profile stats for the opponent if their username is known
+    if (un) {
+      const base = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? `http://${location.hostname}:8787` : 'https://api.tetris.taozi4887.dev';
+      fetch(`${base}/api/profile/${encodeURIComponent(un)}`, { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.stats) return;
+          const s = data.stats;
+          const gp = s.versus_played || 0;
+          const gw = s.versus_won    || 0;
+          const wr = gp ? Math.round(gw / gp * 100) + '%' : '-';
+          const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n||0);
+          const statsEl = document.getElementById('oppCardStats');
+          if (statsEl) statsEl.innerHTML =
+            `<span class="sk">Win rate</span><span class="sv">${wr}</span>` +
+            `<span class="sk">Best score</span><span class="sv">${fmt(s.best_score)}</span>` +
+            `<span class="sk">Games</span><span class="sv">${fmt(gp)}</span>`;
+        }).catch(() => {});
+    }
+    } // end versus-only block
+  }
 
   // Mode banner
   const modeLabels = {
-    versus: 'Versus',
-    sprint: 'Sprint Race \u2014 ' + mpSprintTarget + ' lines',
-    coop:   'Co-op \u2014 ' + mpCoopTarget + ' lines',
+    versus: (mpIsRanked ? 'Ranked' : 'Casual') + ' \u00b7 Versus',
+    sprint: 'Sprint Race \u2014 ' + mpSprintTarget + ' lines (Ranked)',
+    coop:   'Co\u2011op \u2014 ' + mpCoopTarget + ' lines',
   };
   const banner = document.getElementById('mpModeBanner');
   if (banner) banner.textContent = modeLabels[mpMode] || mpMode;
+  // Co-op mode: add body class to suppress garbage bar / warnings
+  document.body.classList.toggle('coop',   mpMode === 'coop');
+  document.body.classList.toggle('sprint', mpMode === 'sprint');
 
   // Co-op progress row visibility
   const coopRow = document.getElementById('coopProgressRow');
   if (coopRow) coopRow.style.display = mpMode === 'coop' ? 'flex' : 'none';
 
+  // Garbage sent panel (versus only)
+  const garbPanel = document.getElementById('oppGarbageSentPanel');
+  if (garbPanel) garbPanel.style.display = mpMode === 'versus' ? '' : 'none';
+
   buildOpponentBoard();
   updateOpponentStats();
   updateGarbageBar();
-  // Show the attack sent panel in MP
+  // Show the attack sent panel in versus mode only (no attacks in sprint/coop)
   const asp = document.getElementById('attackSentPanel');
-  if (asp) asp.style.display = '';
+  if (asp) asp.style.display = mpMode === 'versus' ? '' : 'none';
 
   // Start game with shared seed (ensures all clients get same piece sequence)
   mpIsActive = true;
   mpLocksSinceUpdate = 0;
   mpPendingGarbageRows = [];
   initGame(mpSeed);
+  startMPHeartbeat();
 }
 
 function updateOpponentStats() {
@@ -3752,21 +4292,30 @@ function handleMPGameEnd(msg) {
   document.getElementById('overlay').classList.remove('active');
 
   // msg.gameType holds 'versusEnd'|'sprintWin'|'coopWin'
-  // (server sends {type:'gameEnd', gameType:'versusEnd', ...} to avoid key collision)
   const gt = msg.gameType || msg.type;  // fallback for older builds
+  // Use server-authoritative isRanked flag, fall back to client-side state
+  // Ranked only applies to versusEnd (only ranked-versus affects ELO)
+  const isRanked = (msg.isRanked !== undefined ? msg.isRanked : mpIsRanked) &&
+                   gt === 'versusEnd';
 
   let title = '', sub = '', accent = '';
 
-  if (gt === 'versusEnd') {
+  if (isRanked) {
     const iWon = msg.winner === mpPlayerId;
     title  = iWon ? 'Victory!' : 'Defeated';
     accent = iWon ? 'var(--accent3)' : 'var(--accent2)';
-    sub    = msg.reason === 'disconnect' ? 'Opponent disconnected' : '';
+    sub    = msg.reason === 'disconnect' ? 'Opponent disconnected — ELO awarded' : 'Ranked · Versus';
+  } else if (gt === 'versusEnd') {
+    const iWon = msg.winner === mpPlayerId;
+    title  = iWon ? 'Victory!' : 'Defeated';
+    accent = iWon ? 'var(--accent3)' : 'var(--accent2)';
+    sub    = msg.reason === 'disconnect' ? 'Opponent disconnected' : 'Casual · Versus · No ELO change';
   } else if (gt === 'sprintWin') {
     const iWon = msg.winner === mpPlayerId;
     title  = iWon ? 'Sprint Win!' : 'Too Slow!';
     accent = iWon ? 'var(--accent3)' : 'var(--accent2)';
-    sub    = (iWon ? 'You finished in ' : (msg.winnerName + ' finished in ')) + msg.elapsed + 's';
+    const timeStr = msg.elapsed !== undefined ? msg.elapsed + 's' : '?';
+    sub    = (iWon ? 'You finished in ' : ((msg.winnerName || 'Opponent') + ' finished in ')) + timeStr;
   } else if (gt === 'coopWin') {
     title  = 'Mission Clear!';
     accent = 'var(--accent)';
@@ -3774,7 +4323,7 @@ function handleMPGameEnd(msg) {
   } else if (gt === 'coopLoss') {
     title  = 'Game Over';
     accent = 'var(--accent2)';
-    sub    = 'Your team topped out.';
+    sub    = msg.reason === 'disconnect' ? 'Teammate disconnected.' : 'Your team topped out.';
   }
 
   // Stop local game
@@ -3782,26 +4331,65 @@ function handleMPGameEnd(msg) {
   gameStatus = 'over';
 
   // Populate end screen
-  const titleEl = document.getElementById('mpEndTitle');
-  const subEl   = document.getElementById('mpEndSub');
-  const tableEl = document.getElementById('mpEndTable');
-  const tbody   = document.getElementById('mpEndTableBody');
+  const titleEl    = document.getElementById('mpEndTitle');
+  const subEl      = document.getElementById('mpEndSub');
+  const tableEl    = document.getElementById('mpEndTable');
+  const tbody      = document.getElementById('mpEndTableBody');
+  const eloSection = document.getElementById('mpEndEloSection');
+  const garbageHdr = document.getElementById('mpEndGarbageHdr');
+  const eloDeltaHdr= document.getElementById('mpEndEloDeltaHdr');
 
   titleEl.textContent   = title;
   titleEl.style.color   = accent;
   subEl.textContent     = sub;
   tbody.innerHTML       = '';
 
+  // ELO delta section (ranked only)
+  const eloDeltas = msg.eloDeltas || {};
+  if (isRanked && eloSection) {
+    const scores = msg.scores || [];
+    // Find my entry and opp entry
+    const myEntry  = scores.find(s => s.id === mpPlayerId);
+    const oppEntry = scores.find(s => s.id !== mpPlayerId);
+    const myDelta  = eloDeltas[mpPlayerId] ?? null;
+    const oppDelta = eloDeltas[oppEntry?.id] ?? null;
+
+    const fmtDelta = (d, name) => {
+      if (d === null) return `<span class="elo-player">${name}</span><span class="elo-delta neu">- ELO</span>`;
+      const cls  = d > 0 ? 'pos' : d < 0 ? 'neg' : 'neu';
+      const sign = d > 0 ? '+' : '';
+      return `<span class="elo-player">${name}</span><span class="elo-delta ${cls}">${sign}${d} ELO</span>`;
+    };
+
+    const myLabel  = (window._authUser?.display_name || window._authUser?.username || myEntry?.name  || 'You');
+    const oppLabel = (mpOpponentData.displayName || mpOpponentData.name || oppEntry?.name || 'Opponent');
+    document.getElementById('mpEndMyEloRow').innerHTML  = fmtDelta(myDelta,  myLabel);
+    document.getElementById('mpEndOppEloRow').innerHTML = fmtDelta(oppDelta, oppLabel);
+    eloSection.style.display = '';
+  } else if (eloSection) {
+    eloSection.style.display = 'none';
+  }
+
+  // Scores table
   const scores = msg.scores || [];
+  const showGarbage = isRanked && scores.some(s => s.garbageSent > 0);
+  if (garbageHdr)  garbageHdr.style.display  = showGarbage ? '' : 'none';
+  if (eloDeltaHdr) eloDeltaHdr.style.display = isRanked    ? '' : 'none';
+
   if (scores.length) {
     scores.forEach(s => {
       const isWinner = s.id === msg.winner;
+      const delta    = eloDeltas[s.id] ?? null;
+      const sign     = delta !== null ? (delta >= 0 ? '+' : '') : '';
+      const deltaStr = isRanked ? `<td style="text-align:right;color:${delta>0?'var(--accent3)':delta<0?'var(--accent2)':'var(--text3)'}">${delta !== null ? sign+delta : '-'}</td>` : '';
+      const garbStr  = showGarbage ? `<td style="text-align:right">${s.garbageSent ?? 0}</td>` : '';
       const tr = document.createElement('tr');
       if (isWinner) tr.className = 'winner';
       tr.innerHTML =
         '<td>' + (isWinner ? '\u2713 ' : '') + s.name + '</td>' +
-        '<td style="text-align:right">' + s.score + '</td>' +
-        '<td style="text-align:right">' + s.lines + '</td>';
+        '<td style="text-align:right">' + (s.score || 0) + '</td>' +
+        '<td style="text-align:right">' + (s.lines || 0) + '</td>' +
+        garbStr + deltaStr;
       tbody.appendChild(tr);
     });
     tableEl.style.display = 'table';
@@ -3809,7 +4397,36 @@ function handleMPGameEnd(msg) {
     tableEl.style.display = 'none';
   }
 
+  // XP section
+  const xpData = msg.xpData || {};
+  const myXpInfo = xpData[mpPlayerId];
+  let xpSection = document.getElementById('mpEndXpSection');
+  if (!xpSection) {
+    xpSection = document.createElement('div');
+    xpSection.id = 'mpEndXpSection';
+    document.querySelector('#mpEndScreen .mp-end-inner .mp-end-actions')?.before(xpSection);
+  }
+  if (myXpInfo) {
+    const lvUpHTML = myXpInfo.leveledUp
+      ? `<div class="xp-level-up-banner">★ Level Up! → ${myXpInfo.level} ★</div>` : '';
+    const info = window._getLevelInfo?.(myXpInfo.xp) || { xpCurrent: 0, xpNeeded: 500, pct: 0 };
+    xpSection.innerHTML =
+      `<div class="xp-gain-panel" style="padding: .6rem;">` +
+      `<div class="xp-gain-amount">+${myXpInfo.xpGained} XP</div>` +
+      `<div style="font-size:.7rem;color:var(--text3)">${window._levelBadgeHTML?.(myXpInfo.level) || ''} Level ${myXpInfo.level} &nbsp;&bull;&nbsp; ${Math.round(info.xpCurrent)} / ${info.xpNeeded} XP</div>` +
+      `<div class="xp-bar-outer" style="width:120px"><div class="xp-bar-fill" style="width:${info.pct}%"></div></div>` +
+      lvUpHTML +
+      `</div>`;
+    xpSection.style.display = 'flex';
+    xpSection.style.justifyContent = 'center';
+  } else {
+    xpSection.style.display = 'none';
+  }
+
   document.getElementById('mpEndScreen').classList.add('active');
+
+  // Refresh nav ELO display
+  if (typeof window.__refreshElo === 'function') setTimeout(window.__refreshElo, 2500);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -3848,32 +4465,43 @@ function doLeaveGame() {
 
 function mpBackToLobby() {
   mpFullReset();
-  nav('lobby');
 }
 
 function mpGoHome() {
   mpFullReset();
-  nav('home');
+  location.href = 'index.html';
 }
 
 function lobbyGoBack() {
-  // If connected, disconnect cleanly; then navigate home
+  if (mqWs) cancelQueue();
   if (mpWs) lobbyLeave();
-  nav('home');
+  location.href = 'index.html';
 }
 
-// Full MP teardown: closes socket, resets all state, restores lobby UI
+// Full MP teardown: closes socket, resets all state, shows home lobby
 function mpFullReset() {
+  stopMPHeartbeat();
   mpDisconnect();
+  // Also cancel any active matchmaking search
+  cancelQueue();
+  mpCoopSpectating   = false;
   mpPlayerId         = null;
   mpRoomCode         = null;
   mpMode             = 'versus';
+  mpIsRanked         = true;
+  mpAutoReady        = false;
   mpSeed             = null;
   mpPendingGarbage   = 0;
   mpPendingGarbageRows = [];
   mpLocksSinceUpdate = 0;
-  mpOpponentData     = { name: '', score: 0, lines: 0 };
+  mpOpponentData     = { name: '', username: '', displayName: '', elo: null, score: 0, lines: 0 };
+  const oppCard = document.getElementById('oppCard');
+  if (oppCard) oppCard.style.display = 'none';
+  const oppGarbagePanel = document.getElementById('oppGarbageSentPanel');
+  if (oppGarbagePanel) oppGarbagePanel.style.display = 'none';
   document.body.classList.remove('mp');
+  document.body.classList.remove('coop');
+  document.body.classList.remove('sprint');
   // Stop any running game timers
   clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
   gameStatus = 'idle';
@@ -3881,24 +4509,19 @@ function mpFullReset() {
   document.getElementById('mpEndScreen').classList.remove('active');
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('leaveConfirmPopup').style.display = 'none';
-  // Hide attack panel
+  // Hide attack / coop panels
   const asp = document.getElementById('attackSentPanel');
   if (asp) asp.style.display = 'none';
-  // Hide coop progress bar
   const coopRow = document.getElementById('coopProgressRow');
   if (coopRow) coopRow.style.display = 'none';
-  // Restore lobby to pristine state
-  lobbySetConnected(false);
-  document.getElementById('lobbyCodeInput').value         = '';
-  document.getElementById('lobbyCodeDisplay').textContent = '______';
-  document.getElementById('lobbyCodeRow').style.display   = 'none';
+  // Reset player slots
+  updateLobbyPlayers([]);
   const rb = document.getElementById('lobbyReadyBtn');
   if (rb) { rb.disabled = true; rb.textContent = 'Ready'; }
-  updateLobbyPlayers([]);
-  // Re-enable mode cards
-  document.querySelectorAll('.mode-card').forEach(c => { c.style.pointerEvents = ''; c.style.opacity = ''; });
   lobbyStopExpiryCountdown();
-  mpUpdateLobbyStatus('Enter your name and create or join a room.');
+  // Return to home queue screen
+  nav('lobby');
+  showQueueState('home');
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -3912,18 +4535,196 @@ window.addEventListener('load', () => {
   curtain.style.transition = 'opacity 0.4s ease';
   curtain.style.opacity = '0';
   setTimeout(() => curtain.remove(), 450);
-
-  // Auto-fill room code from invite link (?join=CODE)
-  const joinCode = new URLSearchParams(location.search).get('join');
-  if (joinCode) {
-    history.replaceState(null, '', location.pathname); // clean URL
-    nav('lobby');
-    const input = document.getElementById('lobbyCodeInput');
-    if (input) input.value = joinCode.toUpperCase();
-    mpUpdateLobbyStatus('Enter your name and click Join Room to connect.');
-  }
 });
 </script>
-<script src="cursor.js" defer></script>
+<script type="module">
+import API, { startChallengePolling, getLevel, getLevelInfo, levelBadgeHTML } from './api.js';
+// Expose to classic (non-module) script sections
+window._getLevel       = getLevel;
+window._getLevelInfo   = getLevelInfo;
+window._levelBadgeHTML = levelBadgeHTML;
+// ── Direct auth integration ───────────────────────────────────────
+// No iframe / postMessage - this page IS the game, so we fetch auth
+// directly and update the header nav in place.
+
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? `http://${location.hostname}:8787`
+  : 'https://api.tetris.taozi4887.dev';
+
+const RANKS = [
+  { name: 'Challenger',  min: 2600 },
+  { name: 'Grandmaster', min: 2200 },
+  { name: 'Master',      min: 2000 },
+  { name: 'Diamond',     min: 1800 },
+  { name: 'Platinum',    min: 1600 },
+  { name: 'Gold',        min: 1400 },
+  { name: 'Silver',      min: 1200 },
+  { name: 'Bronze',      min: 1000 },
+  { name: 'Iron',        min:  800 },
+  { name: 'Unranked',    min:    0 },
+];
+const getRank = elo => RANKS.find(r => elo >= r.min) || RANKS[RANKS.length - 1];
+window._getRankName = elo => getRank(elo || 0).name;
+
+function applyAuthToNav(me) {
+  const loginBtn   = document.getElementById('navLoginBtn');
+  const logoutBtn  = document.getElementById('navLogoutBtn');
+  const usernameEl = document.getElementById('navUsername');
+  const avatar     = document.getElementById('navAvatar');
+  const avatarLink = document.getElementById('navAvatarLink');
+  const friendsLink = document.getElementById('navFriendsLink');
+
+  const settingsBtn = document.getElementById('navSettingsBtn');
+
+  if (!me) {
+    loginBtn?.classList.remove('hidden');
+    logoutBtn?.classList.add('hidden');
+    usernameEl?.classList.add('hidden');
+    if (avatar) avatar.style.display = 'none';
+    if (friendsLink) friendsLink.style.display = 'none';
+    settingsBtn?.classList.add('hidden');
+    // Show auth wall in queue section
+    if (typeof updateQueueCards === 'function') updateQueueCards();
+    return;
+  }
+
+  // Expose to classic-script game engine (e.g. for lobby name defaults)
+  window._authUser = { id: me.id, username: me.username, display_name: me.display_name, elo: me.elo, xp: me.xp ?? 0 };
+  // Refresh matchmaking queue cards with ELO / rank badge
+  if (typeof updateQueueCards === 'function') updateQueueCards();
+
+  loginBtn?.classList.add('hidden');
+  logoutBtn?.classList.remove('hidden');
+  settingsBtn?.classList.remove('hidden');
+
+  // Reveal friends nav link now that user is authenticated
+  if (friendsLink) friendsLink.style.display = '';
+
+  if (usernameEl) {
+    usernameEl.textContent = me.username;
+    usernameEl.classList.remove('hidden');
+  }
+
+  if (avatar) {
+    const src = me.avatarUrl
+      ? (me.avatarUrl.startsWith('http') ? me.avatarUrl : API_BASE + me.avatarUrl)
+      : '';
+    avatar.style.display = '';
+    if (src) {
+      avatar.innerHTML = `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.remove()">`;
+    } else {
+      avatar.textContent = (me.username || '?').slice(0, 2).toUpperCase();
+    }
+  }
+
+  if (avatarLink) {
+    avatarLink.href = `profile.html?u=${encodeURIComponent(me.username)}`;
+  }
+}
+
+async function refreshElo() {
+  try {
+    const res = await fetch(API_BASE + '/api/auth/me', { credentials: 'include' });
+    if (!res.ok) return;
+    const me = await res.json();
+    if (window._authUser) {
+      window._authUser.elo = me.elo;
+      if (typeof me.xp === 'number') window._authUser.xp = me.xp;
+    }
+  } catch {}
+}
+
+async function gameLogout() {
+  try {
+    await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch {}
+  location.reload();
+}
+
+// Allow the game engine (classic script) to call this after a ranked match ends
+window.__refreshElo = refreshElo;
+
+// Expose solo stat recorder (called from classic-script gameOver)
+// Returns XP result object {xpGained, level, leveledUp, ...} or null
+window.recordSoloGame = async function(data) {
+  if (!window._authUser) return null;
+  try {
+    const res = await API.stats.recordSolo(data);
+    if (res && typeof res.xpGained === 'number') {
+      // Keep _authUser.xp in sync
+      if (window._authUser) window._authUser.xp = res.xp;
+      return res;
+    }
+  } catch {}
+  return null;
+};
+
+// Sync game settings from DB → localStorage after login so settings survive localStorage clears
+async function syncSettingsFromDB() {
+  try {
+    const data = await API.profile.getSettings();
+    if (data?.settings && typeof data.settings === 'object' && Object.keys(data.settings).length > 0) {
+      try { localStorage.setItem('tetrisSettings3', JSON.stringify(data.settings)); } catch {}
+      loadSettings(); // reapply with freshly synced values
+    }
+  } catch {}
+}
+
+// Handle ?mode= and ?room= query params so links like game.html?mode=versus&room=ABC work
+function handleUrlParams() {
+  const p = new URLSearchParams(location.search);
+  const mode   = p.get('mode');
+  const room   = p.get('room');
+  const ranked = p.get('ranked'); // '1' from matchmaking redirect
+
+  // Solo marathon
+  if (mode === 'marathon') {
+    window._soloMode = 'marathon';
+    setTimeout(() => startGame(), 350);
+    return;
+  }
+
+  // Auto-join: arriving via challenge accept (autojoin=1) or matchmaking redirect
+  // autohost=1 is used for the challenge SENDER - same flow but isRanked=false
+  const autojoin  = p.get('autojoin')  === '1';
+  const autohost  = p.get('autohost')  === '1';
+  if (room && (autojoin || autohost)) {
+    // matchmaking sets ranked=1; challenge links are always casual
+    mpIsRanked  = autojoin ? (ranked === '1') : false;
+    mpAutoReady = true;
+    const joinMode = mode || 'versus';
+    showQueueState('waiting');
+    const wml = document.getElementById('mqWaitModeLabel');
+    if (wml) wml.textContent = (mpIsRanked ? 'Ranked ' : 'Casual ') + joinMode.charAt(0).toUpperCase() + joinMode.slice(1).replace(/-/g,' ');
+    mpUpdateLobbyStatus('Connecting\u2026');
+    // Slight delay so _authUser is populated from applyAuthToNav
+    setTimeout(() => {
+      const u          = window._authUser || {};
+      const playerName = u.display_name || u.username || 'Player';
+      mpConnect(room.toUpperCase(), playerName, joinMode, mpIsRanked)
+        .catch(err => {
+          showQueueState('home');
+          mpUpdateLobbyStatus('Could not join: ' + err.message, 'error');
+        });
+    }, 400);
+    history.replaceState(null, '', location.pathname);
+  }
+}
+
+async function init() {
+  try {
+    const res = await fetch(API_BASE + '/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const me = await res.json();
+      applyAuthToNav(me);
+      startChallengePolling(me); // popup when challenged from any page
+      syncSettingsFromDB(); // pull latest settings from DB into localStorage (non-blocking)
+    } else applyAuthToNav(null);
+  } catch { applyAuthToNav(null); }
+  handleUrlParams();
+}
+
+init();
+</script>
 </body>
 </html>

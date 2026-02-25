@@ -820,7 +820,7 @@
   /* ── Fullscreen toggle (game pages only) ── */
   (function () {
     const path = location.pathname;
-    const isGame = !path.endsWith('index.html') && !path.endsWith('/') && path !== '';
+    const isGame = path.endsWith('game.html');
     if (!isGame) return;
 
     const fsStyle = document.createElement('style');
@@ -874,8 +874,8 @@
     btn.id = '_fs-btn';
     btn.innerHTML = ICON_EXPAND;
     const _fsHeaderRight = document.querySelector('.header-right');
-    if (_fsHeaderRight) _fsHeaderRight.appendChild(btn);
-    else document.body.appendChild(btn);
+    if (!_fsHeaderRight) return; // page has its own fullscreen control; skip
+    _fsHeaderRight.appendChild(btn);
 
     function isFullscreen() {
       return !!(document.fullscreenElement || document.webkitFullscreenElement)
@@ -994,7 +994,8 @@
     </svg><span id="_back-btn-label">go back</span>`;
     const _backHeader = document.querySelector('header');
     if (_backHeader) _backHeader.insertBefore(backBtn, _backHeader.firstChild);
-    else document.body.appendChild(backBtn);
+    else if (!document.getElementById('navbar') && !document.querySelector('.auth-page')) document.body.appendChild(backBtn);
+    // Skip back-btn on pages that already have a full site navbar (#navbar) or auth pages
   })();
 
   /* ── Page transitions ── */

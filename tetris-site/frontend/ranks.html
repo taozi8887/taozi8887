@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rank Tiers - Tetris</title>
+  <meta name="description" content="ELO rank tiers and level border tiers for the Tetris ladder.">
+  <link rel="canonical" href="https://tetris.taozi4887.dev/ranks.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    .section-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-card h3 {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      letter-spacing: -.03em;
+      margin-bottom: 1.25rem;
+    }
+    .rank-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .rank-table th {
+      font-size: .65rem; color: var(--text3); text-transform: uppercase;
+      letter-spacing: .1em; font-weight: 400;
+      padding: 0 .75rem .625rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .rank-table td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); color: var(--text2); }
+    .rank-table tr:last-child td { border-bottom: none; }
+
+    .level-tier-row {
+      display: flex; align-items: center; gap: .75rem; padding: .55rem 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .level-tier-row:last-child { border-bottom: none; }
+    .level-tier-name { font-size: .82rem; width: 100px; font-weight: 600; color: var(--text); }
+    .level-tier-range { font-size: .75rem; color: var(--text3); font-family: var(--mono); }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Tetris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html" class="active">Ranks</a>
+      <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
+      <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container" style="max-width:820px; padding-top:2.5rem; padding-bottom:5rem;">
+
+  <!-- Hero -->
+  <div style="margin-bottom:2rem;">
+    <span class="hero-tag">Ladder</span>
+    <h1 style="font-family:var(--serif);font-size:clamp(2rem,6vw,3.5rem);letter-spacing:-.04em;margin:.5rem 0 .75rem;">
+      Rank <em>Tiers<span style="color:var(--accent)">.</span></em>
+    </h1>
+    <p class="muted" style="font-size:.9rem;">ELO determines your rank in Versus. Level borders are earned by playing any game mode.</p>
+  </div>
+
+  <!-- ELO Rank Tiers -->
+  <div class="section-card">
+    <h3>ELO Rank Tiers</h3>
+    <table class="rank-table">
+      <thead>
+        <tr><th>Rank</th><th>ELO Range</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rank-badge Challenger">Challenger</span></td>
+          <td>2600 +</td>
+          <td style="font-size:.75rem;color:var(--text3)">Top of the ladder</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Grandmaster">Grandmaster</span></td>
+          <td>2200 – 2599</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Master">Master</span></td>
+          <td>2000 – 2199</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Diamond">Diamond</span></td>
+          <td>1800 – 1999</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Platinum">Platinum</span></td>
+          <td>1600 – 1799</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Gold">Gold</span></td>
+          <td>1400 – 1599</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Silver">Silver</span></td>
+          <td>1200 – 1399</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Bronze">Bronze</span></td>
+          <td>1000 – 1199</td>
+          <td style="font-size:.75rem;color:var(--text3)">Starting rank</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Iron">Iron</span></td>
+          <td>800 – 999</td>
+          <td style="font-size:.75rem;color:var(--text3)"></td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge Unranked">Unranked</span></td>
+          <td>0 – 799</td>
+          <td style="font-size:.75rem;color:var(--text3)">No placement matches yet</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:.72rem;color:var(--text3);margin-top:1rem;">
+      New accounts start at <strong style="color:var(--text2)">1000 ELO</strong> (Bronze). ELO only changes in <strong style="color:var(--text2)">ranked Versus</strong> matches.
+      The closer the opponent's ELO, the smaller the change.
+    </p>
+  </div>
+
+  <!-- Level Border Tiers -->
+  <div class="section-card">
+    <h3>Level Border Tiers</h3>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:1.25rem;">
+      Earned by playing any game mode — Versus, Marathon, Sprint, or Co-op. XP accumulates across all modes.
+    </p>
+    <div id="levelTierList"></div>
+    <p style="font-size:.72rem;color:var(--text3);margin-top:1rem;">
+      Level border is shown next to your name everywhere on the site and in-game.
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem;">
+    <a href="game.html" class="btn primary lg">Play Now</a>
+    <a href="leaderboard.html" class="btn ghost lg">Leaderboard</a>
+    <a href="controls.html" class="btn ghost lg">Controls &amp; Guide</a>
+  </div>
+
+</div>
+
+<p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
+
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { injectNavUser, getLevel, levelBadgeHTML } from './api.js';
+
+  const LEVEL_TIERS = [
+    { tier: 'Mythic',      minLv: 200, maxLv: null },
+    { tier: 'Grandmaster', minLv: 150, maxLv: 199  },
+    { tier: 'Legend',      minLv: 100, maxLv: 149  },
+    { tier: 'Elite',       minLv:  75, maxLv:  99  },
+    { tier: 'Expert',      minLv:  50, maxLv:  74  },
+    { tier: 'Veteran',     minLv:  25, maxLv:  49  },
+    { tier: 'Apprentice',  minLv:  10, maxLv:  24  },
+    { tier: 'Rookie',      minLv:   1, maxLv:   9  },
+  ];
+
+  document.getElementById('levelTierList').innerHTML = LEVEL_TIERS.map(t => `
+    <div class="level-tier-row">
+      ${levelBadgeHTML(t.minLv)}
+      <div class="level-tier-name">${t.tier}</div>
+      <div class="level-tier-range" style="margin-left:auto">${t.minLv}${t.maxLv ? '–' + t.maxLv : '+'}</div>
+    </div>`).join('');
+
+  async function init() {
+    await injectNavUser(null);
+  }
+
+  window.doLogout = async () => {
+    try { const { default: API } = await import('./api.js'); await API.auth.logout(); } catch {}
+    location.reload();
+  };
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - Tetris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+</head>
+<body>
+
+<div class="auth-page">
+  <a class="nav-logo" href="index.html" style="font-family:var(--serif);font-style:italic;color:var(--accent);font-size:1.6rem;">Tetris</a>
+
+  <div class="auth-card">
+    <h2 class="auth-title">Sign in</h2>
+
+    <div id="errBox" class="form-error hidden" style="margin-bottom: 5px;"></div>
+
+    <form id="loginForm" class="form-group" novalidate>
+      <div class="field">
+        <label for="usernameOrEmail">Username or email</label>
+        <input id="usernameOrEmail" class="input" type="text" autocomplete="username" required placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" class="input" type="password" autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn primary" id="submitBtn">Sign in</button>
+    </form>
+  </div>
+
+  <p class="auth-footer">
+    Don't have an account? <a href="register.html">Register</a>
+  </p>
+</div>
+
+<script type="module">
+  import API from './api.js';
+
+  // Redirect if already logged in
+  (async () => {
+    try {
+      await API.auth.me();
+      location.href = 'index.html';
+    } catch {}
+  })();
+
+  const form      = document.getElementById('loginForm');
+  const errBox    = document.getElementById('errBox');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const usernameOrEmail = document.getElementById('usernameOrEmail').value.trim();
+    const password        = document.getElementById('password').value;
+
+    if (!usernameOrEmail || !password) {
+      showErr('Please fill in all fields.');
+      return;
+    }
+
+    submitBtn.disabled    = true;
+    submitBtn.textContent = 'Signing in…';
+    errBox.classList.add('hidden');
+
+    try {
+      await API.auth.login({ usernameOrEmail, password });
+      // Redirect: go to where they came from if possible, else home
+      const redir = new URLSearchParams(location.search).get('redir') || 'index.html';
+      location.href = redir;
+    } catch (err) {
+      showErr(err.message || 'Login failed.');
+      submitBtn.disabled    = false;
+      submitBtn.textContent = 'Sign in';
+    }
+  });
+
+  function showErr(msg) {
+    errBox.textContent = msg;
+    errBox.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

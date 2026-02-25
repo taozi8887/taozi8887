@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Tetris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    .profile-header {
+      display: flex; gap: 1.5rem; align-items: flex-start;
+      padding: 2.5rem 0 2rem;
+    }
+    .profile-info { flex: 1; }
+    .profile-name {
+      font-family: var(--serif); font-size: 2rem; margin-bottom: .1rem;
+    }
+    .profile-username-sub {
+      font-size: .78rem; color: var(--text3); letter-spacing: .03em; margin-bottom: .35rem;
+    }
+    .profile-bio {
+      font-size: .9rem; color: var(--text2); max-width: 480px; margin: .5rem 0;
+    }
+    .profile-meta {
+      display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+      font-size: .8rem; color: var(--text3); margin-top: .5rem;
+    }
+    .edit-section {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 1.5rem;
+    }
+    .edit-section h3 { font-family: var(--mono); font-size: .85rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); margin-bottom: 1rem; }
+    .avatar-upload { display: flex; gap: 1rem; align-items: center; }
+    .avatar-large {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: var(--bg3); border: 2px solid var(--border);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .match-list { margin-top: 1rem; }
+    .no-matches { color: var(--text3); font-size: .85rem; padding: 1rem 0; }
+    .result-tag {
+      display: inline-block; font-size: .68rem; padding: .15rem .55rem;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .result-tag.win  { background: rgba(200,255,74,.1);  color: var(--accent);  border: 1px solid rgba(200,255,74,.25); }
+    .result-tag.loss { background: rgba(255,74,110,.1);  color: var(--accent2); border: 1px solid rgba(255,74,110,.25); }
+    .result-tag.draw { background: rgba(255,255,255,.05); color: var(--text2);  border: 1px solid var(--border); }
+    .result-tag.ranked { background: rgba(100,200,255,.12); color: #60c8ff; border: 1px solid rgba(100,200,255,.3); }
+    .mode-badge {
+      display: inline-block; font-size: .62rem; padding: .13rem .5rem;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .09em; font-weight: 600;
+      vertical-align: middle;
+    }
+    .mode-badge.versus-ranked  { background: rgba(100,200,255,.13); color: #60c8ff;  border: 1px solid rgba(100,200,255,.32); }
+    .mode-badge.versus-casual  { background: rgba(180,130,255,.12); color: #b48aff;  border: 1px solid rgba(180,130,255,.3);  }
+    .mode-badge.sprint         { background: rgba(255,190,60,.11);  color: #ffb83a;  border: 1px solid rgba(255,190,60,.3);   }
+    .mode-badge.coop           { background: rgba(74,220,160,.11);  color: #4adca0;  border: 1px solid rgba(74,220,160,.28);  }
+    /* Expandable match detail */
+    .match-row { cursor: pointer; }
+    .match-row:hover { background: rgba(255,255,255,.025); border-radius: 6px; }
+    .match-detail {
+      overflow: hidden; max-height: 0;
+      transition: max-height .25s ease, padding .25s ease, margin .25s ease;
+      padding: 0;
+      margin: 0;
+    }
+    .match-detail.open { max-height: 200px; padding: .1rem 0 .5rem; margin: 2rem 0;}
+    .match-detail-inner {
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 6px;
+      padding: .7rem 1rem;
+      margin-bottom: .25rem;
+    }
+    .match-detail-col { display: flex; flex-direction: column; gap: .25rem; min-width: 90px; }
+    .match-detail-col .dk { font-size: .62rem; color: var(--text3); text-transform: uppercase; letter-spacing: .09em; }
+    .match-detail-col .dv { font-size: .82rem; font-family: var(--mono); color: var(--text); }
+    .match-detail-col .dv.win  { color: var(--accent); }
+    .match-detail-col .dv.loss { color: var(--accent2); }
+    .level-info-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.3rem; height: 1.3rem; border-radius: 50%; font-size: .7rem;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text3);
+      cursor: pointer; vertical-align: middle; margin-left: .4rem;
+      transition: border-color .2s, color .2s;
+    }
+    .level-info-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .level-tier-row {
+      display: flex; align-items: center; gap: .75rem; padding: .55rem 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .level-tier-row:last-child { border-bottom: none; }
+    .level-tier-name { font-size: .8rem; width: 90px; font-weight: 600; }
+    .level-tier-range { font-size: .75rem; color: var(--text3); font-family: var(--mono); }
+    .result-tag.loss { background: rgba(255,74,110,.1);  color: var(--accent2); border: 1px solid rgba(255,74,110,.25); }
+    .result-tag.draw { background: rgba(255,255,255,.05); color: var(--text2);  border: 1px solid var(--border); }
+    /* Settings tab */
+    .settings-section { width: 100%; margin-bottom: 1.25rem; }
+    .settings-section-title {
+      font-size: .65rem; color: var(--text3); letter-spacing: .12em;
+      text-transform: uppercase; margin-bottom: .625rem; border-bottom: 1px solid var(--border);
+      padding-bottom: .4rem; width: 100%;
+    }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; gap: .625rem; padding: .3rem 0; }
+    .settings-label { font-size: .78rem; color: var(--text2); letter-spacing: .03em; flex: 1; }
+    .settings-number {
+      width: 68px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .3rem .625rem; color: var(--text);
+      font-family: var(--mono); font-size: .75rem; outline: none; text-align: right;
+      transition: border-color .2s;
+    }
+    .settings-number:focus { border-color: var(--accent); }
+    .keybind-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .keybind-row:last-child { border-bottom: none; }
+    .keybind-action { font-size: .72rem; color: var(--text2); width: 110px; flex-shrink: 0; letter-spacing: .03em; }
+    .keybind-slots { display: flex; gap: .375rem; flex-wrap: wrap; }
+    .kbslot {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .25rem .625rem; font-size: .65rem;
+      color: var(--text); font-family: var(--mono); letter-spacing: .06em;
+      cursor: pointer; transition: all .18s; min-width: 42px; text-align: center; user-select: none;
+    }
+    .kbslot:hover { border-color: var(--accent); color: var(--accent); }
+    .kbslot.listening { border-color: #ffd700; color: #ffd700; animation: kbPulse .8s ease infinite alternate; }
+    .kbslot.empty { opacity: .3; border-style: dashed; }
+    @keyframes kbPulse { from { box-shadow: 0 0 0 0 rgba(255,215,0,.4); } to { box-shadow: 0 0 0 6px rgba(255,215,0,0); } }
+    .toggle-btn {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .3rem .875rem; font-size: .75rem;
+      color: var(--text2); cursor: pointer; transition: all .18s; font-family: var(--mono);
+    }
+    .toggle-btn.on { border-color: var(--accent); color: var(--accent); }
+    /* Modals */
+    .modal-backdrop { position:fixed;inset:0;z-index:400;background:rgba(10,10,11,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center; }
+    .modal-backdrop.hidden { display:none; }
+    .modal-box { background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem 2rem;width:100%;max-width:340px;display:flex;flex-direction:column;gap:1rem; }
+    .modal-header { display:flex;align-items:center;justify-content:space-between;gap:1rem; }
+    .modal-title { font-family:var(--serif);font-size:1.2rem;margin:0; }
+    .modal-close { background:none;border:none;color:var(--text3);font-size:1.25rem;line-height:1;cursor:pointer;padding:.1rem .35rem;border-radius:var(--radius);transition:color .15s,background .15s; }
+    .modal-close:hover { color:var(--text);background:var(--bg3); }
+    .modal-sub { font-size:.82rem;color:var(--text2); }
+    .modal-actions { display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap; }
+    .mode-btn { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .5rem;color:var(--text);cursor:pointer;transition:all .15s;font-size:.78rem;text-align:center; }
+    .mode-btn:hover { border-color:var(--accent);color:var(--accent); }
+    .mode-btn.selected { border-color:var(--accent);background:rgba(200,255,74,.07);color:var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Tetris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+      <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
+      <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='game.html'">Settings</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Profile header -->
+  <div class="profile-header" id="profileHeader">
+    <div class="flex-center" style="width:120px;height:120px;border-radius:50%;background:var(--bg3);">
+      <div class="spinner"></div>
+    </div>
+    <div class="profile-info">
+      <div class="profile-name">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabBar">
+    <button class="tab-btn active" onclick="switchTab('stats')">Stats</button>
+    <button class="tab-btn" onclick="switchTab('matches')">Matches</button>
+    <button class="tab-btn" id="editTabBtn" onclick="switchTab('edit')" style="display:none">Edit Profile</button>
+    <button class="tab-btn" id="settingsTabBtn" onclick="switchTab('settings')" style="display:none">Settings</button>
+  </div>
+
+  <!-- Stats tab -->
+  <div id="tabStats">
+    <!-- Ranked Versus -->
+    <p class="section-title" style="margin-bottom:.75rem">Ranked Versus</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Games</div><div class="value" id="stVsGames">-</div></div>
+      <div class="stat-cell"><div class="label">Wins</div><div class="value" id="stVsWins">-</div></div>
+      <div class="stat-cell"><div class="label">Win rate</div><div class="value" id="stVsWinRate">-</div></div>
+      <div class="stat-cell"><div class="label">Best score</div><div class="value" id="stVsScore">-</div></div>
+      <div class="stat-cell"><div class="label">Lines cleared</div><div class="value" id="stVsLines">-</div></div>
+      <div class="stat-cell"><div class="label">Tetrises</div><div class="value" id="stVsTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">T-Spins</div><div class="value" id="stVsTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stVsB2B">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stVsCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stVsTime">-</div></div>
+    </div>
+
+    <!-- Casual Versus (directly under ranked) -->
+    <p class="section-title" style="margin-top:2rem;margin-bottom:.25rem">Casual Versus</p>
+    <p class="small muted" style="margin-bottom:.75rem">Friend challenges &amp; casual queue — no ELO change.</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Games</div><div class="value" id="stCasGames">-</div></div>
+      <div class="stat-cell"><div class="label">Wins</div><div class="value" id="stCasWins">-</div></div>
+      <div class="stat-cell"><div class="label">Win rate</div><div class="value" id="stCasWinRate">-</div></div>
+      <div class="stat-cell"><div class="label">Best score</div><div class="value" id="stCasScore">-</div></div>
+      <div class="stat-cell"><div class="label">Lines cleared</div><div class="value" id="stCasLines">-</div></div>
+      <div class="stat-cell"><div class="label">Tetrises</div><div class="value" id="stCasTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">T-Spins</div><div class="value" id="stCasTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stCasB2B">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stCasCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stCasTime">-</div></div>
+    </div>
+
+    <!-- Marathon -->
+    <p class="section-title" style="margin-top:2rem;margin-bottom:.75rem">Marathon</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Games</div><div class="value" id="stMaGames">-</div></div>
+      <div class="stat-cell"><div class="label">Best score</div><div class="value" id="stMaScore">-</div></div>
+      <div class="stat-cell"><div class="label">Best lines</div><div class="value" id="stMaLines">-</div></div>
+      <div class="stat-cell"><div class="label">Max level</div><div class="value" id="stMaLevel">-</div></div>
+      <div class="stat-cell"><div class="label">Total lines</div><div class="value" id="stMaTotalLines">-</div></div>
+      <div class="stat-cell"><div class="label">Tetrises</div><div class="value" id="stMaTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">T-Spins</div><div class="value" id="stMaTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stMaB2B">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stMaCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stMaTime">-</div></div>
+    </div>
+
+    <!-- Sprint Race -->
+    <p class="section-title" style="margin-top:2rem;margin-bottom:.75rem">Sprint Race</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Games</div><div class="value" id="stSpGames">-</div></div>
+      <div class="stat-cell"><div class="label">Wins</div><div class="value" id="stSpWins">-</div></div>
+      <div class="stat-cell"><div class="label">Win rate</div><div class="value" id="stSpWinRate">-</div></div>
+      <div class="stat-cell"><div class="label">Best time</div><div class="value" id="stSpPB">-</div></div>
+      <div class="stat-cell"><div class="label">Best score</div><div class="value" id="stSpScore">-</div></div>
+      <div class="stat-cell"><div class="label">Lines cleared</div><div class="value" id="stSpLines">-</div></div>
+      <div class="stat-cell"><div class="label">Tetrises</div><div class="value" id="stSpTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">T-Spins</div><div class="value" id="stSpTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stSpB2B">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stSpCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stSpTime">-</div></div>
+    </div>
+
+    <!-- Co-op -->
+    <p class="section-title" style="margin-top:2rem;margin-bottom:.75rem">Co-op</p>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="label">Games</div><div class="value" id="stCoGames">-</div></div>
+      <div class="stat-cell"><div class="label">Wins</div><div class="value" id="stCoWins">-</div></div>
+      <div class="stat-cell"><div class="label">Win rate</div><div class="value" id="stCoWinRate">-</div></div>
+      <div class="stat-cell"><div class="label">Best score</div><div class="value" id="stCoScore">-</div></div>
+      <div class="stat-cell"><div class="label">Lines cleared</div><div class="value" id="stCoLines">-</div></div>
+      <div class="stat-cell"><div class="label">Tetrises</div><div class="value" id="stCoTetrises">-</div></div>
+      <div class="stat-cell"><div class="label">T-Spins</div><div class="value" id="stCoTSpins">-</div></div>
+      <div class="stat-cell"><div class="label">Max B2B</div><div class="value" id="stCoB2B">-</div></div>
+      <div class="stat-cell"><div class="label">Max combo</div><div class="value" id="stCoCombo">-</div></div>
+      <div class="stat-cell"><div class="label">Time played</div><div class="value" id="stCoTime">-</div></div>
+    </div>
+  </div>
+
+  <!-- Matches tab -->
+  <div id="tabMatches" class="hidden">
+    <div class="match-list" id="matchList">
+      <p class="no-matches">Loading matches…</p>
+    </div>
+  </div>
+
+  <!-- Edit tab (own profile only) -->
+  <div id="tabEdit" class="hidden">
+    <div class="edit-section">
+      <h3>Avatar</h3>
+      <div class="avatar-upload">
+        <div id="editAvatar" class="avatar-large flex-center" style="font-size:.72rem;color:var(--text3);text-align:center;">No photo</div>
+        <div class="flex col gap-s">
+          <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+          <button class="btn sm" onclick="document.getElementById('avatarInput').click()">Upload image</button>
+          <span class="small muted">Max 512 KB · JPG/PNG/WebP/GIF</span>
+          <span id="avatarStatus" class="small"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-section mt-m">
+      <h3>Profile info</h3>
+      <div class="form-group">
+        <div class="field">
+          <label for="editDisplayName">Display name</label>
+          <input id="editDisplayName" class="input" type="text" maxlength="30" placeholder="Your display name">
+        </div>
+        <div class="field">
+          <label for="editBio">Bio</label>
+          <textarea id="editBio" class="input" maxlength="200" placeholder="A short bio…"></textarea>
+        </div>
+        <div class="field">
+          <label for="editCountry">Country code (ISO 2)</label>
+          <input id="editCountry" class="input" type="text" maxlength="2" placeholder="US" style="max-width:80px">
+        </div>
+        <div>
+          <button class="btn primary" onclick="saveProfile()">Save changes</button>
+          <span id="profileSaveStatus" class="small muted" style="margin-left:.75rem"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings tab (own profile only) -->
+  <div id="tabSettings" class="hidden">
+    <div class="edit-section">
+      <h3>Audio</h3>
+      <div class="settings-row">
+        <span class="settings-label">Sound Effects</span>
+        <button class="toggle-btn" id="sfxToggleBtn" onclick="toggleSfx()">OFF</button>
+      </div>
+    </div>
+
+    <div class="edit-section mt-m">
+      <h3>Input Timing</h3>
+      <p class="small muted" style="margin-bottom:1rem">Competitive defaults: DAS 133ms · ARR 0ms</p>
+      <div class="settings-row">
+        <span class="settings-label">DAS - delayed auto-shift (ms)</span>
+        <input class="settings-number" id="dasDelayInput" type="number" min="0" max="500">
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">ARR - auto-repeat rate (ms)</span>
+        <input class="settings-number" id="dasIntervalInput" type="number" min="0" max="200">
+      </div>
+    </div>
+
+    <div class="edit-section mt-m">
+      <h3>Key Bindings <span class="small muted" style="font-weight:normal;text-transform:none;letter-spacing:0">- click a slot to rebind, Esc to clear</span></h3>
+      <div id="keybindRows"></div>
+    </div>
+
+    <div class="flex gap-m mt-m" style="align-items:center">
+      <button class="btn sm" onclick="resetDefaultSettings()">Reset Defaults</button>
+      <button class="btn sm primary" onclick="applySettings()">Save</button>
+      <span id="settingsSaveStatus" class="small"></span>
+    </div>
+  </div>
+
+  <!-- Add friend / challenge buttons (shown on other users' profiles) -->
+  <div id="socialBtns" class="flex gap-m mt-l hidden">
+    <button class="btn" id="addFriendBtn" onclick="addFriend()">+ Add Friend</button>
+    <button class="btn" id="challengeBtn" onclick="sendChallenge()">⚔ Challenge</button>
+  </div>
+
+</div>
+
+<p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)" class="">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
+
+<!-- Footer -->
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum, fmtTime, toast, getLevel, getLevelInfo, levelBadgeHTML } from './api.js';
+
+  let me            = null;
+  let profileUser   = null;
+  let activeTab     = 'stats';
+
+  const params      = new URLSearchParams(location.search);
+  const targetUser  = params.get('u'); // if null → own profile
+
+  async function init() {
+    me = await injectNavUser(null);
+
+    if (!targetUser) {
+      // Own profile
+      if (!me) { location.href = 'login.html?redir=profile.html'; return; }
+      try {
+        const data = await API.profile.get();
+        profileUser = data;
+        renderProfile(data, true);
+      } catch (e) {
+        showError(e.message);
+      }
+    } else {
+      try {
+        const data = await API.profile.getByName(targetUser);
+        profileUser = data;
+        const isOwn = me && me.id === data.id;
+        renderProfile(data, isOwn);
+        if (!isOwn && me) {
+          document.getElementById('socialBtns').classList.remove('hidden');
+          // Check existing friendship status
+          try {
+            const fd = await API.friends.list();
+            const existing = (fd.friends || []).find(f => f.friend.username === targetUser);
+            const btn = document.getElementById('addFriendBtn');
+            if (existing) {
+              if (existing.status === 'accepted') {
+                btn.textContent = '✓ Friends';
+                btn.disabled = true;
+              } else if (existing.isSent) {
+                btn.textContent = 'Request sent';
+                btn.disabled = true;
+              } else {
+                // They sent us a request - offer to accept
+                btn.textContent = 'Accept Request';
+                btn.onclick = async () => {
+                  try {
+                    await API.friends.respond({ id: existing.id, action: 'accept' });
+                    btn.textContent = '✓ Friends';
+                    btn.disabled = true;
+                    toast('Friend added!', 'success');
+                  } catch (e) { toast(e.message, 'error'); }
+                };
+              }
+            }
+          } catch {}
+        }
+      } catch (e) {
+        showError(`User "${targetUser}" not found.`);
+        return;
+      }
+    }
+    // Auto-switch to ?tab if requested
+    const tabParam = params.get('tab');
+    if (tabParam && ['stats','matches','edit','settings'].includes(tabParam)) switchTab(tabParam);
+  }
+
+  function renderProfile(data, isOwn) {
+    const rank     = getRank(data.elo || 1000);
+    const lvlInfo  = getLevelInfo(data.xp || 0);
+    // Backend returns avatarUrl as a relative path like /api/profile/avatar/<key>
+    const avSrc    = data.avatarUrl
+      ? (data.avatarUrl.startsWith('http') ? data.avatarUrl : API.BASE + data.avatarUrl)
+      : '';
+
+    const avatarEl = document.createElement('img');
+    avatarEl.className = 'avatar lg';
+    avatarEl.src = avSrc;
+    avatarEl.alt = '';
+    avatarEl.onerror = () => { avatarEl.replaceWith(initials); };
+
+    const initials  = document.createElement('div');
+    initials.className = 'avatar lg flex-center';
+    initials.style.cssText = 'font-size:2rem;color:var(--text3);display:flex;align-items:center;justify-content:center;';
+    initials.textContent = (data.username || '?').slice(0, 2).toUpperCase();
+
+    const headerEl = document.getElementById('profileHeader');
+    headerEl.innerHTML = '';
+    headerEl.appendChild(avSrc ? avatarEl : initials);
+
+    const info = document.createElement('div');
+    info.className = 'profile-info';
+    info.innerHTML = `
+      <div class="profile-name">${levelBadgeHTML(lvlInfo.level)} ${escHtml(data.display_name || data.username)} <button class="level-info-btn" onclick="showLevelModal()" title="Level tiers">?</button></div>
+      <div class="profile-username-sub">@${escHtml(data.username)}</div>
+      <div class="flex gap-s" style="align-items:center;margin-bottom:.4rem;">
+        <span class="rank-badge ${rank.name}">${rank.name}</span>
+        <span class="elo-number">${fmtNum(data.elo)}</span>
+      </div>
+      <div class="xp-bar-section">
+        <div class="xp-bar-label">Level ${lvlInfo.level} &nbsp;&bull;&nbsp; ${Math.round(lvlInfo.xpCurrent)} / ${lvlInfo.xpNeeded} XP to next</div>
+        <div class="xp-bar-outer" style="margin-top:.75rem"><div class="xp-bar-fill" style="width:${lvlInfo.pct}%"></div></div>
+      </div>
+      ${data.bio ? `<p class="profile-bio">${escHtml(data.bio)}</p>` : ''}
+      <div class="profile-meta">
+        ${data.country ? `<span>🌐 ${data.country.toUpperCase()}</span>` : ''}
+      </div>
+    `;
+    headerEl.appendChild(info);
+
+    // Stats - 4 sections
+    const s = data.stats || {};
+
+    // -- Ranked Versus --
+    const vsWinRate = s.versus_played ? Math.round((s.versus_won || 0) / s.versus_played * 100) + '%' : '-';
+    setVal('stVsGames',    fmtNum(s.versus_played));
+    setVal('stVsWins',     fmtNum(s.versus_won));
+    setVal('stVsWinRate',  vsWinRate);
+    setVal('stVsScore',    fmtNum(s.versus_best_score || s.best_score));
+    setVal('stVsLines',    fmtNum(s.total_lines));
+    setVal('stVsTetrises', fmtNum(s.versus_tetrises || s.tetrises));
+    setVal('stVsTSpins',   fmtNum(s.versus_t_spins   || s.t_spins));
+    setVal('stVsB2B',      fmtNum(s.versus_b2b_max   || s.b2b_max));
+    setVal('stVsCombo',    fmtNum(s.versus_max_combo  || s.max_combo));
+    setVal('stVsTime',     fmtTime((s.versus_time_played_ms || s.time_played_ms || 0) / 1000));
+
+    // -- Casual Versus --
+    const casGames  = s.casual_vs_played || 0;
+    const casWins   = s.casual_vs_won    || 0;
+    setVal('stCasGames',    fmtNum(casGames));
+    setVal('stCasWins',     fmtNum(casWins));
+    setVal('stCasWinRate',  casGames ? Math.round(casWins / casGames * 100) + '%' : '-');
+    setVal('stCasScore',    fmtNum(s.casual_vs_best_score));
+    setVal('stCasLines',    fmtNum(s.casual_vs_lines));
+    setVal('stCasTetrises', fmtNum(s.casual_vs_tetrises));
+    setVal('stCasTSpins',   fmtNum(s.casual_vs_t_spins));
+    setVal('stCasB2B',      fmtNum(s.casual_vs_b2b_max));
+    setVal('stCasCombo',    fmtNum(s.casual_vs_max_combo));
+    setVal('stCasTime',     fmtTime((s.casual_vs_time_played_ms || 0) / 1000));
+
+    // -- Marathon --
+    setVal('stMaGames',      fmtNum(s.marathon_played));
+    setVal('stMaScore',      fmtNum(s.marathon_best_score));
+    setVal('stMaLines',      fmtNum(s.marathon_best_lines));
+    setVal('stMaLevel',      fmtNum(s.marathon_max_level));
+    setVal('stMaTotalLines', fmtNum(s.marathon_total_lines));
+    setVal('stMaTetrises',   fmtNum(s.marathon_tetrises));
+    setVal('stMaTSpins',     fmtNum(s.marathon_t_spins));
+    setVal('stMaB2B',        fmtNum(s.marathon_b2b_max));
+    setVal('stMaCombo',      fmtNum(s.marathon_max_combo));
+    setVal('stMaTime',       fmtTime((s.marathon_time_played_ms || 0) / 1000));
+
+    // -- Sprint Race --
+    const spWinRate = s.sprint_played ? Math.round((s.sprint_won || 0) / s.sprint_played * 100) + '%' : '-';
+    const sprintPB  = s.best_sprint_ms ? fmtTime(s.best_sprint_ms / 1000) : '-';
+    setVal('stSpGames',    fmtNum(s.sprint_played));
+    setVal('stSpWins',     fmtNum(s.sprint_won));
+    setVal('stSpWinRate',  spWinRate);
+    setVal('stSpPB',       sprintPB);
+    setVal('stSpScore',    fmtNum(s.sprint_best_score));
+    setVal('stSpLines',    fmtNum(s.sprint_total_lines));
+    setVal('stSpTetrises', fmtNum(s.sprint_tetrises));
+    setVal('stSpTSpins',   fmtNum(s.sprint_t_spins));
+    setVal('stSpB2B',      fmtNum(s.sprint_b2b_max));
+    setVal('stSpCombo',    fmtNum(s.sprint_max_combo));
+    setVal('stSpTime',     fmtTime((s.sprint_time_played_ms || 0) / 1000));
+
+    // -- Co-op --
+    const coWinRate = s.coop_played ? Math.round((s.coop_won || 0) / s.coop_played * 100) + '%' : '-';
+    setVal('stCoGames',    fmtNum(s.coop_played));
+    setVal('stCoWins',     fmtNum(s.coop_won));
+    setVal('stCoWinRate',  coWinRate);
+    setVal('stCoScore',    fmtNum(s.coop_best_score));
+    setVal('stCoLines',    fmtNum(s.coop_total_lines));
+    setVal('stCoTetrises', fmtNum(s.coop_tetrises));
+    setVal('stCoTSpins',   fmtNum(s.coop_t_spins));
+    setVal('stCoB2B',      fmtNum(s.coop_b2b_max));
+    setVal('stCoCombo',    fmtNum(s.coop_max_combo));
+    setVal('stCoTime',     fmtTime((s.coop_time_played_ms || 0) / 1000));
+
+    // Matches - backend returns recent_matches (snake_case)
+    renderMatches(data.recent_matches || [], data.id);
+
+    if (isOwn) {
+      document.getElementById('editTabBtn').style.display = '';
+      document.getElementById('settingsTabBtn').style.display = '';
+      document.getElementById('editDisplayName').value = data.display_name || '';
+      document.getElementById('editBio').value         = data.bio          || '';
+      document.getElementById('editCountry').value     = data.country      || '';
+      const editAv = document.getElementById('editAvatar');
+      if (avSrc) {
+        editAv.innerHTML = `<img src="${avSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='No photo'">`;
+      } else {
+        editAv.textContent = 'No photo';
+      }
+    }
+
+    // Avatar file input
+    document.getElementById('avatarInput').addEventListener('change', uploadAvatar);
+  }
+
+  function renderMatches(matches, userId) {
+    const list = document.getElementById('matchList');
+    if (!matches.length) { list.innerHTML = '<p class="no-matches">No matches recorded yet.</p>'; return; }
+
+    const modeConfig = {
+      'versus-ranked':  { cls: 'versus-ranked', label: 'Ranked Versus' },
+      'versus-casual':  { cls: 'versus-casual', label: 'Casual Versus' },
+      'sprint':         { cls: 'sprint',         label: 'Sprint Race'   },
+      'coop':           { cls: 'coop',           label: 'Co-op'         },
+    };
+
+    list.innerHTML = matches.map((m, i) => {
+      const won   = m.winner_id === userId;
+      const draw  = !m.winner_id;
+      const res   = draw ? 'draw' : (won ? 'win' : 'loss');
+      const label = draw ? 'Draw' : (won ? 'Won' : 'Lost');
+      const isMe1    = m.p1_id === userId;
+      const myName   = isMe1 ? (m.p1_name || 'You') : (m.p2_name || 'You');
+      const oppName  = isMe1 ? (m.p2_name || '?') : (m.p1_name || '?');
+      const oppDisplay = isMe1 ? (m.p2_display || oppName) : (m.p1_display || oppName);
+      const oppElo   = isMe1 ? m.p2_elo : m.p1_elo;
+      const oppXp    = isMe1 ? (m.p2_xp || 0) : (m.p1_xp || 0);
+      const oppRank  = oppElo != null ? getRank(oppElo) : null;
+      const oppLevel = getLevel(oppXp);
+      const oppRankBadge  = oppRank  ? `<span class="rank-badge ${oppRank.name}" style="font-size:.6rem;padding:.1rem .4rem">${oppRank.name}</span>` : '';
+      const oppLevelBadge = `<span style="font-size:.65rem;opacity:.75">${levelBadgeHTML(oppLevel)}</span>`;
+      const oppUsernameSub = oppDisplay !== oppName ? `<span class="dimmed" style="font-size:.75rem">@${escHtml(oppName)}</span>` : '';
+      const myScore  = isMe1 ? m.p1_score : m.p2_score;
+      const oppScore = isMe1 ? m.p2_score : m.p1_score;
+      const myLines  = isMe1 ? m.p1_lines : m.p2_lines;
+      const oppLines = isMe1 ? m.p2_lines : m.p1_lines;
+      const eloDelta = isMe1 ? m.p1_elo_delta : m.p2_elo_delta;
+      const oppEloDelta = isMe1 ? m.p2_elo_delta : m.p1_elo_delta;
+      const showElo  = eloDelta != null && eloDelta !== 0;
+      const eloStr   = showElo ? (eloDelta > 0 ? `+${eloDelta}` : `${eloDelta}`) : '';
+      const eloClass = eloDelta >= 0 ? 'pos' : 'neg';
+      const date     = m.played_at ? new Date(m.played_at).toLocaleDateString() : '';
+      const timeStr  = m.played_at ? new Date(m.played_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+      const durStr   = m.duration_ms ? fmtTime(m.duration_ms / 1000) : null;
+      const fmtN     = n => n != null ? fmtNum(n) : '—';
+
+      let modeKey = m.mode === 'versus' ? (m.is_ranked ? 'versus-ranked' : 'versus-casual') : m.mode;
+      const mc = modeConfig[modeKey] || { cls: 'versus-casual', label: m.mode };
+
+      // Detail columns
+      const scoreWin  = myScore > oppScore ? 'win' : myScore < oppScore ? 'loss' : '';
+      const linesWin  = myLines > oppLines  ? 'win' : myLines  < oppLines  ? 'loss' : '';
+      let detailCols = `
+        <div class="match-detail-col">
+          <span class="dk">Your score</span>
+          <span class="dv ${scoreWin}">${fmtN(myScore)}</span>
+        </div>
+        <div class="match-detail-col">
+          <span class="dk">Opp score</span>
+          <span class="dv">${fmtN(oppScore)}</span>
+        </div>
+        <div class="match-detail-col">
+          <span class="dk">Your lines</span>
+          <span class="dv ${linesWin}">${fmtN(myLines)}</span>
+        </div>
+        <div class="match-detail-col">
+          <span class="dk">Opp lines</span>
+          <span class="dv">${fmtN(oppLines)}</span>
+        </div>`;
+      if (showElo) {
+        const oppEloStr = oppEloDelta != null && oppEloDelta !== 0 ? (oppEloDelta > 0 ? `+${oppEloDelta}` : `${oppEloDelta}`) : '—';
+        detailCols += `
+        <div class="match-detail-col">
+          <span class="dk">Your ELO</span>
+          <span class="dv ${eloDelta >= 0 ? 'win' : 'loss'}">${eloStr}</span>
+        </div>
+        <div class="match-detail-col">
+          <span class="dk">Opp ELO</span>
+          <span class="dv">${oppEloStr}</span>
+        </div>`;
+      }
+      if (durStr) detailCols += `
+        <div class="match-detail-col">
+          <span class="dk">Duration</span>
+          <span class="dv">${durStr}</span>
+        </div>`;
+      detailCols += `
+        <div class="match-detail-col">
+          <span class="dk">Time</span>
+          <span class="dv">${timeStr}</span>
+        </div>`;
+
+      return `
+        <div class="match-row" onclick="toggleMatchDetail(this)">
+          <div style="font-size:.85rem;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-left:1rem;">
+            <span style="color:var(--text3)">vs</span>
+            <a href="profile.html?u=${encodeURIComponent(oppName)}" onclick="event.stopPropagation()" style="font-weight:500;margin-right: .25rem;">${escHtml(oppDisplay)}</a>
+            ${oppUsernameSub}
+            ${oppLevelBadge}
+            ${oppRankBadge}
+            <span class="mode-badge ${mc.cls}">${mc.label}</span>
+          </div>
+          <div class="flex gap-s" style="align-items:center;margin-right: 1rem;">
+            <span class="result-tag ${res}">${label}</span>
+            ${eloStr ? `<span class="match-elo ${eloClass}">${eloStr}</span>` : ''}
+            <span class="dimmed small">${date}</span>
+          </div>
+        </div>
+        <div class="match-detail">
+          <div class="match-detail-inner">${detailCols}</div>
+        </div>`;
+    }).join('');
+  }
+
+  window.toggleMatchDetail = (row) => {
+    const detail = row.nextElementSibling;
+    if (detail && detail.classList.contains('match-detail')) {
+      detail.classList.toggle('open');
+    }
+  };
+
+  window.switchTab = (tab) => {
+    activeTab = tab;
+    document.getElementById('tabStats').classList.toggle('hidden',    tab !== 'stats');
+    document.getElementById('tabMatches').classList.toggle('hidden',  tab !== 'matches');
+    document.getElementById('tabEdit').classList.toggle('hidden',     tab !== 'edit');
+    document.getElementById('tabSettings').classList.toggle('hidden', tab !== 'settings');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick')?.includes(`'${tab}'`))?.classList.add('active');
+    if (tab === 'settings') buildSettingsTab();
+  };
+
+  window.saveProfile = async () => {
+    const bio          = document.getElementById('editBio').value;
+    const display_name = document.getElementById('editDisplayName').value;
+    const country      = document.getElementById('editCountry').value.toUpperCase().slice(0,2);
+    const status       = document.getElementById('profileSaveStatus');
+    try {
+      await API.profile.update({ bio, display_name, country: country || null });
+      status.textContent = 'Saved!';
+      status.style.color = 'var(--accent)';
+      setTimeout(() => { status.textContent = ''; }, 2500);
+      // Immediately update profile header
+      profileUser.display_name = display_name;
+      profileUser.bio = bio;
+      profileUser.country = country || null;
+      const nameEl = document.querySelector('#profileHeader .profile-name');
+      if (nameEl) nameEl.textContent = display_name || profileUser.username;
+      const infoEl = document.querySelector('#profileHeader .profile-info');
+      if (infoEl) {
+        let bioEl = infoEl.querySelector('.profile-bio');
+        if (bio) {
+          if (!bioEl) { bioEl = document.createElement('p'); bioEl.className = 'profile-bio'; infoEl.insertBefore(bioEl, infoEl.querySelector('.profile-meta')); }
+          bioEl.textContent = bio;
+        } else if (bioEl) bioEl.remove();
+        const metaEl = infoEl.querySelector('.profile-meta');
+        if (metaEl) {
+          metaEl.innerHTML = `
+            ${country ? `<span>🌐 ${escHtml(country.toUpperCase())}</span>` : ''}
+          `;
+        }
+      }
+    } catch (e) {
+      status.textContent = e.message;
+      status.style.color = 'var(--accent2)';
+    }
+  };
+
+  async function uploadAvatar(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById('avatarStatus');
+    status.textContent = 'Uploading…';
+    status.style.color = 'var(--text2)';
+    const fd = new FormData();
+    fd.append('avatar', file);
+    try {
+      const res = await API.profile.uploadAvatar(fd);
+      const newSrc = API.profile.avatarUrl(res.key) + '?t=' + Date.now();
+      const editAv = document.getElementById('editAvatar');
+      editAv.innerHTML = `<img src="${newSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      // Also update navbar avatar
+      const navAv = document.getElementById('navAvatar');
+      if (navAv) navAv.innerHTML = `<img src="${newSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      status.textContent = 'Avatar updated!';
+      status.style.color = 'var(--accent)';
+    } catch (err) {
+      status.textContent = err.message;
+      status.style.color = 'var(--accent2)';
+    }
+  }
+
+  window.addFriend = async () => {
+    if (!me) { location.href = 'login.html'; return; }
+    try {
+      await API.friends.request({ username: profileUser.username });
+      toast('Friend request sent!', 'success');
+      document.getElementById('addFriendBtn').disabled    = true;
+      document.getElementById('addFriendBtn').textContent = 'Request sent';
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window.sendChallenge = () => {
+    if (!me) { location.href = 'login.html'; return; }
+    // reset selection
+    document.querySelectorAll('#profileChallengeModal .mode-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('#profileChallengeModal .mode-btn[data-mode="versus"]')?.classList.add('selected');
+    document.getElementById('profileChallengeModal').classList.remove('hidden');
+  };
+
+  window.profileChallengeSelectMode = (btn) => {
+    document.querySelectorAll('#profileChallengeModal .mode-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  };
+
+  window.submitProfileChallenge = async () => {
+    const modeBtn = document.querySelector('#profileChallengeModal .mode-btn.selected');
+    const mode = modeBtn?.dataset.mode || 'versus';
+    document.getElementById('profileChallengeModal').classList.add('hidden');
+    try {
+      const res = await API.inbox.challenge({ username: profileUser.username, mode });
+      toast('Challenge sent! Joining lobby…', 'success');
+      // Redirect sender to game lobby as host (room pre-registered in KV by backend)
+      setTimeout(() => {
+        location.href = `game.html?room=${encodeURIComponent(res.room_code)}&mode=${mode}&autohost=1`;
+      }, 600);
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  window.closeModal = (id) => document.getElementById(id)?.classList.add('hidden');
+  document.querySelectorAll('.modal-backdrop').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+  });
+
+  window.showLevelModal = () => {
+    const TIERS = [
+      { tier: 'Mythic',      minLv: 200, maxLv: null },
+      { tier: 'Grandmaster', minLv: 150, maxLv: 199  },
+      { tier: 'Legend',      minLv: 100, maxLv: 149  },
+      { tier: 'Elite',       minLv:  75, maxLv:  99  },
+      { tier: 'Expert',      minLv:  50, maxLv:  74  },
+      { tier: 'Veteran',     minLv:  25, maxLv:  49  },
+      { tier: 'Apprentice',  minLv:  10, maxLv:  24  },
+      { tier: 'Rookie',      minLv:   1, maxLv:   9  },
+    ];
+    const list = document.getElementById('levelTierList');
+    list.innerHTML = TIERS.map(t => `
+      <div class="level-tier-row">
+        ${levelBadgeHTML(t.minLv)}
+        <div class="level-tier-name" style="color:var(--text)">${t.tier}</div>
+        <div class="level-tier-range" style="margin-left:auto">${t.minLv}${t.maxLv ? '\u2013' + t.maxLv : '+'}</div>
+      </div>`).join('');
+    document.getElementById('levelModal').classList.remove('hidden');
+  };
+
+  window.doLogout = async () => {
+    try { await API.auth.logout(); } catch {}
+    location.href = 'index.html';
+  };
+
+  function setVal(id, v) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v ?? '-';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showError(msg) {
+    document.getElementById('profileHeader').innerHTML = `<p class="accent2" style="padding:2rem 0">${msg}</p>`;
+  }
+
+  // ── Game settings (reads/writes same key as game.html; also syncs to DB) ──
+  const _SKEY = 'tetrisSettings3';
+  const _KB_DEFS = [
+    { id: 'left',       label: 'Move Left',    defaults: ['ArrowLeft',  'a'] },
+    { id: 'right',      label: 'Move Right',   defaults: ['ArrowRight', 'd'] },
+    { id: 'softDrop',   label: 'Soft Drop',    defaults: ['ArrowDown',  's'] },
+    { id: 'rotateCW',   label: 'Rotate CW',    defaults: ['ArrowUp',    'x'] },
+    { id: 'rotateCCW',  label: 'Rotate CCW',   defaults: ['z',      'Control'] },
+    { id: 'rotateCCW2', label: 'Rotate CCW 2', defaults: ['Alt',        ''] },
+    { id: 'hardDrop',   label: 'Hard Drop',    defaults: [' ',          ''] },
+    { id: 'hold',       label: 'Hold Piece',   defaults: ['c',      'Shift'] },
+    { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },
+    { id: 'restart',    label: 'Restart',      defaults: ['r',          ''] },
+  ];
+  let _kb = {}, _das = 167, _arr = 33, _sfxOn = false, _bindSlot = null;
+
+  function _loadSettings() {
+    _kb = {}; _KB_DEFS.forEach(d => { _kb[d.id] = [...d.defaults]; });
+    try {
+      const s = JSON.parse(localStorage.getItem(_SKEY) || 'null');
+      if (s) {
+        if (s.keybinds)                        Object.assign(_kb, s.keybinds);
+        if (typeof s.dasDelay    === 'number') _das   = s.dasDelay;
+        if (typeof s.dasInterval === 'number') _arr   = s.dasInterval;
+        if (s.soundEnabled === true)           _sfxOn = true;
+      }
+    } catch {}
+  }
+
+  function _persistSettings() {
+    try {
+      const cur = JSON.parse(localStorage.getItem(_SKEY) || '{}');
+      const merged = { ...cur, keybinds: _kb, dasDelay: _das, dasInterval: _arr, soundEnabled: _sfxOn };
+      localStorage.setItem(_SKEY, JSON.stringify(merged));
+      // Also persist to DB (fire-and-forget)
+      API.profile.saveSettings({ settings: merged }).catch(() => {});
+    } catch {}
+  }
+
+  async function buildSettingsTab() {
+    _loadSettings(); // populate from localStorage first (instant)
+    document.getElementById('dasDelayInput').value    = _das;
+    document.getElementById('dasIntervalInput').value = _arr;
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    if (sfxBtn) { sfxBtn.textContent = _sfxOn ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', _sfxOn); }
+    _buildKbRows();
+    // Then try to fetch from DB and refresh UI if there's fresher data
+    try {
+      const data = await API.profile.getSettings();
+      if (data?.settings && typeof data.settings === 'object' && Object.keys(data.settings).length > 0) {
+        const s = data.settings;
+        if (s.keybinds)                        Object.assign(_kb, s.keybinds);
+        if (typeof s.dasDelay    === 'number') _das   = s.dasDelay;
+        if (typeof s.dasInterval === 'number') _arr   = s.dasInterval;
+        if (s.soundEnabled === true)           _sfxOn = true; else if (s.soundEnabled === false) _sfxOn = false;
+        // Sync DB value back to localStorage too
+        try { localStorage.setItem(_SKEY, JSON.stringify(s)); } catch {}
+        // Refresh UI
+        document.getElementById('dasDelayInput').value    = _das;
+        document.getElementById('dasIntervalInput').value = _arr;
+        if (sfxBtn) { sfxBtn.textContent = _sfxOn ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', _sfxOn); }
+        _buildKbRows();
+      }
+    } catch {}
+  }
+
+  function _buildKbRows() {
+    const c = document.getElementById('keybindRows'); if (!c) return;
+    c.innerHTML = '';
+    _KB_DEFS.forEach(def => {
+      const row = document.createElement('div'); row.className = 'keybind-row';
+      const lbl = document.createElement('span'); lbl.className = 'keybind-action'; lbl.textContent = def.label;
+      row.appendChild(lbl);
+      const slots = document.createElement('div'); slots.className = 'keybind-slots';
+      const keys = _kb[def.id] || def.defaults;
+      for (let i = 0; i < 2; i++) {
+        const k = keys[i] || '';
+        const btn = document.createElement('button');
+        btn.className = 'kbslot' + (k ? '' : ' empty');
+        btn.textContent = _dKey(k) || '-';
+        btn.dataset.defId = def.id; btn.dataset.slot = i;
+        btn.addEventListener('click', () => _startBind(def.id, i, btn));
+        slots.appendChild(btn);
+      }
+      row.appendChild(slots); c.appendChild(row);
+    });
+  }
+
+  function _dKey(k) {
+    return ({' ':'Space',ArrowLeft:'← Left',ArrowRight:'→ Right',ArrowUp:'↑ Up',ArrowDown:'↓ Down',Escape:'Esc',Control:'Ctrl',Shift:'Shift',Alt:'Alt'})[k] || k || '';
+  }
+
+  function _startBind(defId, slotIndex, btnEl) {
+    if (_bindSlot) {
+      _bindSlot.btnEl.classList.remove('listening');
+      _bindSlot.btnEl.textContent = _dKey(_kb[_bindSlot.defId]?.[_bindSlot.slotIndex] || '') || '-';
+    }
+    _bindSlot = { defId, slotIndex, btnEl };
+    btnEl.classList.add('listening'); btnEl.textContent = 'Press…';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!_bindSlot) return;
+    e.preventDefault();
+    const { defId, slotIndex, btnEl } = _bindSlot; _bindSlot = null;
+    btnEl.classList.remove('listening');
+    if (e.key === 'Escape') {
+      if (!_kb[defId]) _kb[defId] = ['',''];
+      _kb[defId][slotIndex] = ''; btnEl.classList.add('empty'); btnEl.textContent = '-'; return;
+    }
+    for (const [id, keys] of Object.entries(_kb))
+      for (let i = 0; i < keys.length; i++)
+        if (keys[i] === e.key && !(id === defId && i === slotIndex)) keys[i] = '';
+    if (!_kb[defId]) _kb[defId] = ['',''];
+    _kb[defId][slotIndex] = e.key;
+    _buildKbRows();
+  });
+
+  window.toggleSfx = () => {
+    _sfxOn = !_sfxOn;
+    const b = document.getElementById('sfxToggleBtn');
+    if (b) { b.textContent = _sfxOn ? 'ON' : 'OFF'; b.classList.toggle('on', _sfxOn); }
+    _persistSettings();
+  };
+
+  window.applySettings = () => {
+    if (_bindSlot) { _bindSlot.btnEl.classList.remove('listening'); _bindSlot = null; }
+    _das = Math.max(0, parseInt(document.getElementById('dasDelayInput').value) || 0);
+    _arr = Math.max(0, parseInt(document.getElementById('dasIntervalInput').value) || 0);
+    _persistSettings();
+    const st = document.getElementById('settingsSaveStatus');
+    st.textContent = 'Saved!'; st.style.color = 'var(--accent)';
+    setTimeout(() => { st.textContent = ''; }, 2500);
+  };
+
+  window.resetDefaultSettings = () => {
+    _KB_DEFS.forEach(d => { _kb[d.id] = [...d.defaults]; });
+    _das = 167; _arr = 33;
+    document.getElementById('dasDelayInput').value    = _das;
+    document.getElementById('dasIntervalInput').value = _arr;
+    _buildKbRows();
+  };
+
+  init();
+</script>
+
+<!-- Challenge modal -->
+<div class="modal-backdrop hidden" id="profileChallengeModal">
+  <div class="modal-box">
+    <div class="modal-title">Send Challenge</div>
+    <div class="modal-sub">Select a game mode. Versus challenges are always unranked - use the <a href="game.html">matchmaking queue</a> for ranked play.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">
+      <button class="mode-btn selected" data-mode="versus" onclick="profileChallengeSelectMode(this)">Versus<br><span style="font-size:.65rem;color:var(--text3)">Unranked</span></button>
+      <button class="mode-btn" data-mode="sprint" onclick="profileChallengeSelectMode(this)">Sprint<br><span style="font-size:.65rem;color:var(--text3)">40 lines</span></button>
+      <button class="mode-btn" data-mode="coop" onclick="profileChallengeSelectMode(this)">Co-op<br><span style="font-size:.65rem;color:var(--text3)">Team</span></button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal('profileChallengeModal')">Cancel</button>
+      <button class="btn primary" onclick="submitProfileChallenge()">Send</button>
+    </div>
+  </div>
+</div>
+<!-- Level Tiers Modal -->
+<div id="levelModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeModal('levelModal')">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h2 class="modal-title">Level Borders</h2>
+      <button class="modal-close" onclick="closeModal('levelModal')">×</button>
+    </div>
+    <p style="font-size:.8rem;color:var(--text3);margin-bottom:1rem">Play games to gain XP and level up. Each tier unlocks a unique border style.</p>
+    <div id="levelTierList"></div>
+  </div>
+</div>
+</body>
+</html>

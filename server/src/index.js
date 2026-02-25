@@ -349,7 +349,7 @@ export class TetrisRoom {
       if (newId===0 && msg.mode && ['versus','sprint','coop'].includes(msg.mode)) this.mode = msg.mode;
       this.players.set(newId, { ws, name, ready:false, alive:true, score:0, lines:0, pendingGarbage:0, eventCount:0, lastEventSec:Math.floor(Date.now()/1000) });
       this.wsToId.set(ws, newId);
-      // Persist player identity on the WS itself — survives DO hibernation
+      // Persist player identity on the WS itself - survives DO hibernation
       ws.serializeAttachment({ id:newId, name, alive:true, score:0, lines:0 });
       await this._persistMeta();
       ws.send(JSON.stringify({type:'joined', playerId:newId, mode:this.mode, players:this.getPlayerList()}));
@@ -404,7 +404,7 @@ export class TetrisRoom {
       if (this.gameState !== 'playing' || !player.alive) return;
       const nowSec = Math.floor(Date.now()/1000);
       if (nowSec !== player.lastEventSec) { player.eventCount=0; player.lastEventSec=nowSec; }
-      if (++player.eventCount > 40) return;  // raised from 20 — high-level play can hit 20/sec legitimately
+      if (++player.eventCount > 40) return;  // raised from 20 - high-level play can hit 20/sec legitimately
 
       const bag  = this.bags.get(id);
       const kind = msg.kind;
@@ -444,17 +444,17 @@ export class TetrisRoom {
 
         // Step 2: T-spin detection on the now-correct board (piece is already locked in it)
         // We need the Y position where the piece landed. Use ghostY on the pre-lock board
-        // — but since the snapshot is post-lock, approximate with whatever x/rot says.
+        // - but since the snapshot is post-lock, approximate with whatever x/rot says.
         // For T-spin the exact Y matters less; use last valid row scan.
         const ghostY = sGetGhostY(bag.board, type, rot, x);
-        // ghostY may be null if a T is at the very top — that's fine, tspin = 'none'
+        // ghostY may be null if a T is at the very top - that's fine, tspin = 'none'
         const actualTSpin = (ghostY !== null) ? sDetectTSpin(bag.board, type, rot, x, ghostY) : 'none';
 
         // Step 3: clear lines from the synced board
         const cleared = sClearLines(bag.board);
 
         // Anti-cheat: sanity-check that the declared piece can appear somewhere on the board.
-        // Count violations only — never close the WS mid-game to avoid false game-overs.
+        // Count violations only - never close the WS mid-game to avoid false game-overs.
         if (ghostY === null) { bag.violations++; } else { bag.violations = 0; }
 
         // Step 6: update combo + b2b, compute attack

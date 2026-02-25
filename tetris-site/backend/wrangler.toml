@@ -1,0 +1,44 @@
+name = "tetris-backend"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ──────────────────────────────────────────────────
+[[d1_databases]]
+binding     = "DB"
+database_name = "tetris-db"
+database_id   = "a6bfa9f3-3052-4388-b4f8-53d6f9353666"
+
+# ── R2 Bucket (profile pictures) ────────────────────────────────
+[[r2_buckets]]
+binding     = "AVATARS"
+bucket_name = "tetris-avatars"
+
+# ── Durable Objects (live MP rooms + matchmaking) ────────────────
+[[durable_objects.bindings]]
+name       = "GAME_ROOM"
+class_name = "GameRoom"
+
+[[durable_objects.bindings]]
+name       = "MATCHMAKING_QUEUE"
+class_name = "MatchmakingQueue"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["MatchmakingQueue"]
+
+# ── KV for rate-limiting ─────────────────────────────────────────
+[[kv_namespaces]]
+binding = "RATE_KV"
+id      = "11c5dffc5fc3484fb728355dc09587d0"
+
+# ── CORS allowed origin ──────────────────────────────────────────
+[vars]
+CORS_ORIGIN  = "https://tetris.taozi4887.dev"
+# Secrets (set via CLI - never commit values):
+#   wrangler secret put JWT_SECRET
+#   wrangler secret put INTERNAL_KEY   ← used by GameRoom → /api/stats/record
