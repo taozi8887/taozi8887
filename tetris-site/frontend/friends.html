@@ -29,7 +29,10 @@
     .friend-status {
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--text3); flex-shrink: 0;
+      title: '';
     }
+    .friend-status.online  { background: var(--accent3); box-shadow: 0 0 6px rgba(61,220,132,.5); }
+    .friend-status.ingame  { background: var(--accent);  box-shadow: 0 0 6px rgba(200,255,74,.5); }
     .add-friend-row {
       display: flex; gap: .5rem; margin-bottom: 1.5rem;
     }
@@ -243,7 +246,7 @@
     reqList.innerHTML = html;
   }
 
-  // f = { id: friendshipRowId, friend: { id, username, elo, display_name, avatarUrl } }
+  // f = { id: friendshipRowId, friend: { id, username, elo, display_name, avatarUrl, online, inGame, roomCode } }
   function friendCard(f) {
     const u    = f.friend;
     const rank = getRank(u.elo || 1000);
@@ -251,15 +254,21 @@
     const avContent = avSrc
       ? `<img class="avatar sm" src="${avSrc}" alt="" onerror="this.style.display='none'">`
       : `<div class="avatar sm flex-center" style="font-size:.75rem;color:var(--text3)">${(u.username||'?').slice(0,2).toUpperCase()}</div>`;
+    const statusClass = u.inGame ? 'ingame' : (u.online ? 'online' : '');
+    const statusTitle = u.inGame ? 'In a game' : (u.online ? 'Online' : 'Offline');
+    const watchBtn = u.inGame && u.roomCode
+      ? `<a class="btn sm ghost" href="game.html?spectate=${encodeURIComponent(u.roomCode)}" title="Spectate this match">👁 Watch</a>`
+      : '';
     return `
       <div class="friend-card">
-        <div class="friend-status"></div>
+        <div class="friend-status ${statusClass}" title="${statusTitle}"></div>
         ${avContent}
         <div class="info">
           <div class="name">${levelBadgeHTML(getLevel(u.xp||0))} <a href="profile.html?u=${encodeURIComponent(u.username)}">${escHtml(u.display_name || u.username)}</a></div>
           <div class="elo-small"><span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span> ${fmtNum(u.elo)} ELO</div>
         </div>
         <div class="actions">
+          ${watchBtn}
           <button class="btn sm" onclick="challenge('${escHtml(u.username)}','${escHtml(u.display_name || u.username)}')">⚔ Challenge</button>
           <button class="btn sm ghost" onclick="removeFriend('${u.id}','${escHtml(u.display_name || u.username)}')">Remove</button>
         </div>

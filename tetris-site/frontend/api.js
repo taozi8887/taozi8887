@@ -539,3 +539,8 @@ export function levelBadgeHTML(level) {
   const tier = getLevelTier(l);
   return `<span style="margin-right:.25rem" class="lvl-badge lvl-${tier}" title="Level ${l}">${l}</span>`;
 }
+
+// Presence heartbeat — refresh pres:userId KV every 60 s while the tab is open
+setInterval(() => {
+  fetch(BASE + '/api/auth/me', { credentials: 'include' }).catch(() => {});
+}, 60_000);

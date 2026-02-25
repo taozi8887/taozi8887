@@ -37,16 +37,31 @@ export async function handleListFriends(request, env) {
      ORDER BY f.updated_at DESC`
   ).bind(session.userId).all();
 
-  const friends = rows.results.map(r => ({
-    id: r.id, status: r.status, created_at: r.created_at,
-    friend: {
-      id: r.friend_id, username: r.username, elo: r.elo, xp: r.xp || 0,
-      display_name: r.display_name,
-      avatarUrl: r.avatar_key ? `/api/profile/avatar/${r.avatar_key}` : null,
-    },
-    isPending:  r.status === 'pending',
-    isSent:     r.status === 'pending' && r.requester_id === session.userId,
-  }));
+  // Batch-check online presence and active game for each accepted friend
+  const now = Date.now();
+  const [presValues, gameValues] = await Promise.all([
+    Promise.all(rows.results.map(r => env.RATE_KV.get('pres:' + r.friend_id).catch(() => null))),
+    Promise.all(rows.results.map(r => env.RATE_KV.get('activegame:' + r.friend_id).catch(() => null))),
+  ]);
+
+  const friends = rows.results.map((r, i) => {
+    const presTs = presValues[i] ? parseInt(presValues[i], 10) : 0;
+    const online = presTs > 0 && (now - presTs) < 130_000; // 120s TTL + 10s grace
+    const roomCode = gameValues[i] || null;
+    return {
+      id: r.id, status: r.status, created_at: r.created_at,
+      friend: {
+        id: r.friend_id, username: r.username, elo: r.elo, xp: r.xp || 0,
+        display_name: r.display_name,
+        avatarUrl: r.avatar_key ? `/api/profile/avatar/${r.avatar_key}` : null,
+        online,
+        inGame: !!roomCode,
+        roomCode,
+      },
+      isPending:  r.status === 'pending',
+      isSent:     r.status === 'pending' && r.requester_id === session.userId,
+    };
+  });
 
   return jsonResponse({ friends });
 }

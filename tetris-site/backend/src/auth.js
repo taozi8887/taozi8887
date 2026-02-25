@@ -262,6 +262,9 @@ export async function handleMe(request, env) {
   const session = await getSession(request, env);
   if (!session) return jsonResponse({ error: 'Not authenticated.' }, 401);
 
+  // Update presence heartbeat — expires after 120 s of inactivity
+  try { await env.RATE_KV.put('pres:' + session.userId, '' + Date.now(), { expirationTtl: 120 }); } catch {}
+
   const row = await env.DB.prepare(
     `SELECT u.id, u.username, u.elo, u.xp, u.created_at,
             p.bio, p.avatar_key, p.country, p.display_name,

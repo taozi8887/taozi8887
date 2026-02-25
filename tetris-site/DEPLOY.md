@@ -24,6 +24,13 @@ npm install
 ```bash
 # One-time: creates .wrangler/state/v3/d1/ local SQLite file
 wrangler d1 execute tetris-db --local --file=schema.sql
+
+wrangler d1 execute tetris-db --local --file=migration_001_solo_stats_settings.sql
+wrangler d1 execute tetris-db --local --file=migration_002_marathon_stats.sql
+wrangler d1 execute tetris-db --local --file=migration_003_sprint_coop_lines.sql
+wrangler d1 execute tetris-db --local --file=migration_004_matchmaking.sql
+wrangler d1 execute tetris-db --local --file=migration_005_stats_expansion.sql
+wrangler d1 execute tetris-db --local --file=migration_006_xp.sql
 ```
 
 ### 3 - Set secrets for local dev

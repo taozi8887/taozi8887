@@ -120,6 +120,18 @@ async function route(request, env, ctx, method, path) {
   if (method === 'GET'  && path === '/api/inbox')               return handleInbox(request, env);
   if (method === 'POST' && path === '/api/inbox/challenge')     return handleSendChallenge(request, env);
   if (method === 'POST' && path === '/api/inbox/respond')       return handleRespondChallenge(request, env);
+
+  // ── Presence ─────────────────────────────────────────────────────
+  // GET /api/presence/room/:username → is this user in a live game right now?
+  if (method === 'GET' && path.startsWith('/api/presence/room/')) {
+    const pUsername = decodeURIComponent(path.slice('/api/presence/room/'.length));
+    const pUser = await env.DB.prepare('SELECT id FROM users WHERE username = ?1').bind(pUsername).first();
+    if (!pUser) return new Response(JSON.stringify({ active: false }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const roomCode = env.RATE_KV ? await env.RATE_KV.get('activegame:' + pUser.id) : null;
+    return new Response(JSON.stringify({ active: !!roomCode, roomCode: roomCode || null }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  }
   // ── Matchmaking queue (Durable Object, WebSocket only) ────────────────────
   if (path.startsWith('/matchmaking/')) {
     // Must be a WebSocket upgrade

@@ -72,7 +72,7 @@
       padding: 0;
       margin: 0;
     }
-    .match-detail.open { max-height: 200px; padding: .1rem 0 .5rem; margin: 2rem 0;}
+    .match-detail.open { max-height: 800px; padding: .1rem 0 .5rem; margin: 2rem 0;}
     .match-detail-inner {
       display: flex; gap: 1.5rem; flex-wrap: wrap;
       background: rgba(255,255,255,.03);
@@ -375,11 +375,6 @@
     </div>
   </div>
 
-  <!-- Add friend / challenge buttons (shown on other users' profiles) -->
-  <div id="socialBtns" class="flex gap-m mt-l hidden">
-    <button class="btn" id="addFriendBtn" onclick="addFriend()">+ Add Friend</button>
-    <button class="btn" id="challengeBtn" onclick="sendChallenge()">⚔ Challenge</button>
-  </div>
 
 </div>
 
@@ -424,7 +419,6 @@
         const isOwn = me && me.id === data.id;
         renderProfile(data, isOwn);
         if (!isOwn && me) {
-          document.getElementById('socialBtns').classList.remove('hidden');
           // Check existing friendship status
           try {
             const fd = await API.friends.list();
@@ -502,8 +496,30 @@
       <div class="profile-meta">
         ${data.country ? `<span>🌐 ${data.country.toUpperCase()}</span>` : ''}
       </div>
+      <div id="watchLiveContainer" style="margin-top:.5rem"></div>
+      ${!isOwn && me ? `
+      <div id="socialBtns" class="flex gap-m" style="margin-top:.75rem">
+        <button class="btn sm" id="addFriendBtn" onclick="addFriend()">+ Add Friend</button>
+        <button class="btn sm" id="challengeBtn" onclick="sendChallenge()">⚔ Challenge</button>
+      </div>` : ''}
     `;
     headerEl.appendChild(info);
+
+    // Async check: is this user in a live game right now?
+    if (!isOwn && data.username) {
+      fetch(API.BASE + '/api/presence/room/' + encodeURIComponent(data.username))
+        .then(r => r.ok ? r.json() : null)
+        .then(pres => {
+          if (!pres?.active || !pres?.roomCode) return;
+          const container = document.getElementById('watchLiveContainer');
+          if (!container) return;
+          container.innerHTML = `
+            <a href="game.html?spectate=${encodeURIComponent(pres.roomCode)}" class="btn sm" style="background:rgba(200,255,74,.12);border-color:rgba(200,255,74,.3);color:var(--accent)">
+              🎮 In Game — Watch Live →
+            </a>`;
+        })
+        .catch(() => {});
+    }
 
     // Bio truncation: show toggle button only when text is actually clipped
     if (data.bio) {
@@ -633,6 +649,24 @@
     document.getElementById('avatarInput').addEventListener('change', uploadAvatar);
   }
 
+  function miniBoard(snapshot) {
+    if (!snapshot) return '<span style="font-size:.65rem;color:var(--text3)">No data</span>';
+    const COLORS = { I:'#32dcff', O:'#ffdc32', T:'#b464ff', S:'#32e678', Z:'#ff5050', J:'#4678ff', L:'#ffa028', G:'#888' };
+    const SNAP_BUFFER = 4;
+    let html = '<div style="display:grid;grid-template-columns:repeat(10,1fr);width:100px;gap:1px;background:rgba(255,255,255,.08);padding:1px;border-radius:3px">';
+    for (let r = 0; r < 20; r++) {
+      for (let c = 0; c < 10; c++) {
+        const ch = snapshot[(r + SNAP_BUFFER) * 10 + c] || '.';
+        const color = COLORS[ch];
+        html += color
+          ? `<div style="aspect-ratio:1;background:${color};opacity:.9;border-radius:1px"></div>`
+          : '<div style="aspect-ratio:1;background:rgba(255,255,255,.04);border-radius:1px"></div>';
+      }
+    }
+    html += '</div>';
+    return html;
+  }
+
   function renderMatches(matches, userId) {
     const list = document.getElementById('matchList');
     if (!matches.length) { list.innerHTML = '<p class="no-matches">No matches recorded yet.</p>'; return; }
@@ -664,6 +698,8 @@
       const oppScore = isMe1 ? m.p2_score : m.p1_score;
       const myLines  = isMe1 ? m.p1_lines : m.p2_lines;
       const oppLines = isMe1 ? m.p2_lines : m.p1_lines;
+      const myEloBefore  = isMe1 ? m.p1_elo_before : m.p2_elo_before;
+      const oppEloBefore = isMe1 ? m.p2_elo_before : m.p1_elo_before;
       const eloDelta = isMe1 ? m.p1_elo_delta : m.p2_elo_delta;
       const oppEloDelta = isMe1 ? m.p2_elo_delta : m.p1_elo_delta;
       const showElo  = eloDelta != null && eloDelta !== 0;
@@ -699,14 +735,16 @@
         </div>`;
       if (showElo) {
         const oppEloStr = oppEloDelta != null && oppEloDelta !== 0 ? (oppEloDelta > 0 ? `+${oppEloDelta}` : `${oppEloDelta}`) : '—';
+        const myEloBeforeStr  = myEloBefore  != null ? `${myEloBefore} (${eloDelta >= 0 ? '+' : ''}${eloDelta})` : eloStr;
+        const oppEloBeforeStr = oppEloBefore != null ? `${oppEloBefore} (${oppEloDelta != null ? (oppEloDelta >= 0 ? '+' + oppEloDelta : oppEloDelta) : '?'})` : oppEloStr;
         detailCols += `
         <div class="match-detail-col">
           <span class="dk">Your ELO</span>
-          <span class="dv ${eloDelta >= 0 ? 'win' : 'loss'}">${eloStr}</span>
+          <span class="dv ${eloDelta >= 0 ? 'win' : 'loss'}">${myEloBeforeStr}</span>
         </div>
         <div class="match-detail-col">
           <span class="dk">Opp ELO</span>
-          <span class="dv">${oppEloStr}</span>
+          <span class="dv">${oppEloBeforeStr}</span>
         </div>`;
       }
       if (durStr) detailCols += `
@@ -719,6 +757,21 @@
           <span class="dk">Time</span>
           <span class="dv">${timeStr}</span>
         </div>`;
+
+      // Final board states
+      const myBoard  = isMe1 ? m.p1_final_board : m.p2_final_board;
+      const oppBoard = isMe1 ? m.p2_final_board : m.p1_final_board;
+      const boardsSection = (myBoard || oppBoard) ? `
+        <div style="width:100%;margin-top:.75rem;display:flex;gap:2rem;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);padding-top:.75rem">
+          <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+            <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Your board</div>
+            ${miniBoard(myBoard)}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+            <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${escHtml(oppDisplay)}&rsquo;s board</div>
+            ${miniBoard(oppBoard)}
+          </div>
+        </div>` : '';
 
       return `
         <div class="match-row" onclick="toggleMatchDetail(this)">
@@ -737,7 +790,7 @@
           </div>
         </div>
         <div class="match-detail">
-          <div class="match-detail-inner">${detailCols}</div>
+          <div class="match-detail-inner">${detailCols}${boardsSection}</div>
         </div>`;
     }).join('');
   }

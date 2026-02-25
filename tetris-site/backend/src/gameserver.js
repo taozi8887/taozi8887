@@ -23,6 +23,8 @@ export class GameRoom {
     this.state  = state;
     this.env    = env;
     this.players  = new Map();   // id → { ws, name, ready, over, score, lines, seed, userId }
+    this.spectators = new Map(); // id → { ws }
+    this.nextSpecId = 0;
     this.nextId   = 0;
     this.started  = false;
     this.finished = false;
@@ -63,6 +65,23 @@ export class GameRoom {
     switch (data.type) {
 
       case 'join': {
+        // Spectator join: read-only observer
+        if (data.spectator) {
+          const specId = this.nextSpecId++;
+          this.spectators.set(specId, { ws, id: specId });
+          // Send current state of both boards to the new spectator
+          const boardSnaps = [...this.players.values()].map(p => ({
+            id: p.id, name: p.name, score: p.score, lines: p.lines, snapshot: p.board,
+          }));
+          ws.send(JSON.stringify({
+            type: 'spectatorJoined', specId,
+            started: this.started, finished: this.finished,
+            mode: this.mode, seed: this.seed,
+            players: this.mapPlayers(), boards: boardSnaps,
+          }));
+          return;
+        }
+
         if (this.players.size >= 2) {
           ws.send(JSON.stringify({ type: 'error', reason: 'Room is full.' }));
           ws.close(); return;
@@ -97,7 +116,7 @@ export class GameRoom {
         }
 
         ws.send(JSON.stringify({ type: 'joined', playerId: id, mode: this.mode, players: this.mapPlayers() }));
-        this.broadcast({ type: 'playerJoined', players: this.mapPlayers() });
+        this.broadcast({ type: 'playerJoined', players: this.mapPlayers() }, true);
         break;
       }
 
@@ -276,6 +295,16 @@ export class GameRoom {
               snapshot: player.board,
             }));
           }
+          // Relay to spectators: send both boards
+          if (this.spectators.size > 0) {
+            const allBoards = [...this.players.values()].map(p => ({
+              id: p.id, name: p.name, score: p.score, lines: p.lines, snapshot: p.board,
+            }));
+            const specMsg = JSON.stringify({ type: 'spectatorUpdate', boards: allBoards });
+            for (const sp of this.spectators.values()) {
+              try { sp.ws.send(specMsg); } catch {}
+            }
+          }
         }
         break;
       }
@@ -304,6 +333,10 @@ export class GameRoom {
   }
 
   async webSocketClose(ws) {
+    // Check if it's a spectator
+    const spec = [...this.spectators.values()].find(s => s.ws === ws);
+    if (spec) { this.spectators.delete(spec.id); return; }
+
     const player = [...this.players.values()].find(p => p.ws === ws);
     if (!player) return;
     if (this.started && !this.finished) {
@@ -338,17 +371,29 @@ export class GameRoom {
     for (const p of this.players.values()) {
       p.over = false; p.score = 0; p.lines = 0;
       p.b2bActive = false; p.combo = -1; p.pendingGarbage = 0;
+      p.eloBefore = p.elo ?? null; // snapshot ELO at game start for match record
+      // Write active game to KV so the presence endpoint can surface it
+      if (p.userId && this.env?.RATE_KV) {
+        this.env.RATE_KV.put('activegame:' + p.userId, this.roomCode, { expirationTtl: 7200 }).catch(() => {});
+      }
     }
     this.broadcast({
       type: 'start', seed: this.seed, mode: this.mode, isRanked: this.isRanked,
       sprintTarget: this.sprintTarget, coopTarget: this.coopTarget,
       players: this.mapPlayers(),
-    });
+    }, true); // also notify spectators that the game started
   }
 
   async endGame(payload) {
     if (this.finished) return;
     this.finished = true;
+
+    // Clear active game presence from KV for all players
+    for (const p of this.players.values()) {
+      if (p.userId && this.env?.RATE_KV) {
+        this.env.RATE_KV.delete('activegame:' + p.userId).catch(() => {});
+      }
+    }
 
     const scores = [...this.players.values()].map(p => ({
       id: p.id, name: p.name, score: p.score, lines: p.lines, garbageSent: p.garbageSent || 0,
@@ -364,6 +409,11 @@ export class GameRoom {
 
     const msg = { ...payload, type: 'gameEnd', gameType: payload.type, scores, eloDeltas, xpData, isRanked: this.isRanked };
     this.broadcast(msg);
+    // Also notify spectators
+    if (this.spectators.size > 0) {
+      const specMsg = JSON.stringify({ ...msg, type: 'spectatorGameEnd' });
+      for (const sp of this.spectators.values()) { try { sp.ws.send(specMsg); } catch {} }
+    }
 
     // Reset for rematch
     setTimeout(() => {
@@ -389,13 +439,19 @@ export class GameRoom {
     try {
       // Use the stats handler directly (same Worker context)
       const { handleRecordMatch } = await import('./stats.js');
+      // Disconnects are never ranked — network drops / page reloads shouldn't affect ELO
+      const effectivelyRanked = this.isRanked && payload.reason !== 'disconnect';
       const body = JSON.stringify({
         mode: this.mode, roomCode: this.roomCode,
-        isRanked: this.isRanked,
+        isRanked: effectivelyRanked,
         p1Id: p1.userId, p2Id: p2.userId, winnerId,
         p1Score: p1.score, p2Score: p2.score,
         p1Lines: p1.lines, p2Lines: p2.lines,
         p1Stats: p1.stats, p2Stats: p2.stats, durationMs,
+        p1EloBefore: p1.eloBefore ?? null,
+        p2EloBefore: p2.eloBefore ?? null,
+        p1FinalBoard: p1.board || null,
+        p2FinalBoard: p2.board || null,
       });
       const fakeReq = new Request('https://internal/api/stats/record', {
         method: 'POST', body,
@@ -436,10 +492,15 @@ export class GameRoom {
     }));
   }
 
-  broadcast(msg) {
+  broadcast(msg, includeSpectators = false) {
     const s = JSON.stringify(msg);
     for (const p of this.players.values()) {
       try { p.ws.send(s); } catch {}
+    }
+    if (includeSpectators) {
+      for (const sp of this.spectators.values()) {
+        try { sp.ws.send(s); } catch {}
+      }
     }
   }
 

@@ -62,7 +62,9 @@ export async function handleRecordMatch(request, env) {
   try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON.' }, 400); }
 
   const { mode, roomCode, isRanked = true, p1Id, p2Id, winnerId, p1Score, p2Score,
-          p1Lines, p2Lines, p1Stats = {}, p2Stats = {}, durationMs = 0 } = body;
+          p1Lines, p2Lines, p1Stats = {}, p2Stats = {}, durationMs = 0,
+          p1EloBefore = null, p2EloBefore = null,
+          p1FinalBoard = null, p2FinalBoard = null } = body;
 
   // ── ELO update (ranked versus only, both players must be registered) ──
   let p1ELODelta = 0, p2ELODelta = 0;
@@ -98,11 +100,13 @@ export async function handleRecordMatch(request, env) {
   // ── Insert match record ────────────────────────────────────────
   await env.DB.prepare(
     `INSERT INTO matches (id,mode,room_code,p1_id,p2_id,winner_id,
-      p1_score,p2_score,p1_lines,p2_lines,p1_elo_delta,p2_elo_delta,is_ranked,duration_ms,played_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)`
+      p1_score,p2_score,p1_lines,p2_lines,p1_elo_delta,p2_elo_delta,is_ranked,duration_ms,played_at,
+      p1_elo_before,p2_elo_before,p1_final_board,p2_final_board)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)`
   ).bind(matchId, mode, roomCode, p1Id || null, p2Id || null, winnerId || null,
          p1Score || 0, p2Score || 0, p1Lines || 0, p2Lines || 0,
-         p1ELODelta, p2ELODelta, isRanked ? 1 : 0, durationMs, now).run();
+         p1ELODelta, p2ELODelta, isRanked ? 1 : 0, durationMs, now,
+         p1EloBefore, p2EloBefore, p1FinalBoard, p2FinalBoard).run();
 
   // ── Update per-player stats ────────────────────────────────────
   const modifyStats = async (userId, myScore, myLines, myStats, isWinner) => {
