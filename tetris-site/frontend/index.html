@@ -151,6 +151,7 @@
 <!-- Stats banner -->
 <div class="container">
   <div class="stats-banner" id="statsBanner">
+    <div class="banner-stat"><div class="val" id="sbOnline">-</div><div class="lbl">Online Now</div></div>
     <div class="banner-stat"><div class="val" id="sbPlayers">-</div><div class="lbl">Players</div></div>
     <div class="banner-stat"><div class="val" id="sbGames">-</div><div class="lbl">Games Played</div></div>
     <div class="banner-stat"><div class="val" id="sbMinutes">-</div><div class="lbl">Minutes Played</div></div>
@@ -248,10 +249,12 @@
 
   async function loadBannerStats() {
     try {
-      const [globalData, lbData] = await Promise.all([
+      const [globalData, lbData, onlineData] = await Promise.all([
         API.stats.global(),
         API.leaderboard.get({ limit: 1 }),
+        fetch(API.BASE + '/api/presence/online-count').then(r => r.ok ? r.json() : { online: 0 }),
       ]);
+      document.getElementById('sbOnline').textContent  = fmtNum(onlineData.online || 0);
       document.getElementById('sbPlayers').textContent = fmtNum(globalData.total_players || lbData.total);
       document.getElementById('sbGames').textContent   = fmtNum(globalData.total_games);
       const totalMins = Math.round((globalData.total_time_ms || 0) / 60000);

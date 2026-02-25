@@ -496,7 +496,7 @@
       <div class="profile-meta">
         ${data.country ? `<span>🌐 ${data.country.toUpperCase()}</span>` : ''}
       </div>
-      <div id="watchLiveContainer" style="margin-top:.5rem"></div>
+      <div id="watchLiveContainer" style="margin-top:.5rem">${!isOwn && data.liveRoomCode ? `<a href="game.html?spectate=${encodeURIComponent(data.liveRoomCode)}" class="btn sm" style="background:rgba(200,255,74,.12);border-color:rgba(200,255,74,.3);color:var(--accent)">🎮 In Game — Watch Live →</a>` : ''}</div>
       ${!isOwn && me ? `
       <div id="socialBtns" class="flex gap-m" style="margin-top:.75rem">
         <button class="btn sm" id="addFriendBtn" onclick="addFriend()">+ Add Friend</button>
@@ -504,22 +504,6 @@
       </div>` : ''}
     `;
     headerEl.appendChild(info);
-
-    // Async check: is this user in a live game right now?
-    if (!isOwn && data.username) {
-      fetch(API.BASE + '/api/presence/room/' + encodeURIComponent(data.username))
-        .then(r => r.ok ? r.json() : null)
-        .then(pres => {
-          if (!pres?.active || !pres?.roomCode) return;
-          const container = document.getElementById('watchLiveContainer');
-          if (!container) return;
-          container.innerHTML = `
-            <a href="game.html?spectate=${encodeURIComponent(pres.roomCode)}" class="btn sm" style="background:rgba(200,255,74,.12);border-color:rgba(200,255,74,.3);color:var(--accent)">
-              🎮 In Game — Watch Live →
-            </a>`;
-        })
-        .catch(() => {});
-    }
 
     // Bio truncation: show toggle button only when text is actually clipped
     if (data.bio) {

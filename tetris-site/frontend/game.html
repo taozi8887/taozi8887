@@ -4635,7 +4635,7 @@ window.addEventListener('load', () => {
 });
 </script>
 <script type="module">
-import API, { startChallengePolling, getLevel, getLevelInfo, levelBadgeHTML } from './api.js';
+import API, { startChallengePolling, getLevel, getLevelInfo, levelBadgeHTML, getRank } from './api.js';
 // Expose to classic (non-module) script sections
 window._getLevel       = getLevel;
 window._getLevelInfo   = getLevelInfo;
@@ -4741,6 +4741,7 @@ async function gameLogout() {
   applyAuthToNav(null);
   location.href = 'index.html';
 }
+window.gameLogout = gameLogout;
 
 // Presence heartbeat — refresh pres:userId KV every 60 s while the tab is open
 setInterval(() => {
@@ -4784,15 +4785,10 @@ let _specWs = null;
 
 function startSpectate(roomCode) {
   if (_specWs) { _specWs.close(); _specWs = null; }
-
-  // Switch to game screen and show spectate view
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('game').classList.add('active');
-  document.body.classList.remove('mp');
   if (mpWs) { mpWs.close(); mpWs = null; }
   mpIsActive = false;
 
-  // Show spectate overlay
+  // Build the spectate overlay FIRST (position:fixed covers everything, no lobby flash)
   _buildSpectateUI(roomCode);
 
   const wsBase = API_BASE.replace(/^http/, 'ws');
@@ -4827,6 +4823,9 @@ function stopSpectate() {
   if (overlay) overlay.remove();
   nav('lobby');
 }
+window.stopSpectate = stopSpectate;
+
+window.startSpectate = startSpectate;
 
 function _buildSpectateUI(roomCode) {
   const old = document.getElementById('specOverlay');
@@ -4834,45 +4833,44 @@ function _buildSpectateUI(roomCode) {
 
   const div = document.createElement('div');
   div.id = 'specOverlay';
-  div.style.cssText = `
-    position:fixed;inset:0;z-index:500;background:var(--bg);
-    display:flex;flex-direction:column;align-items:center;
-    padding:1.5rem 1rem;gap:1rem;overflow:auto;
-  `;
+  div.style.cssText = 'position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:1.25rem 1rem 2rem;gap:1.25rem;overflow-y:auto;';
   div.innerHTML = `
-    <div style="display:flex;align-items:center;gap:1rem;width:100%;max-width:800px">
-      <div style="font-family:var(--serif);font-size:1.25rem;letter-spacing:-.03em;flex:1">
-        👁 Spectating <span style="color:var(--accent)">${escHtml(roomCode)}</span>
+    <div style="width:100%;max-width:900px;display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--border);padding-bottom:.9rem">
+      <div style="flex:1;font-family:var(--serif);font-size:1.15rem;letter-spacing:-.03em">
+        <span style="color:var(--text3);font-size:.8rem;font-family:var(--mono)">SPECTATING</span><br>
+        <span id="specRoomLabel" style="color:var(--accent)">${escHtml(roomCode)}</span>
       </div>
-      <div id="specStatus" style="font-size:.72rem;color:var(--text3)">Connecting…</div>
-      <button type="button" class="btn sm ghost" onclick="stopSpectate()">Exit</button>
+      <div id="specStatus" style="font-size:.72rem;color:var(--text3);text-align:right">Connecting…</div>
+      <button type="button" class="btn sm ghost" id="specExitBtn">Exit ✕</button>
     </div>
-    <div id="specBoards" style="display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;width:100%;max-width:800px">
+    <div id="specBoards" style="display:flex;gap:3rem;flex-wrap:wrap;justify-content:center;align-items:flex-start;width:100%;max-width:900px">
       <div id="specBoard0" class="spec-board-wrap"></div>
       <div id="specBoard1" class="spec-board-wrap"></div>
     </div>
-    <div id="specGameEndMsg" style="display:none;font-family:var(--serif);font-size:2rem;color:var(--accent);text-align:center"></div>
+    <div id="specGameEndMsg" style="display:none;font-family:var(--serif);font-size:2.5rem;color:var(--accent);text-align:center;margin-top:1rem"></div>
   `;
   document.body.appendChild(div);
+  // Attach exit via addEventListener so it works inside module scope
+  document.getElementById('specExitBtn').addEventListener('click', stopSpectate);
 }
 
 function _handleSpectateMessage(data) {
   const status = document.getElementById('specStatus');
   if (data.type === 'spectatorJoined') {
     if (status) status.textContent = data.started ? 'Game in progress' : 'Waiting for players…';
-    (data.players || []).forEach((p, i) => _initSpecBoard(i, p.display_name || p.name || p.username || 'Player ' + (i+1), p.elo));
+    (data.players || []).forEach((p, i) => _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp));
     if (data.boards) {
       data.boards.forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
     }
   } else if (data.type === 'playerJoined') {
     if (status) status.textContent = (data.players || []).length + '/2 players joined…';
     (data.players || []).forEach((p, i) => {
-      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.name || p.username || 'Player ' + (i+1), p.elo);
+      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp);
     });
   } else if (data.type === 'start') {
     if (status) status.textContent = 'Game started!';
     (data.players || []).forEach((p, i) => {
-      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.name || p.username || 'Player ' + (i+1), p.elo);
+      if (!document.getElementById('spec' + i + 'Score')) _initSpecBoard(i, p.display_name || p.username || 'Player ' + (i+1), p.elo, p.xp);
     });
   } else if (data.type === 'spectatorUpdate') {
     (data.boards || []).forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
@@ -4894,22 +4892,31 @@ function _handleSpectateMessage(data) {
   }
 }
 
-function _initSpecBoard(boardIdx, playerName, elo) {
+function _initSpecBoard(boardIdx, playerName, elo, xp) {
   const wrap = document.getElementById('specBoard' + boardIdx);
   if (!wrap) return;
-  const eloStr = elo != null ? ` <span style="font-size:.65rem;color:var(--accent);font-family:var(--mono)">${elo} ELO</span>` : '';
-  const cellSize = 18;
+  const rank  = elo  != null ? getRank(elo)  : null;
+  const level = xp   != null ? getLevel(xp)  : null;
+  const cellSize = 24;
   let cells = '';
   for (let i = 0; i < 200; i++) cells += '<div class="opp-cell" id="sc' + boardIdx + '_' + i + '"></div>';
+  const rankHTML  = rank  ? `<span class="rank-badge ${rank.name}" style="font-size:.6rem;padding:.15rem .45rem">${rank.name}</span>` : '';
+  const levelHTML = level != null ? `<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">Lv ${level}</span>` : '';
+  const eloHTML   = elo   != null ? `<span style="font-size:.75rem;font-family:var(--mono);color:var(--accent)">${fmtNum(elo)} ELO</span>` : '';
   wrap.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.5rem">
-      <div style="font-size:.82rem;color:var(--text)">${escHtml(playerName)}${eloStr}</div>
-      <div id="specBoardGrid${boardIdx}" class="opp-board" style="--opp-cell:${cellSize}px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.6rem">
+      <div style="text-align:center">
+        <div style="font-size:.9rem;font-weight:600;margin-bottom:.3rem">${escHtml(playerName)}</div>
+        <div style="display:flex;gap:.4rem;justify-content:center;align-items:center;flex-wrap:wrap">
+          ${rankHTML}${eloHTML}${levelHTML}
+        </div>
+      </div>
+      <div id="specBoardGrid${boardIdx}" class="opp-board" style="--opp-cell:${cellSize}px;border:1px solid rgba(255,255,255,.08);border-radius:3px">
         ${cells}
       </div>
-      <div style="display:flex;gap:.5rem;font-size:.72rem;color:var(--text3)">
-        <span>Score: <strong id="spec${boardIdx}Score" style="color:var(--text)">0</strong></span>
-        <span>Lines: <strong id="spec${boardIdx}Lines" style="color:var(--text)">0</strong></span>
+      <div style="display:flex;gap:1.25rem;font-size:.75rem;color:var(--text3)">
+        <span>Score <strong id="spec${boardIdx}Score" style="color:var(--text);font-family:var(--mono)">0</strong></span>
+        <span>Lines <strong id="spec${boardIdx}Lines" style="color:var(--text);font-family:var(--mono)">0</strong></span>
       </div>
     </div>
   `;
@@ -4947,7 +4954,7 @@ function handleUrlParams() {
   const spectate = p.get('spectate');
   if (spectate) {
     history.replaceState(null, '', location.pathname);
-    setTimeout(() => startSpectate(spectate.toUpperCase()), 400);
+    startSpectate(spectate.toUpperCase());  // no delay — overlay covers page immediately
     return;
   }
 

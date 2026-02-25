@@ -71,10 +71,14 @@ export async function handleGetProfile(request, env, username) {
      ORDER BY m.played_at DESC LIMIT 20`
   ).bind(row.id).all();
 
+  // Include live game room code so the frontend doesn't need a second fetch
+  const liveRoomCode = env.RATE_KV ? (await env.RATE_KV.get('activegame:' + row.id)) : null;
+
   return jsonResponse({
     id: row.id, username: row.username, elo: row.elo, xp: row.xp || 0, rank,
     avatarUrl, bio: row.bio, country: row.country, display_name: row.display_name,
     created_at: row.created_at,
+    liveRoomCode: liveRoomCode || null,
     stats: {
       games_played: row.games_played,  games_won: row.games_won,  games_lost: row.games_lost,
       versus_played: row.versus_played, versus_won: row.versus_won,

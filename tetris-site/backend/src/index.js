@@ -132,6 +132,24 @@ async function route(request, env, ctx, method, path) {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
+  // GET /api/presence/online-count → count users with active pres: keys
+  if (method === 'GET' && path === '/api/presence/online-count') {
+    try {
+      let count = 0;
+      let cursor;
+      do {
+        const res = env.RATE_KV ? await env.RATE_KV.list({ prefix: 'pres:', cursor, limit: 1000 }) : { keys: [], list_complete: true };
+        count += res.keys.length;
+        cursor = res.cursor;
+        if (res.list_complete) break;
+      } while (true);
+      return new Response(JSON.stringify({ online: count }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    } catch {
+      return new Response(JSON.stringify({ online: 0 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
   // ── Matchmaking queue (Durable Object, WebSocket only) ────────────────────
   if (path.startsWith('/matchmaking/')) {
     // Must be a WebSocket upgrade
