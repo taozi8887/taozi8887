@@ -229,7 +229,7 @@
 
       const data = await API.leaderboard.get(params);
       totalPages = Math.ceil((data.total || 0) / LIMIT) || 1;
-      renderTable(data.players || [], (page - 1) * LIMIT);
+      renderTable(data.entries || [], (page - 1) * LIMIT);
       renderPagination();
       const totalEl = document.getElementById('lbTotal');
       if (totalEl && data.total != null) {
@@ -250,9 +250,9 @@
     tbody.innerHTML = players.map((p, i) => {
       const pos    = offset + i + 1;
       const rank   = getRank(p.elo);
-      // Backend returns avatarUrl (relative path or null)
-      const avSrc  = p.avatarUrl
-        ? (p.avatarUrl.startsWith('http') ? p.avatarUrl : API.BASE + p.avatarUrl)
+      // Backend returns avatar_url (relative path or null)
+      const avSrc  = p.avatar_url
+        ? (p.avatar_url.startsWith('http') ? p.avatar_url : API.BASE + p.avatar_url)
         : '';
       const initials = (p.username||'?').slice(0,2).toUpperCase();
       const avContent = avSrc
@@ -271,7 +271,7 @@
               <div class="page-av">${avContent}</div>
               <div>
                 <div class="flex gap-s" style="align-items:center;flex-wrap:wrap">
-                  <a href="profile.html?u=${encodeURIComponent(p.username)}">${levelBadgeHTML(getLevel(p.xp||0))} ${escHtml(p.display_name || p.username)}</a>
+                  <a href="profile.html?u=${encodeURIComponent(p.username)}" style="margin-left:.5rem">${levelBadgeHTML(getLevel(p.xp||0))} ${escHtml(p.display_name || p.username)}</a>
                   ${p.display_name && p.display_name !== p.username ? `<span class="small muted">@${escHtml(p.username)}</span>` : ''}
                   <span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span>
                 </div>

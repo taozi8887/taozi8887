@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email - Taotris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+</head>
+<body>
+
+<div class="auth-page">
+  <a class="nav-logo" href="index.html">Taotris</a>
+
+  <div class="auth-card" style="text-align:center;">
+
+    <!-- Loading state -->
+    <div id="stateLoading">
+      <div style="display:flex;justify-content:center;margin-bottom:1.25rem;">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="display:block">
+          <circle cx="20" cy="20" r="16" stroke="var(--border)" stroke-width="3"/>
+          <circle cx="20" cy="20" r="16" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-dasharray="25 76">
+            <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.7s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+      </div>
+      <h2 class="auth-title" style="margin:0 0 .5rem;">Verifying…</h2>
+      <p class="muted" style="font-size:.85rem;">Confirming your email address.</p>
+    </div>
+
+    <!-- Success state -->
+    <div id="stateSuccess" class="hidden">
+      <div style="font-size:2.75rem;margin-bottom:.75rem;">&#10003;</div>
+      <h2 class="auth-title" style="margin:0 0 .5rem;">Email verified!</h2>
+      <p class="muted" style="font-size:.85rem;margin:0 0 1.25rem;">Your account is now active. Redirecting you to your profile…</p>
+      <a href="profile.html" class="btn primary" style="width:100%;">Go to Profile</a>
+    </div>
+
+    <!-- Error state -->
+    <div id="stateError" class="hidden">
+      <div style="font-size:2.75rem;margin-bottom:.75rem;">&#9888;</div>
+      <h2 class="auth-title" style="margin:0 0 .5rem;">Verification failed</h2>
+      <p id="errMsg" class="muted" style="font-size:.85rem;margin:0 0 1.25rem;"></p>
+      <a href="register.html" class="btn primary" style="width:100%;margin-bottom:.5rem;">Register again</a>
+      <a href="login.html" class="btn ghost" style="width:100%;">Sign in</a>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import API from './api.js';
+
+  const stateLoading = document.getElementById('stateLoading');
+  const stateSuccess = document.getElementById('stateSuccess');
+  const stateError   = document.getElementById('stateError');
+  const errMsg       = document.getElementById('errMsg');
+
+  function showError(msg) {
+    stateLoading.classList.add('hidden');
+    stateError.classList.remove('hidden');
+    errMsg.textContent = msg;
+  }
+
+  async function verify() {
+    // Parse the URL hash — Supabase puts the token there:
+    // #access_token=xxx&token_type=bearer&type=email_confirmation
+    const hash   = window.location.hash.slice(1); // strip leading #
+    const params = new URLSearchParams(hash);
+    const token  = params.get('access_token');
+    const type   = params.get('type');
+
+    if (!token) {
+      showError('No verification token found. The link may have expired or already been used.');
+      return;
+    }
+
+    if (type && type !== 'email_confirmation' && type !== 'signup') {
+      showError('This link is not a valid email verification link.');
+      return;
+    }
+
+    try {
+      await API.auth.session(token);
+      // Session cookie is now set — show success then redirect
+      stateLoading.classList.add('hidden');
+      stateSuccess.classList.remove('hidden');
+      setTimeout(() => { location.href = 'profile.html'; }, 2000);
+    } catch (err) {
+      showError(err.message || 'Verification failed. The link may have expired — please register again.');
+    }
+  }
+
+  verify();
+</script>
+</body>
+</html>

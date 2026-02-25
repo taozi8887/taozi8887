@@ -192,8 +192,13 @@
 
   <!-- Profile header -->
   <div class="profile-header" id="profileHeader">
-    <div class="flex-center" style="width:120px;height:120px;border-radius:50%;background:var(--bg3);">
-      <div class="spinner"></div>
+    <div style="width:120px;height:120px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="display:block">
+        <circle cx="18" cy="18" r="13" stroke="var(--border)" stroke-width="2.5"/>
+        <circle cx="18" cy="18" r="13" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="20 62">
+          <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.7s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
     </div>
     <div class="profile-info">
       <div class="profile-name">Loading…</div>
@@ -642,7 +647,7 @@
     setVal('atB2B',      fmtNum(atB2B));
 
     // Matches - backend returns recent_matches (snake_case)
-    renderMatches(data.recent_matches || [], data.id);
+    renderMatches(data.recent_matches || [], data.id, isOwn);
 
     if (isOwn) {
       document.getElementById('editTabBtn').style.display = '';
@@ -680,7 +685,7 @@
     return html;
   }
 
-  function renderMatches(matches, userId) {
+  function renderMatches(matches, userId, isOwn) {
     const list = document.getElementById('matchList');
     if (!matches.length) { list.innerHTML = '<p class="no-matches">No matches recorded yet.</p>'; return; }
 
@@ -697,7 +702,7 @@
       const res   = draw ? 'draw' : (won ? 'win' : 'loss');
       const label = draw ? 'Draw' : (won ? 'Won' : 'Lost');
       const isMe1    = m.p1_id === userId;
-      const myName   = isMe1 ? (m.p1_name || 'You') : (m.p2_name || 'You');
+      const myName   = isMe1 ? (m.p1_display || m.p1_name || (isOwn ? 'You' : 'Player 1')) : (m.p2_display || m.p2_name || (isOwn ? 'You' : 'Player 2'));
       const oppName  = isMe1 ? (m.p2_name || '?') : (m.p1_name || '?');
       const oppDisplay = isMe1 ? (m.p2_display || oppName) : (m.p1_display || oppName);
       const oppElo   = isMe1 ? m.p2_elo : m.p1_elo;
@@ -730,37 +735,44 @@
         ? `<span class="void-badge" title="This ranked match ended due to a disconnect — no ELO was changed">🔌 Disconnected · No ELO</span>`
         : '';
 
-      // Detail columns
+      // Detail columns — use 'Your' only on own profile, otherwise use the player's name
+      const subjectName = isOwn ? 'Your' : escHtml(myName) + '\u2019s';
       const scoreWin  = myScore > oppScore ? 'win' : myScore < oppScore ? 'loss' : '';
       const linesWin  = myLines > oppLines  ? 'win' : myLines  < oppLines  ? 'loss' : '';
       let detailCols = `
         <div class="match-detail-col">
-          <span class="dk">Your score</span>
+          <span class="dk">${subjectName} score</span>
           <span class="dv ${scoreWin}">${fmtN(myScore)}</span>
         </div>
         <div class="match-detail-col">
-          <span class="dk">Opp score</span>
+          <span class="dk">${escHtml(oppDisplay)}\u2019s score</span>
           <span class="dv">${fmtN(oppScore)}</span>
         </div>
         <div class="match-detail-col">
-          <span class="dk">Your lines</span>
+          <span class="dk">${subjectName} lines</span>
           <span class="dv ${linesWin}">${fmtN(myLines)}</span>
         </div>
         <div class="match-detail-col">
-          <span class="dk">Opp lines</span>
+          <span class="dk">${escHtml(oppDisplay)}\u2019s lines</span>
           <span class="dv">${fmtN(oppLines)}</span>
         </div>`;
       if (showElo) {
-        const oppEloStr = oppEloDelta != null && oppEloDelta !== 0 ? (oppEloDelta > 0 ? `+${oppEloDelta}` : `${oppEloDelta}`) : '—';
-        const myEloBeforeStr  = myEloBefore  != null ? `${myEloBefore} (${eloDelta >= 0 ? '+' : ''}${eloDelta})` : eloStr;
-        const oppEloBeforeStr = oppEloBefore != null ? `${oppEloBefore} (${oppEloDelta != null ? (oppEloDelta >= 0 ? '+' + oppEloDelta : oppEloDelta) : '?'})` : oppEloStr;
+        // Estimate elo-before from current_elo - delta (p1_elo_before is never populated in DB)
+        const myCurElo  = isMe1 ? m.p1_elo : m.p2_elo;
+        const oppCurElo = isMe1 ? m.p2_elo : m.p1_elo;
+        const myEloBefore2  = myEloBefore  != null ? myEloBefore  : (myCurElo  != null ? myCurElo  - eloDelta          : null);
+        const oppEloBefore2 = oppEloBefore != null ? oppEloBefore : (oppCurElo != null ? oppCurElo - (oppEloDelta || 0) : null);
+        const mySign  = eloDelta            >= 0 ? '+' : '';
+        const oppSign = (oppEloDelta || 0)  >= 0 ? '+' : '';
+        const myEloBeforeStr  = myEloBefore2  != null ? `${myEloBefore2} (${mySign}${eloDelta})`          : (eloDelta     >= 0 ? `+${eloDelta}`    : `${eloDelta}`);
+        const oppEloBeforeStr = oppEloBefore2 != null ? `${oppEloBefore2} (${oppSign}${oppEloDelta ?? 0})` : (oppEloDelta != null ? (oppEloDelta >= 0 ? `+${oppEloDelta}` : `${oppEloDelta}`) : '\u2014');
         detailCols += `
         <div class="match-detail-col">
-          <span class="dk">Your ELO</span>
+          <span class="dk">${subjectName} ELO</span>
           <span class="dv ${eloDelta >= 0 ? 'win' : 'loss'}">${myEloBeforeStr}</span>
         </div>
         <div class="match-detail-col">
-          <span class="dk">Opp ELO</span>
+          <span class="dk">${escHtml(oppDisplay)}\u2019s ELO</span>
           <span class="dv">${oppEloBeforeStr}</span>
         </div>`;
       }
@@ -781,7 +793,7 @@
       const boardsSection = (myBoard || oppBoard) ? `
         <div style="width:100%;margin-top:.75rem;display:flex;gap:2rem;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);padding-top:.75rem">
           <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
-            <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Your board</div>
+            <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${subjectName} board</div>
             ${miniBoard(myBoard)}
           </div>
           <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
@@ -886,7 +898,7 @@
     fd.append('avatar', file);
     try {
       const res = await API.profile.uploadAvatar(fd);
-      const newSrc = API.profile.avatarUrl(res.key) + '?t=' + Date.now();
+      const newSrc = (res.avatarUrl || API.profile.avatarUrl(res.key)) + '?t=' + Date.now();
       const editAv = document.getElementById('editAvatar');
       editAv.innerHTML = `<img src="${newSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       // Also update navbar avatar

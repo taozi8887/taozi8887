@@ -15,6 +15,7 @@
 
 <link rel="stylesheet" href="style.css">
 <script src="cursor.js" defer></script>
+<script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
 <style>
   :root {
     /* bridge – rest of tokens come from style.css */
@@ -1934,7 +1935,7 @@ let lastDropTime = 0;
 let bag = [];
 let rng = null;            // seeded PRNG for MP (null = Math.random in SP)
 // ── Multiplayer state (see MP ENGINE section) ──
-let mpWs = null; let mpPlayerId = null; let mpRoomCode = null;
+let mpSocket = null; let mpPlayerId = null; let mpRoomCode = null;
 let mpMode = 'versus'; let mpIsActive = false; let mpSeed = null;
 let mpIsRanked    = true;   // was this game from a ranked queue?
 let mpAutoReady   = false;  // auto-send 'ready' when joined (matchmaking/challenge flows)
@@ -2277,7 +2278,7 @@ function holdPiece() {
   canHold = false;
   sfx.hold();
   // MP: notify server so it keeps piece sequence in sync
-  if (mpIsActive && mpWs) mpSend({ type: 'event', kind: 'hold' });
+  if (mpIsActive && mpSocket) mpSend({ type: 'event', kind: 'hold' });
 
   clearLockTimer();
   clearDropTimer();
@@ -2389,7 +2390,7 @@ function lockPiece() {
   const isPerfectClear = clearedRows.length > 0 &&
     board.every((row, r) => clearedRows.includes(r) || row.every(c => c === EMPTY));
 
-  if (mpIsActive && mpWs && gameStatus === 'playing') {
+  if (mpIsActive && mpSocket?.connected && gameStatus === 'playing') {
     mpSend({
       type:          'event',
       kind:          'piecePlaced',
@@ -2822,7 +2823,7 @@ function closeModal(id) {
 
 function startGame() {
   // Exit MP mode if transitioning from MP → SP
-  if (mpWs) { mpWs.close(); mpWs = null; }
+  if (mpSocket) { mpSocket.disconnect(); mpSocket = null; }
   mpIsActive = false; mpPendingGarbage = 0; mpPendingGarbageRows = [];
   document.body.classList.remove('mp');
   // Hide MP-only UI that may have been shown during a previous MP session
@@ -3089,7 +3090,7 @@ document.addEventListener('keydown', (e) => {
   } else if (isActionKey('hold', key)) {
     e.preventDefault(); holdPiece();
   } else if (isActionKey('restart', key)) {
-    e.preventDefault(); if (!mpWs) startGame();
+    e.preventDefault(); if (!mpSocket) startGame();
   }
 });
 
@@ -3439,9 +3440,8 @@ function updateParticles() {
 
 // ── Config ── Set these to your deployed Cloudflare Worker URL ──
 // Auto-detect local vs production - no manual URL switching needed
-const _IS_LOCAL      = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const MP_SERVER_HTTP = _IS_LOCAL ? `http://${location.hostname}:8787` : 'https://tetris-backend.inlowik.workers.dev';
-const MP_SERVER_WS   = _IS_LOCAL ? `ws://${location.hostname}:8787`   : 'wss://tetris-backend.inlowik.workers.dev';
+const _IS_LOCAL  = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const MP_SERVER  = _IS_LOCAL ? `http://${location.hostname}:3001` : 'https://api.tetris.taozi4887.dev';
 
 // ─────────────────────────────────────────────────────────────────
 //  Opponent board rendering
@@ -3618,7 +3618,7 @@ function applyPendingGarbage() {
 function startMPHeartbeat() {
   stopMPHeartbeat();
   mpHeartbeatTimer = setInterval(() => {
-    if (!mpIsActive || !mpWs || mpWs.readyState !== WebSocket.OPEN || gameStatus !== 'playing') return;
+    if (!mpIsActive || !mpSocket?.connected || gameStatus !== 'playing') return;
     mpSend({ type: 'event', kind: 'boardHeartbeat', score, snapshot: encodeBoardSnapshotWithActive() });
   }, 150);
 }
@@ -3631,7 +3631,7 @@ function stopMPHeartbeat() {
 //  Hooks called by existing game functions
 // ─────────────────────────────────────────────────────────────────
 function mpOnGameOver() {
-  if (!mpWs) return;
+  if (!mpSocket) return;
   mpSend({ type: 'event', kind: 'gameOver', score });
   mpIsActive = false;
 }
@@ -3643,52 +3643,60 @@ window.mpHooks = {
 };
 
 // ─────────────────────────────────────────────────────────────────
-//  WebSocket client
+//  Socket.io client
 // ─────────────────────────────────────────────────────────────────
 function mpConnect(roomCode, playerName, mode, isRanked = true) {
   return new Promise((resolve, reject) => {
-    if (mpWs) { mpWs.close(); mpWs = null; }
+    if (mpSocket) { mpSocket.disconnect(); mpSocket = null; }
     mpRoomCode = roomCode;
-    mpWs = new WebSocket(`${MP_SERVER_WS}/room/${roomCode}`);
+
+    mpSocket = io(MP_SERVER, { transports: ['websocket'], reconnection: false });
 
     let resolved = false;
     const timeout = setTimeout(() => {
-      if (!resolved) reject(new Error('Connection timed out'));
+      if (!resolved) { mpSocket?.disconnect(); reject(new Error('Connection timed out')); }
     }, 8000);
 
-    mpWs.onopen = () => {
+    mpSocket.on('connect', () => {
       const u = window._authUser || {};
-      mpSend({ type: 'join', name: playerName, mode,
-        isRanked,
+      mpSocket.emit('joinRoom', {
+        roomCode, name: playerName, mode, isRanked,
         userId:      u.id          || null,
         username:    u.username    || '',
         displayName: u.display_name || '',
         elo:         typeof u.elo === 'number' ? u.elo : null,
         xp:          typeof u.xp  === 'number' ? u.xp  : null,
       });
-    };
+    });
 
-    mpWs.onmessage = (e) => {
-      let msg;
-      try { msg = JSON.parse(e.data); } catch { return; }
-      // Resolve the promise once we get our joined confirmation
-      if (msg.type === 'joined' && !resolved) {
-        resolved = true; clearTimeout(timeout); mpStartKeepalive(); resolve(msg);
-      } else if (msg.type === 'error' && !resolved) {
-        resolved = true; clearTimeout(timeout); reject(new Error(msg.reason));
-      }
+    const MP_EVENTS = ['joined','playerJoined','playerLeft','playerReady','start','gameEnd',
+      'reset','incomingGarbage','opponentUpdate','spectatorJoined','spectatorGameEnd',
+      'spectatorUpdate','boardHeartbeat','gravitySync','chat','pong','lobbyClosed',
+      'pieceConfirmed','spectatorCount','sprintProgress','coopProgress','playerOver'];
+    MP_EVENTS.forEach(ev => {
+      mpSocket.on(ev, (data) => {
+        const msg = { type: ev, ...(data || {}) };
+        if (ev === 'joined' && !resolved) {
+          resolved = true; clearTimeout(timeout); mpStartKeepalive(); resolve(msg);
+        }
+        handleMPMessage(msg);
+      });
+    });
+
+    mpSocket.on('error', (data) => {
+      const msg = { type: 'error', ...(data || {}) };
       handleMPMessage(msg);
-    };
+      if (!resolved) { resolved = true; clearTimeout(timeout); reject(new Error(data?.reason || 'Connection error')); }
+    });
 
-    mpWs.onerror = () => {
+    mpSocket.on('connect_error', (err) => {
       if (!resolved) { resolved = true; clearTimeout(timeout); reject(new Error('Connection failed. Is the server running?')); }
-    };
+    });
 
-    mpWs.onclose = () => {
+    mpSocket.on('disconnect', () => {
       mpStopKeepalive();
       stopMPHeartbeat();
       if (mpIsActive) {
-        // Lost connection mid-game — show a proper end screen so the player isn't stranded
         mpIsActive = false;
         clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
         gameStatus = 'over';
@@ -3705,32 +3713,32 @@ function mpConnect(roomCode, playerName, mode, isRanked = true) {
         if (_dcXp)    _dcXp.style.display = 'none';
         document.getElementById('mpEndScreen').classList.add('active');
       } else if (window._mqInFoundPhase) {
-        // Server dropped us during the match-found countdown — cancel and re-queue
         if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
         if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
         window._mqInFoundPhase = false;
-        mpWs = null;
+        mpSocket = null;
         const _requeueMode = mqMode;
         if (_requeueMode) setTimeout(() => enterQueue(_requeueMode), 600);
         else showQueueState('home');
-      } else if (mpWs !== null) {
-        // Unexpected disconnect while in waiting room - show home
+      } else if (mpSocket !== null) {
         showQueueState('home');
         mpUpdateLobbyStatus('Disconnected.');
       }
-    };
+    });
   });
 }
 
 function mpSend(msg) {
-  if (mpWs && mpWs.readyState === WebSocket.OPEN) mpWs.send(JSON.stringify(msg));
+  if (!mpSocket?.connected) return;
+  const { type, ...data } = msg;
+  mpSocket.emit(type, data);
 }
 
 let _mpPingInterval = null;
 
 function mpStartKeepalive() {
   _mpPingInterval = setInterval(() => {
-    if (mpWs && mpWs.readyState === WebSocket.OPEN) mpSend({ type: 'ping' });
+    if (mpSocket?.connected) mpSocket.emit('ping');
   }, 4_000);
 }
 
@@ -3741,7 +3749,7 @@ function mpStopKeepalive() {
 
 function mpDisconnect() {
   mpStopKeepalive();
-  if (mpWs) { mpWs.close(); mpWs = null; }
+  if (mpSocket) { mpSocket.disconnect(); mpSocket = null; }
   mpIsActive = false; mpPendingGarbage = 0;
 }
 
@@ -3759,8 +3767,8 @@ function handleMPMessage(msg) {
       break;
 
     case 'gravitySync':
-      // Server broadcasts shared gravity level in versus so both players experience the same speed
-      if (mpIsActive && mpMode === 'versus') {
+      // Server broadcasts shared gravity level so both players experience the same speed
+      if (mpIsActive) {
         const newLvl = msg.level || 1;
         if (newLvl > level) {
           level = newLvl;
@@ -3866,13 +3874,18 @@ function handleMPMessage(msg) {
       break;
 
     case 'incomingGarbage':
-      mpPendingGarbage = msg.pending;
+      // Server sends: { lines, pending, garbageLines:[{holeCol},...], fromName }
+      mpPendingGarbage = msg.pending ?? msg.total ?? (mpPendingGarbage + (msg.lines ?? 0));
       // Store server-provided hole positions - these are applied in applyPendingGarbage()
       if (Array.isArray(msg.garbageLines)) {
         mpPendingGarbageRows.push(...msg.garbageLines);
+      } else if (msg.lines > 0) {
+        // Fallback: server didn't send positions, generate locally
+        const col = Math.floor(Math.random() * 10);
+        for (let i = 0; i < msg.lines; i++) mpPendingGarbageRows.push({ holeCol: col });
       }
       updateGarbageBar();
-      flashGarbageWarning(msg.amount, msg.fromName);
+      flashGarbageWarning(msg.lines ?? msg.amount, msg.fromName);
       break;
 
     case 'pieceConfirmed':
@@ -3988,10 +4001,11 @@ function enterQueue(mode) {
   if (!u) { location.href = 'login.html?redir=game.html'; return; }
 
   // Close any existing matchmaking socket before starting a new one
-  if (mqWs) {
-    try { if (mqWs.readyState === WebSocket.OPEN || mqWs.readyState === WebSocket.CONNECTING) mqWs.close(); } catch {}
-    mqWs = null;
+  if (mpSocket) {
+    try { mpSocket.disconnect(); } catch {}
+    mpSocket = null;
   }
+  mqWs = null;
 
   mqMode        = mode;
   mqSearchStart = Date.now();
@@ -4025,12 +4039,11 @@ function enterQueue(mode) {
     if (wt) wt.textContent = m + ':' + s;
   }, 1000);
 
-  mqWs = new WebSocket(`${MP_SERVER_WS}/matchmaking/${mode}`);
-  const thisMqWs = mqWs; // capture this socket so stale onclose/onerror can self-identify
+  mpSocket = io(MP_SERVER, { transports: ['websocket'], reconnection: false });
+  mqWs = mpSocket; // alias for cancelQueue compatibility
 
-  mqWs.onopen = () => {
-    mqWs.send(JSON.stringify({
-      type:        'enqueue',
+  mpSocket.on('connect', () => {
+    mpSocket.emit('enqueue', {
       sessionId:   crypto.randomUUID(),
       userId:      u.id,
       username:    u.username    || '',
@@ -4038,21 +4051,29 @@ function enterQueue(mode) {
       elo:         typeof u.elo === 'number' ? u.elo : 1000,
       xp:          typeof u.xp  === 'number' ? u.xp  : 0,
       mode,
-    }));
-  };
+    });
+  });
 
-  mqWs.onmessage = (e) => {
-    let data;
-    try { data = JSON.parse(e.data); } catch { return; }
+  mpSocket.on('queueStatus', (data) => {
+    if (data.eloDelta != null && mpIsRanked) {
+      const rangeEl = document.getElementById('mqRangeDisplay');
+      if (rangeEl) rangeEl.textContent = '\u00b1' + data.eloDelta;
+    }
+  });
 
-    if (data.type === 'queueUpdate' && mpIsRanked) {
+  mpSocket.on('queueUpdate', (data) => {
+    if (mpIsRanked) {
       const rangeEl = document.getElementById('mqRangeDisplay');
       if (rangeEl) rangeEl.textContent = '\u00b1' + (data.eloDelta || 100);
     }
+  });
 
-    if (data.type === 'matchFound') {
-      clearInterval(mqWaitTimer); mqWaitTimer = null;
-      const { roomCode, isRanked, opponent, gameMode } = data;
+  mpSocket.on('matchFound', (data) => {
+    clearInterval(mqWaitTimer); mqWaitTimer = null;
+      const { roomCode, isRanked, gameMode } = data;
+      // Server sends flat opponentName/opponentElo/opponentDisplayName (not nested object)
+      const oppName = data.opponentDisplayName || data.opponentName || data.opponent?.displayName || data.opponent?.username || 'Opponent';
+      const oppElo  = data.opponentElo ?? data.opponent?.elo ?? null;
       // Trust the local mode first — server may omit isRanked
       mpIsRanked  = isRanked != null ? !!isRanked : (mqMode === 'ranked-versus');
       mpAutoReady = false; // will send ready after the countdown completes
@@ -4060,8 +4081,6 @@ function enterQueue(mode) {
       // Populate match-found panel
       const myName  = u.display_name || u.username || 'You';
       const myElo   = typeof u.elo === 'number' ? u.elo : 1000;
-      const oppName = opponent?.displayName || opponent?.username || 'Opponent';
-      const oppElo  = typeof opponent?.elo === 'number' ? opponent.elo : null;
       const resolvedMode = gameMode || 'versus';
       const foundTypeLabel = mpIsRanked ? (resolvedMode === 'sprint' ? 'Sprint Race (Ranked)' : 'Ranked Versus')
                                         : (resolvedMode === 'coop'   ? 'Co-op'
@@ -4069,7 +4088,7 @@ function enterQueue(mode) {
                                         : 'Casual Versus');
 
       const myXp  = typeof u.xp === 'number' ? u.xp : 0;
-      const oppXp = typeof opponent?.xp === 'number' ? opponent.xp : 0;
+      const oppXp = 0; // server does not send opponent xp in matchFound
       document.getElementById('mqMyName').innerHTML      = (window._levelBadgeHTML?.(window._getLevel?.(myXp)  || 1) || '') + ' ' + myName;
       document.getElementById('mqMyFoundElo').textContent = myElo + ' ELO';
       document.getElementById('mqOppName').innerHTML     = (window._levelBadgeHTML?.(window._getLevel?.(oppXp) || 1) || '') + ' ' + oppName;
@@ -4095,7 +4114,11 @@ function enterQueue(mode) {
       window._mqInFoundPhase = true;
       window._mqFoundRejoin  = () => { enterQueue(mqMode || mode); };
 
-      // Connect to game room; send ready after the countdown so the game actually starts in ~10s
+      // Remove matchmaking listeners — reuse mpSocket for game room via mpConnect
+      mpSocket.off('queueStatus'); mpSocket.off('queueUpdate'); mpSocket.off('matchFound');
+      mpSocket.off('connect_error'); mpSocket.off('disconnect');
+      mqWs = null;
+
       mpConnect(roomCode, myName, resolvedMode, mpIsRanked)
         .then(() => {
           if (_mqReadyTimeout) clearTimeout(_mqReadyTimeout);
@@ -4104,7 +4127,7 @@ function enterQueue(mode) {
             window._mqInFoundPhase = false;
             // Update found panel to show connecting status instead of switching to lobby
             const cdParent = document.querySelector('.mq-found-countdown');
-            if (cdParent) cdParent.innerHTML = 'Connecting to game…';
+            if (cdParent) cdParent.innerHTML = 'Connecting to game\u2026';
             mpSend({ type: 'ready' });
             // If the server never sends 'start' (e.g. opponent dropped), re-queue after 15s
             window._mqStartTimeout = setTimeout(() => {
@@ -4123,30 +4146,24 @@ function enterQueue(mode) {
           showQueueState('home');
           mpUpdateLobbyStatus('Could not connect: ' + err.message, 'error');
         });
+  });
 
-      mqWs.close(); mqWs = null;
-    }
+  mpSocket.on('error', (data) => {
+    cancelQueue();
+    mpUpdateLobbyStatus((data && data.reason) || 'Queue error.', 'error');
+  });
 
-    if (data.type === 'error') {
-      cancelQueue();
-      mpUpdateLobbyStatus(data.reason || 'Queue error.', 'error');
-    }
-  };
-
-  mqWs.onerror = () => {
-    if (mqWs !== thisMqWs) return; // stale socket fired after a new one was created
+  mpSocket.on('connect_error', () => {
     cancelQueue();
     mpUpdateLobbyStatus('Could not reach matchmaking server.', 'error');
-  };
+  });
 
-  // Unexpected close after enqueue
-  mqWs.onclose = () => {
-    if (mqWs !== thisMqWs) return; // stale socket's onclose fired after a new one was created
+  mpSocket.on('disconnect', () => {
     if (mqMode !== null) {
       mqWs = null;
       cancelQueue();
     }
-  };
+  });
 }
 
 function cancelQueue() {
@@ -4154,16 +4171,9 @@ function cancelQueue() {
   if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
   if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
   window._mqInFoundPhase = false;
-  if (mqWs) {
-    try {
-      if (mqWs.readyState === WebSocket.OPEN) {
-        mqWs.send(JSON.stringify({ type: 'leave' }));
-        mqWs.close();
-      } else if (mqWs.readyState === WebSocket.CONNECTING) {
-        mqWs.close();
-      }
-    } catch {}
-    mqWs = null;
+  if (mpSocket && mqWs) {
+    try { mpSocket.emit('dequeue'); mpSocket.disconnect(); } catch {}
+    mpSocket = null; mqWs = null;
   }
   mqMode        = null;
   mqSearchStart = null;
@@ -4332,7 +4342,7 @@ function startMPGame() {
     // Fetch full profile stats for the opponent if their username is known
     if (un) {
       const base = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? `http://${location.hostname}:8787` : 'https://api.tetris.taozi4887.dev';
+        ? `http://${location.hostname}:3001` : 'https://api.tetris.taozi4887.dev';
       fetch(`${base}/api/profile/${encodeURIComponent(un)}`, { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
@@ -4599,7 +4609,7 @@ function mpGoHome() {
 
 function lobbyGoBack() {
   if (mqWs) cancelQueue();
-  if (mpWs) lobbyLeave();
+  if (mpSocket) lobbyLeave();
   location.href = 'index.html';
 }
 
@@ -4676,7 +4686,7 @@ window._levelBadgeHTML = levelBadgeHTML;
 // directly and update the header nav in place.
 
 const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? `http://${location.hostname}:8787`
+  ? `http://${location.hostname}:3001`
   : 'https://api.tetris.taozi4887.dev';
 
 const RANKS = [
@@ -4817,48 +4827,47 @@ let _specPingInterval = null;
 
 function startSpectate(roomCode) {
   if (_specPingInterval) { clearInterval(_specPingInterval); _specPingInterval = null; }
-  if (_specWs) { _specWs.close(); _specWs = null; }
-  if (mpWs) { mpWs.close(); mpWs = null; }
+  if (_specWs) { _specWs.disconnect(); _specWs = null; }
+  if (mpSocket) { mpSocket.disconnect(); mpSocket = null; }
   mpIsActive = false;
 
   // Build the spectate overlay FIRST (position:fixed covers everything, no lobby flash)
   _buildSpectateUI(roomCode);
 
-  const wsBase = API_BASE.replace(/^http/, 'ws');
-  _specWs = new WebSocket(wsBase + '/room/' + roomCode);
+  const wsBase = API_BASE.replace(/^http/, 'ws'); // kept for reference
+  _specWs = io(MP_SERVER, { transports: ['websocket'], reconnection: false });
 
-  _specWs.onopen = () => {
-    _specWs.send(JSON.stringify({ type: 'join', spectator: true }));
+  _specWs.on('connect', () => {
+    _specWs.emit('joinRoom', { roomCode, spectator: true });
     const status = document.getElementById('specStatus');
-    if (status) status.textContent = 'Connected — waiting for game…';
-    // Keepalive: send ping every 30 s so Cloudflare doesn't close idle WS
+    if (status) status.textContent = 'Connected \u2014 waiting for game\u2026';
+    // Keepalive ping every 30s
     _specPingInterval = setInterval(() => {
-      if (_specWs && _specWs.readyState === WebSocket.OPEN) {
-        try { _specWs.send(JSON.stringify({ type: 'ping' })); } catch {}
-      }
+      if (_specWs?.connected) _specWs.emit('ping');
     }, 30_000);
-  };
+  });
 
-  _specWs.onmessage = (e) => {
-    let data;
-    try { data = JSON.parse(e.data); } catch { return; }
-    _handleSpectateMessage(data);
-  };
+  const SPEC_EVENTS = ['joined','spectatorJoined','playerJoined','playerLeft','start','gameEnd',
+    'spectatorGameEnd','spectatorUpdate','opponentUpdate','gravitySync','chat','lobbyClosed',
+    'spectatorCount','sprintProgress','coopProgress'];
+  SPEC_EVENTS.forEach(ev => {
+    _specWs.on(ev, (data) => { _handleSpectateMessage({ type: ev, ...(data || {}) }); });
+  });
 
-  _specWs.onclose = () => {
+  _specWs.on('disconnect', () => {
     const status = document.getElementById('specStatus');
     if (status) status.textContent = 'Disconnected from room.';
-  };
+  });
 
-  _specWs.onerror = () => {
+  _specWs.on('connect_error', () => {
     const status = document.getElementById('specStatus');
     if (status) status.textContent = 'Could not connect to room.';
-  };
+  });
 }
 
 function stopSpectate() {
   if (_specPingInterval) { clearInterval(_specPingInterval); _specPingInterval = null; }
-  if (_specWs) { _specWs.close(); _specWs = null; }
+  if (_specWs) { _specWs.disconnect(); _specWs = null; }
   const overlay = document.getElementById('specOverlay');
   if (overlay) overlay.remove();
   const endOverlay = document.getElementById('specEndOverlay');
@@ -4880,7 +4889,7 @@ function _buildSpectateUI(roomCode) {
     <div style="width:100%;max-width:900px;display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--border);padding-bottom:.9rem">
       <div style="flex:1;font-family:var(--serif);font-size:1.15rem;letter-spacing:-.03em">
         <span style="color:var(--text3);font-size:.8rem;font-family:var(--mono)">SPECTATING</span><br>
-        <span id="specRoomLabel" style="color:var(--accent)">${escHtml(roomCode)}</span>
+        <span id="specRoomLabel" style="color:var(--accent)">Connecting…</span>
       </div>
       <div id="specStatus" style="font-size:.72rem;color:var(--text3);text-align:right">Connecting…</div>
       <button type="button" class="btn sm ghost" id="specExitBtn">Exit ✕</button>
@@ -4896,7 +4905,16 @@ function _buildSpectateUI(roomCode) {
 }
 
 function _handleSpectateMessage(data) {
-  if (data.type === 'spectatorJoined') {
+  if (data.type === 'joined' || data.type === 'spectatorJoined') {
+    // 'joined' = server's response when we first connect as spectator (has mode/isRanked)
+    // 'spectatorJoined' = legacy alias (unused but kept for safety)
+    if (data.type === 'joined') {
+      const modeLabel = data.mode === 'sprint' ? 'Sprint Race'
+        : data.mode === 'coop' ? 'Co-op'
+        : data.isRanked ? 'Ranked Versus' : 'Casual Versus';
+      const labelEl = document.getElementById('specRoomLabel');
+      if (labelEl) labelEl.textContent = modeLabel;
+    }
     const statusEl = document.getElementById('specStatus');
     if (statusEl) statusEl.textContent = data.finished ? 'Match ended' : data.started ? 'Game in progress' : 'Waiting for players…';
     // Always init both board slots — placeholder for missing players
@@ -4929,8 +4947,12 @@ function _handleSpectateMessage(data) {
       _initSpecBoard(i, name, p.elo, p.xp, false);
     });
   } else if (data.type === 'spectatorUpdate') {
-    (data.boards || []).forEach((b, i) => { if (b.snapshot) _renderSpecBoard(i, b.snapshot, b.score || 0, b.lines || 0); });
-  } else if (data.type === 'spectatorGameEnd') {
+    // Server sends individual player updates: { playerId, board, score, lines }
+    if (data.board != null && data.playerId != null) {
+      const idx = data.playerId - 1; // playerId 1→0, 2→1
+      _renderSpecBoard(idx, data.board, data.score || 0, data.lines || 0);
+    }
+  } else if (data.type === 'spectatorGameEnd' || data.type === 'gameEnd') {
     const scores = data.scores || [];
     const gt = data.gameType || '';
     // Use server-authoritative winner ID — never infer from score

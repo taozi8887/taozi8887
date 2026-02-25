@@ -1,207 +1,127 @@
-# Testing & Deployment Guide
+# Deploy Guide — tetris.taozi4887.dev
 
-## Prerequisites
-
-| Tool | Install |
-|---|---|
-| Node.js ≥ 18 | https://nodejs.org |
-| Wrangler CLI | `npm i -g wrangler` |
-| A Cloudflare account | Workers + D1 + R2 + KV enabled |
+Both Railway (backend) and Cloudflare Pages (frontend) auto-deploy when you push
+to GitHub. Almost every update is just a `git push`.
 
 ---
 
-## Local Testing
-
-### 1 - Install backend dependencies
+## Routine Update (99% of the time)
 
 ```bash
-cd tetris-site/backend
-npm install
+cd "C:\Users\edwar\Downloads\portfolio"
+
+git add .
+git status
+# ↑ review what's staged — make sure no .env or node_modules appear
+
+git commit -m "your message here"
+git push
 ```
 
-### 2 - Create local D1 database and apply schema
-
-```bash
-# One-time: creates .wrangler/state/v3/d1/ local SQLite file
-wrangler d1 execute tetris-db --local --file=schema.sql
-
-wrangler d1 execute tetris-db --local --file=migration_001_solo_stats_settings.sql
-wrangler d1 execute tetris-db --local --file=migration_002_marathon_stats.sql
-wrangler d1 execute tetris-db --local --file=migration_003_sprint_coop_lines.sql
-wrangler d1 execute tetris-db --local --file=migration_004_matchmaking.sql
-wrangler d1 execute tetris-db --local --file=migration_005_stats_expansion.sql
-wrangler d1 execute tetris-db --local --file=migration_006_xp.sql
-```
-
-### 3 - Set secrets for local dev
-
-Wrangler reads secrets from a `.dev.vars` file (never commit this).
-
-```
-# tetris-site/backend/.dev.vars
-JWT_SECRET=any-random-string-32-chars-or-more
-INTERNAL_KEY=any-other-random-string
-```
-
-### 4 - Start the backend dev server
-
-```bash
-# from tetris-site/backend/
-wrangler dev
-# Listens on http://localhost:8787
-```
-
-The `CORS_ORIGIN` in `wrangler.toml` is `https://tetris.taozi4887.dev`, which will
-block requests from `localhost`. Override it for local dev in `.dev.vars`:
-
-```
-CORS_ORIGIN=http://localhost:5500
-```
-
-### 5 - Serve the frontend
-
-Any static file server works. VS Code's **Live Server** extension is easiest:
-- Install **ritwickdey.liveserver** from the Extensions panel
-- Right-click `tetris-site/frontend/index.html` → **Open with Live Server**
-- Default: `http://localhost:5500`
-
-Or with Node:
-```bash
-npx serve tetris-site/frontend
-# http://localhost:3000
-```
-
-### 6 - Test checklist
-
-| Feature | How to test |
-|---|---|
-| Register | `/register.html` → fill form → should redirect to `/index.html` |
-| Login | `/login.html` → cookie set → nav shows username + ELO |
-| Profile | `/profile.html?u=<username>` → stats visible |
-| Avatar upload | Profile page → upload button → refresh → avatar shown in header |
-| Solo game | `/game.html` → Start Game → play to game over |
-| Sprint | `/game.html?mode=sprint` → auto-navigates to lobby → solo sprint |
-| Multiplayer | Open two browser windows → game.html → Multiplayer → same room code → play |
-| Versus ELO | After versus match ends, wait 3 s → header ELO should update |
-| Leaderboard | `/leaderboard.html` → filter by rank tier → search player name |
-| Friends | `/friends.html` → send request to second test account → accept → challenge |
-| Rank badges | Register two accounts, boost ELO via SQL, confirm badge shows correct tier |
+Railway and Cloudflare Pages pick up the push automatically within ~1 minute.
 
 ---
 
-## Deployment
+## First-Time Setup (one time only)
 
-### Step 1 - Create Cloudflare resources (first time only)
+### 1. Create the GitHub repo
+Go to github.com → New repository → **do NOT initialise with README**.
 
-```bash
-# Log in
-wrangler login
-
-# Create D1 database - note the ID it prints
-wrangler d1 create tetris-db
-
-# Create R2 bucket for avatars
-wrangler r2 bucket create tetris-avatars
-
-# Create KV namespace for rate limiting
-wrangler kv namespace create RATE_KV
-```
-
-**Copy the IDs** into `backend/wrangler.toml`:
-```toml
-[[d1_databases]]
-database_id = "<PASTE D1 ID HERE>"
-
-[[kv_namespaces]]
-id = "<PASTE KV ID HERE>"
-```
-
-### Step 2 - Apply schema to production D1
+### 2. Initialise and push
 
 ```bash
-cd tetris-site/backend
-wrangler d1 execute tetris-db --remote --file=schema.sql
+cd "C:\Users\edwar\Downloads\portfolio"
+
+git init
+git add .
+git status
+# ↑ verify no secrets show up before continuing
+
+git commit -m "initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git push -u origin main
 ```
 
-### Step 3 - Set production secrets
+### 3. Connect Railway (backend)
+1. railway.app → New Project → Deploy from GitHub repo
+2. Select your repo
+3. Set **Root Directory** → `tetris-site/backend`
+4. Add env vars under Settings → Variables:
 
-```bash
-wrangler secret put JWT_SECRET
-# paste a long random string (32+ chars), press Enter
+| Key | Value |
+|-----|-------|
+| `SUPABASE_URL` | your Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | your Supabase service role key |
+| `JWT_SECRET` | long random string |
+| `CLIENT_ORIGIN` | `https://tetris.taozi4887.dev` |
+| `PORT` | `3001` |
 
-wrangler secret put INTERNAL_KEY
-# paste a different random string, press Enter
+5. Settings → Networking → Add Custom Domain → type `api.tetris.taozi4887.dev`
+   - Railway will ask **"What port is your app listening on?"** → enter **`3001`**
+   - After saving, Railway shows a CNAME target like `xxxxxxx.up.railway.app` — copy it
+6. Copy that CNAME target for the next step
+
+### 4. Add DNS in Cloudflare (taozi4887.dev → DNS)
+| Type | Name | Target | Proxy |
+|------|------|--------|-------|
+| CNAME | `api` | `xxxxxxx.up.railway.app` | **Grey cloud (DNS only)** |
+
+### 5. Connect Cloudflare Pages (frontend)
+1. Cloudflare dashboard → Workers & Pages → Create → Pages → Connect to Git
+2. Select your repo
+3. Settings:
+   - Root directory: `tetris-site/frontend`
+   - Build command: *(blank — plain HTML, no build)*
+   - Build output directory: *(blank)*
+4. Deploy → Pages project → Custom Domains → `tetris.taozi4887.dev`
+   (Cloudflare auto-adds the DNS record since the domain is already there)
+
+### 6. Run DB migration (Supabase SQL Editor, one time)
+```sql
+ALTER TABLE matches ADD COLUMN p1_final_board TEXT;
+ALTER TABLE matches ADD COLUMN p2_final_board TEXT;
 ```
-
-### Step 3b - Apply any pending migrations to production D1
-
-> **Run this before every deploy if new migration files exist in `backend/`.**
-
-```bash
-cd tetris-site/backend
-wrangler d1 execute tetris-db --remote --file=migration_001_solo_stats_settings.sql
-wrangler d1 execute tetris-db --remote --file=migration_002_marathon_stats.sql
-wrangler d1 execute tetris-db --remote --file=migration_003_sprint_coop_lines.sql
-wrangler d1 execute tetris-db --remote --file=migration_004_matchmaking.sql
-wrangler d1 execute tetris-db --remote --file=migration_005_stats_expansion.sql
-wrangler d1 execute tetris-db --remote --file=migration_006_xp.sql
-```
-
-### Step 4 - Deploy the backend Worker
-
-```bash
-cd tetris-site/backend
-wrangler deploy
-# Output: https://tetris-backend.<your-subdomain>.workers.dev
-```
-
-Then set your custom domain `api.tetris.taozi4887.dev` in the Cloudflare dashboard:
-- Workers & Pages → tetris-backend → Settings → Domains & Routes → Add Custom Domain
-
-### Step 5 - Deploy the frontend
-
-The frontend is plain HTML/CSS/JS - no build step.
-
-**Option A: Cloudflare Pages (recommended)**
-```bash
-# From repo root, deploy the frontend folder
-wrangler pages deploy tetris-site/frontend --project-name tetris-frontend
-```
-Then add `tetris.taozi4887.dev` as a custom domain in:
-- Cloudflare Dashboard → Pages → tetris-frontend → Custom Domains
-
-**Option B: Manual via dashboard**
-- Drag `tetris-site/frontend/` into Cloudflare Pages deploy UI
-
-### Step 6 - Verify CORS origin
-
-In `backend/wrangler.toml`, `CORS_ORIGIN` must exactly match the frontend origin:
-```toml
-[vars]
-CORS_ORIGIN = "https://tetris.taozi4887.dev"
-```
-If it doesn't match, all API calls will fail with CORS errors.
-
-### Step 7 - Smoke test production
-
-1. Visit `https://tetris.taozi4887.dev` - landing page loads
-2. Register an account - check D1 via `wrangler d1 execute tetris-db --remote --command "SELECT * FROM users LIMIT 5;"`
-3. Play a solo game - no console errors
-4. Play a versus match - ELO updates in header after 3 s
 
 ---
 
-## About the file changes this session
+## Updating Environment Variables
 
-| Old file | Status | Replacement |
-|---|---|---|
-| `portfolio/tetris.html` | **Deleted** | → `https://tetris.taozi4887.dev` |
-| `tetris-site/frontend/game-engine.html` | **Deleted** | → `game.html` (now fully self-contained) |
-| `tetris-site/frontend/game.html` | **Replaced** | Integrated game engine - no iframe |
+Railway only — done in the Railway dashboard (Settings → Variables).
+Never put secrets in code or commit them.
 
-`game.html` is now the full game page. It includes:
-- The complete Tetris engine (solo + multiplayer)
-- The tetris-site header with auth (avatar, rank badge, ELO)
-- Direct API auth fetch - no postMessage bridge
-- Auto-refreshes ELO display 2.5 s after a versus match ends
-- Handles `?mode=sprint|versus|coop&room=CODE` URL params
+After changing env vars, Railway redeploys automatically.
+
+---
+
+## Checking Deploy Status
+
+- **Frontend**: Cloudflare dashboard → Workers & Pages → tetris → Deployments
+- **Backend**: Railway dashboard → your project → Deployments tab
+- **Live check**: `https://api.tetris.taozi4887.dev` should respond (not time out)
+
+---
+
+## Emergency: Force Redeploy Without a Code Change
+
+**Frontend (Cloudflare Pages):**
+Workers & Pages → tetris → Deployments → latest → Retry deployment
+
+**Backend (Railway):**
+Railway dashboard → your service → Deployments → Redeploy
+
+---
+
+## What's NOT in Git (secrets stay local)
+
+Covered by `.gitignore` at the repo root:
+
+```
+.env  /  .env.*  /  .dev.vars          ← all secret files
+node_modules/                           ← dependencies (npm install reinstalls)
+dist/  build/                           ← build outputs
+.wrangler/                              ← Cloudflare local state
+```
+
+**Never** paste `SUPABASE_SERVICE_ROLE_KEY` or `JWT_SECRET` into any file
+that gets committed. Set them only in Railway's Variables panel.

@@ -41,35 +41,147 @@
     .banner-stat .val { font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; word-break: break-word; overflow-wrap: break-word; }
     .banner-stat .lbl { font-size: .75rem; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; }
 
-    .lb-preview {
-      background: var(--bg2);
-      border: 1px solid var(--border);
+    .lb-preview { }
+    .lb-preview-header { display: none; }
+
+    /* Podium card */
+    .lb-podium-card {
+      position: relative;
+      background: linear-gradient(to top, var(--bg2) 25%, transparent 65%);
       border-radius: var(--radius-lg);
       overflow: hidden;
     }
-    .lb-preview-header {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
+    .lb-podium-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid var(--border);
+      -webkit-mask-image: linear-gradient(to top, black 25%, transparent 65%);
+      mask-image: linear-gradient(to top, black 25%, transparent 65%);
+      pointer-events: none;
+      z-index: 1;
     }
-    .lb-preview-header h3 { font-size: 1rem; }
+
+    /* Podium stage */
+    .lb-podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 0;
+      padding: 2.5rem 1rem 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 100%, rgba(200,160,0,.06), transparent);
+      position: relative;
+    }
+    .lb-podium-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 200px;
+      position: relative;
+    }
+    /* Golden glow behind 1st */
+    .lb-podium-slot.p1::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 65% at 50% 85%, rgba(200,160,0,.1), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .lb-podium-player {
+      display: flex; flex-direction: column; align-items: center; gap: .45rem;
+      padding-bottom: .9rem;
+      position: relative; z-index: 1;
+    }
+    .lb-podium-av-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+    .lb-podium-av {
+      border-radius: 50%;
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; color: var(--text2);
+      overflow: hidden;
+    }
+    .lb-podium-av img { width: 100%; height: 100%; object-fit: cover; }
+    .lb-podium-slot.p1 .lb-podium-av {
+      width: 72px; height: 72px; font-size: 1rem;
+      border: 3px solid #c8a800;
+      box-shadow: 0 0 0 4px rgba(200,160,0,.15), 0 0 28px rgba(200,160,0,.3);
+    }
+    .lb-podium-slot.p2 .lb-podium-av {
+      width: 58px; height: 58px; font-size: .85rem;
+      border: 2px solid #888;
+      box-shadow: 0 0 0 3px rgba(140,140,140,.1);
+    }
+    .lb-podium-slot.p3 .lb-podium-av {
+      width: 50px; height: 50px; font-size: .78rem;
+      border: 2px solid #a0622a;
+      box-shadow: 0 0 0 3px rgba(160,98,42,.1);
+    }
+    /* Position badge floating on avatar */
+    .lb-podium-pos-badge {
+      position: absolute; bottom: -3px; right: -3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .6rem; font-weight: 800; font-family: var(--mono);
+      border: 2px solid var(--bg2);
+      line-height: 1;
+    }
+    .lb-podium-slot.p1 .lb-podium-pos-badge { background: #c8a800; color: #000; }
+    .lb-podium-slot.p2 .lb-podium-pos-badge { background: #888; color: #fff; }
+    .lb-podium-slot.p3 .lb-podium-pos-badge { background: #a0622a; color: #fff; }
+    .lb-podium-name {
+      font-size: .8rem; font-weight: 600; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 140px; line-height: 1.3;
+    }
+    .lb-podium-slot.p1 .lb-podium-elo { font-size: 1.05rem; color: var(--accent); font-family: var(--mono); font-weight: 700; }
+    .lb-podium-slot.p2 .lb-podium-elo { font-size: .88rem;  color: var(--accent); font-family: var(--mono); font-weight: 600; }
+    .lb-podium-slot.p3 .lb-podium-elo { font-size: .82rem;  color: var(--accent); font-family: var(--mono); font-weight: 600; }
+    .lb-podium-meta { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+    /* Stands - translucent with colored top stripe */
+    .lb-podium-stand {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-weight: 900; font-size: 2.8rem;
+      letter-spacing: -.06em; position: relative; z-index: 1;
+    }
+    .lb-podium-slot.p1 .lb-podium-stand {
+      height: 96px;
+      background: linear-gradient(180deg, rgba(200,160,0,.16), rgba(200,160,0,.04));
+      border-top: 2px solid rgba(200,160,0,.55);
+      color: rgba(200,160,0,.22);
+    }
+    .lb-podium-slot.p2 .lb-podium-stand {
+      height: 68px;
+      background: linear-gradient(180deg, rgba(150,150,150,.1), rgba(150,150,150,.03));
+      border-top: 2px solid rgba(150,150,150,.35);
+      color: rgba(150,150,150,.2);
+    }
+    .lb-podium-slot.p3 .lb-podium-stand {
+      height: 48px;
+      background: linear-gradient(180deg, rgba(160,98,42,.12), rgba(160,98,42,.03));
+      border-top: 2px solid rgba(160,98,42,.4);
+      color: rgba(160,98,42,.22);
+    }
+
+    /* Rows 4-5 */
     .lb-row {
       display: flex; align-items: center; gap: 1rem;
       padding: .75rem 1.5rem;
-      border-bottom: 1px solid var(--border);
+      border-top: 1px solid var(--border);
       font-size: .85rem;
     }
-    .lb-row:last-child { border-bottom: none; }
-    .lb-pos { width: 24px; text-align: right; color: var(--text3); }
-    .lb-pos.gold { color: var(--rank-gold); }
+    .lb-pos { width: 24px; text-align: right; color: var(--text3); font-family: var(--mono); }
     .lb-name { flex: 1; }
-    .lb-elo  { color: var(--accent); font-weight: 500; }
-    .lb-avg  { width: 56px; display: inline-block; border-radius: 50%; background: var(--bg3); overflow: hidden; }
+    .lb-elo  { color: var(--accent); font-weight: 500; font-family: var(--mono); font-size: .8rem; }
     .lb-av {
       width: 32px; height: 32px; border-radius: 50%;
       background: var(--bg3); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: .7rem; color: var(--text3); overflow:hidden;
+      font-size: .7rem; color: var(--text3); overflow:hidden; flex-shrink:0;
     }
     .lb-av img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -161,16 +273,12 @@
 
 <!-- Leaderboard preview -->
 <div class="container section">
-  <p class="section-title">Top Players</p>
-  <div class="lb-preview" id="lbPreview">
-    <div class="lb-preview-header">
-      <h3>Global Ranking</h3>
-      <a href="leaderboard.html" class="btn sm">See all →</a>
-    </div>
-    <div id="lbPreviewBody">
-      <!-- populated by JS -->
-      <div class="lb-row"><span class="dimmed small">Loading…</span></div>
-    </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem">
+    <p class="section-title" style="margin:0">Top Players</p>
+    <a href="leaderboard.html" class="btn sm">See all →</a>
+  </div>
+  <div id="lbPreviewBody">
+    <div class="lb-row" style="border-top:none"><span class="dimmed small">Loading…</span></div>
   </div>
 </div>
 
@@ -238,8 +346,18 @@
 
 <div id="toast-container"></div>
 
+<!-- Redirect to verify.html when Supabase email confirmation link lands on this root page -->
+<script>
+  (function() {
+    var h = new URLSearchParams(window.location.hash.slice(1));
+    if (h.get('type') === 'email_confirmation' && h.get('access_token')) {
+      location.replace('verify.html' + window.location.hash);
+    }
+  })();
+</script>
+
 <script type="module">
-  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum } from './api.js';
+  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum, getLevel } from './api.js';
 
   async function init() {
     const me = await injectNavUser(null);
@@ -249,17 +367,27 @@
 
   async function loadBannerStats() {
     try {
-      const [globalData, lbData, onlineData] = await Promise.all([
+      const [globalData, lbData] = await Promise.all([
         API.stats.global(),
         API.leaderboard.get({ limit: 1 }),
-        fetch(API.BASE + '/api/presence/online-count').then(r => r.ok ? r.json() : { online: 0 }),
       ]);
-      document.getElementById('sbOnline').textContent  = fmtNum(onlineData.online || 0);
       document.getElementById('sbPlayers').textContent = fmtNum(globalData.total_players || lbData.total);
       document.getElementById('sbGames').textContent   = fmtNum(globalData.total_games);
       const totalMins = Math.round((globalData.total_time_ms || 0) / 60000);
       document.getElementById('sbMinutes').textContent = fmtNum(totalMins);
       document.getElementById('sbLines').textContent   = fmtNum(globalData.total_lines);
+    } catch {}
+    // Fetch online count separately after a short delay so the presence socket
+    // has time to connect and emit 'identify' before we read online.size
+    refreshOnlineCount();
+    setInterval(refreshOnlineCount, 30_000);
+  }
+
+  async function refreshOnlineCount() {
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      const data = await fetch(API.BASE + '/api/presence/online-count').then(r => r.ok ? r.json() : null);
+      if (data) document.getElementById('sbOnline').textContent = fmtNum(data.online || 0);
     } catch {}
   }
 
@@ -267,27 +395,82 @@
     const body = document.getElementById('lbPreviewBody');
     try {
       const data = await API.leaderboard.get({ limit: 5 });
-      if (!data.players?.length) { body.innerHTML = '<div class="lb-row"><span class="dimmed small">No players yet.</span></div>'; return; }
-      body.innerHTML = data.players.map((p, i) => {
-        const rank = getRank(p.elo);
-        const pos  = i + 1;
-        const avSrc = p.avatarUrl
-          ? (p.avatarUrl.startsWith('http') ? p.avatarUrl : API.BASE + p.avatarUrl)
+      const players = data.entries || data.players || [];
+      if (!players.length) {
+        body.innerHTML = '<div class="lb-row" style="border-top:none"><span class="dimmed small">No players yet.</span></div>';
+        return;
+      }
+
+      // Build avatar helper
+      function avEl(p, wh) {
+        const src = p.avatar_url || p.avatarUrl
+          ? ((p.avatar_url || p.avatarUrl).startsWith('http') ? (p.avatar_url || p.avatarUrl) : API.BASE + (p.avatar_url || p.avatarUrl))
           : '';
-        const avContent = avSrc
-          ? `<img src="${avSrc}" alt="" onerror="this.style.display='none'">`
-          : p.username.slice(0, 2).toUpperCase();
+        const initials = (p.display_name || p.username || '?').slice(0, 2).toUpperCase();
+        return src
+          ? `<div class="lb-podium-av" style="width:${wh}px;height:${wh}px"><img src="${src}" alt="" onerror="this.style.display='none'"></div>`
+          : `<div class="lb-podium-av" style="width:${wh}px;height:${wh}px">${initials}</div>`;
+      }
+
+      function podiumSlot(p, cls, pos, avSize) {
+        const rank  = getRank(p.elo);
+        const level = getLevel(p.xp ?? 0);
+        const name  = p.display_name || p.username;
+        return `
+          <div class="lb-podium-slot ${cls}">
+            <div class="lb-podium-player">
+              <a href="profile.html?u=${encodeURIComponent(p.username)}" style="display:contents">
+                <div class="lb-podium-av-wrap">
+                  ${avEl(p, avSize)}
+                  <div class="lb-podium-pos-badge">${pos}</div>
+                </div>
+              </a>
+              <div class="lb-podium-name"><a href="profile.html?u=${encodeURIComponent(p.username)}">${name}</a></div>
+              <div class="lb-podium-elo">${fmtNum(p.elo)}</div>
+              <div class="lb-podium-meta">
+                <span class="rank-badge ${rank.name}" style="font-size:.55rem;padding:.1rem .4rem">${rank.name}</span>
+                <span style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">Lv&nbsp;${level}</span>
+              </div>
+            </div>
+            <div class="lb-podium-stand">${pos}</div>
+          </div>`;
+      }
+
+      // Podium: 2nd | 1st | 3rd
+      const p1 = players[0], p2 = players[1], p3 = players[2];
+      let podiumHTML = '<div class="lb-podium-card"><div class="lb-podium">';
+      if (p2) podiumHTML += podiumSlot(p2, 'p2', 2, 58);
+      if (p1) podiumHTML += podiumSlot(p1, 'p1', 1, 72);
+      if (p3) podiumHTML += podiumSlot(p3, 'p3', 3, 50);
+      podiumHTML += '</div>';
+
+      // Rows 4 & 5
+      let rowsHTML = players.slice(3).map((p, i) => {
+        const pos   = i + 4;
+        const rank  = getRank(p.elo);
+        const level = getLevel(p.xp ?? 0);
+        const name  = p.display_name || p.username;
+        const src   = p.avatar_url || p.avatarUrl
+          ? ((p.avatar_url || p.avatarUrl).startsWith('http') ? (p.avatar_url || p.avatarUrl) : API.BASE + (p.avatar_url || p.avatarUrl))
+          : '';
+        const avContent = src
+          ? `<img src="${src}" alt="" onerror="this.style.display='none'">`
+          : name.slice(0, 2).toUpperCase();
         return `
           <div class="lb-row">
-            <span class="lb-pos${pos <= 3 ? ' gold' : ''}">${pos}</span>
+            <span class="lb-pos">${pos}</span>
             <div class="lb-av">${avContent}</div>
-            <span class="lb-name"><a href="profile.html?u=${encodeURIComponent(p.username)}">${p.username}</a></span>
-            <span class="rank-badge ${rank.name}">${rank.name}</span>
+            <span class="lb-name"><a href="profile.html?u=${encodeURIComponent(p.username)}">${name}</a></span>
+            <span class="rank-badge ${rank.name}" style="font-size:.6rem;padding:.1rem .4rem">${rank.name}</span>
+            <span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">Lv&nbsp;${level}</span>
             <span class="lb-elo">${fmtNum(p.elo)}</span>
           </div>`;
       }).join('');
-    } catch {
-      body.innerHTML = '<div class="lb-row"><span class="dimmed small">Unable to load leaderboard.</span></div>';
+
+      body.innerHTML = podiumHTML + rowsHTML + '</div>';
+    } catch (e) {
+      console.error('lb preview:', e);
+      body.innerHTML = '<div class="lb-row" style="border-top:none"><span class="dimmed small">Unable to load leaderboard.</span></div>';
     }
   }
 

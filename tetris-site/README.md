@@ -1,92 +1,141 @@
-# tetris.taozi4887.dev
+# Taotris — tetris.taozi4887.dev
 
-Full-featured Tetris site with user accounts, ELO rankings, profiles, live multiplayer, friends system, and challenge inbox.
+Competitive multiplayer Tetris with ELO rankings, real-time matchmaking, profiles, and leaderboards.
+
+---
 
 ## Stack
-- **Frontend**: Plain HTML/CSS/JS + Cloudflare Pages
-- **Backend**: Cloudflare Workers (API) + Durable Objects (live rooms)
-- **Database**: Cloudflare D1 (SQLite-compatible SQL)
-- **Storage**: Cloudflare R2 (profile pictures)
-- **Sessions**: JWT in HTTP-only cookies (signed with HMAC-SHA256)
+
+| Layer | What |
+|---|---|
+| **Frontend** | Vanilla HTML / CSS / JS — static files, no build step |
+| **Backend** | Node.js + Express + Socket.io |
+| **Database** | Supabase (Postgres) |
+| **Frontend host** | Cloudflare Pages → `tetris.taozi4887.dev` |
+| **Backend host** | Any Node.js host (Railway, Render, Fly.io, VPS) → `api.tetris.taozi4887.dev` |
+
+Supabase is the **database only** — the Node server handles all HTTP REST routes, WebSocket game rooms, matchmaking, JWT auth, and avatar uploads. It connects to Supabase using the service role key.
+
+---
+
+## Project structure
+
+```
+tetris-site/
+  backend/
+    src/
+      index.js        ← Express app + Socket.io server entry point
+      auth.js         ← /api/auth/* (register, login, logout, me)
+      profile.js      ← /api/profile/* (get, update, avatar upload)
+      stats.js        ← /api/stats/* (solo stats, match history, record match)
+      friends.js      ← /api/friends/* (requests, list, challenge)
+      gameroom.js     ← Socket.io game room (Durable Object equivalent)
+      matchmaking.js  ← Ranked/casual matchmaking queue
+      elo.js          ← ELO calculation
+    .env.example      ← Required environment variables
+    package.json
+  frontend/
+    index.html        ← Home / leaderboard preview
+    game.html         ← Full game (solo + multiplayer, all modes)
+    profile.html
+    leaderboard.html
+    friends.html
+    login.html
+    register.html
+    controls.html
+    ranks.html
+    verify.html
+    api.js            ← Typed fetch wrapper (points to api.tetris.taozi4887.dev)
+    style.css
+    cursor.js
+```
+
+---
+
+## Local development
+
+### 1 — Backend
+
+```bash
+cd tetris-site/backend
+npm install
+cp .env.example .env    # fill in your Supabase credentials
+npm run dev             # node --watch src/index.js  →  http://localhost:3001
+```
+
+Required `.env` values:
+
+```
+SUPABASE_URL=https://<your-project>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service role key>
+JWT_SECRET=<any 32+ char random string>
+CLIENT_ORIGIN=http://localhost:5500
+PORT=3001
+```
+
+### 2 — Frontend
+
+Serve the `frontend/` folder with any static file server. The easiest option is VS Code Live Server (default port 5500) or:
+
+```bash
+npx serve tetris-site/frontend
+```
+
+`api.js` automatically uses `http://localhost:3001` when on localhost.
+
+---
 
 ## Deployment
 
-### 1. Create D1 database
+### Frontend → Cloudflare Pages
+
 ```bash
-cd backend
-npx wrangler d1 create tetris-db
-# Copy the database_id into wrangler.toml
-npx wrangler d1 execute tetris-db --file=schema.sql
+# from repo root
+npx wrangler pages deploy tetris-site/frontend --project-name tetris-frontend
 ```
 
-### 2. Create R2 bucket
-```bash
-npx wrangler r2 bucket create tetris-avatars
+Add `tetris.taozi4887.dev` as a custom domain in Cloudflare Pages → tetris-frontend → Custom Domains.
+
+### Backend → Node host (Railway / Render / Fly.io / VPS)
+
+The backend is a standard Node.js app — deploy it to any host that runs persistent Node processes.
+
+Set the following environment variables on the host:
+
+```
+SUPABASE_URL=https://<your-project>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service role key>
+JWT_SECRET=<same value as production>
+CLIENT_ORIGIN=https://tetris.taozi4887.dev
+PORT=3001   (or whatever your host assigns)
 ```
 
-### 3. Set secrets
+Point the DNS record `api.tetris.taozi4887.dev` → your Node server's IP/hostname.
+
+**Railway (quickest):**
 ```bash
-npx wrangler secret put JWT_SECRET          # random 32+ char string
-npx wrangler secret put AVATAR_MAX_SIZE_KB  # e.g. "512"
+# install Railway CLI, then:
+cd tetris-site/backend
+railway up
 ```
 
-### 4. Deploy backend
-```bash
-cd backend
-npm install
-npx wrangler deploy
-```
+---
 
-### 5. Deploy frontend
-Connect the `frontend/` folder to Cloudflare Pages and set the custom domain to `tetris.taozi4887.dev`.
+## Environment variables reference
 
-Update `frontend/api.js` `API_BASE` to your Worker URL if needed.
-
-## Security notes
-- Passwords: PBKDF2-SHA256, 250 000 iterations, per-user salt (uses Web Crypto API - available in Workers)
-- Sessions: signed JWT stored in `HttpOnly; Secure; SameSite=Strict` cookie, 30-day expiry
-- Username/email inputs are sanitised and length-capped server-side
-- Rate-limiting on auth endpoints via a KV-backed sliding window counter
-- SQL uses parameterised queries only - no string concatenation
-- Profile pictures: validated MIME type + size, served from R2 with a random key (not guessable)
-- CORS: `Access-Control-Allow-Origin` set to `https://tetris.taozi4887.dev` only
-
-## ELO ranks
-| ELO Range    | Rank        | Badge colour |
+| Variable | Where | Description |
 |---|---|---|
-| < 1000       | Unranked    | grey         |
-| 1000 – 1199  | Bronze      | #cd7f32      |
-| 1200 – 1399  | Silver      | #aaa         |
-| 1400 – 1599  | Gold        | #ffd700      |
-| 1600 – 1799  | Platinum    | #4affda      |
-| 1800 – 1999  | Diamond     | #60efff      |
-| 2000 – 2199  | Master      | #b46ff0      |
-| 2200+        | Grandmaster | #c8ff4a      |
+| `SUPABASE_URL` | backend | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | backend | Service role key (bypasses RLS) |
+| `JWT_SECRET` | backend | Signs HttpOnly auth cookies |
+| `CLIENT_ORIGIN` | backend | Allowed CORS origin (frontend URL) |
+| `PORT` | backend | HTTP listen port (default 3001) |
 
-## Folder structure
-```
-tetris-site/
-├── README.md
-├── frontend/               ← Cloudflare Pages static site
-│   ├── index.html          landing / home
-│   ├── game.html           the Tetris game
-│   ├── login.html
-│   ├── register.html
-│   ├── profile.html        public + own profile
-│   ├── leaderboard.html    global ELO rankings
-│   ├── friends.html        friends list + challenge inbox
-│   ├── style.css           shared design system
-│   └── api.js              typed fetch wrapper
-└── backend/                ← Cloudflare Workers
-    ├── package.json
-    ├── wrangler.toml
-    ├── schema.sql
-    └── src/
-        ├── index.js        router
-        ├── auth.js         /api/auth/*
-        ├── profile.js      /api/profile/*
-        ├── stats.js        /api/stats/*
-        ├── friends.js      /api/friends/*  /api/inbox/*
-        ├── elo.js          ELO helpers
-        └── gameserver.js   Durable Object for live rooms
-```
+---
+
+## Notes
+
+- Auth uses **HttpOnly JWT cookies** set by the Node backend — not Supabase Auth client-side flows.
+- Avatars are stored as base64 in Supabase (profiles table), served through the backend.
+- Socket.io game rooms and matchmaking queue live **in Node process memory** — restarting the server ends all active games.
+- `migration_007_match_boards.sql` must be run in the Supabase SQL editor to enable match board history: `ALTER TABLE matches ADD COLUMN p1_final_board TEXT; ALTER TABLE matches ADD COLUMN p2_final_board TEXT;`

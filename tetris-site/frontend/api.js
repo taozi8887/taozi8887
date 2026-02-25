@@ -12,7 +12,7 @@
 
 const BASE = (() => {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    return `http://${location.hostname}:8787`;
+    return `http://${location.hostname}:3001`;
   return 'https://api.tetris.taozi4887.dev';
 })();
 
@@ -70,6 +70,9 @@ const auth = {
 
   /** Fetch the currently logged-in user (or throws 401). */
   me:       ()     => req('GET',  '/api/auth/me'),
+
+  /** Exchange a Supabase access_token (from email verification hash) for a session cookie. */
+  session:  (token) => req('POST', '/api/auth/session', { body: { token } }),
 };
 
 /* ── Profile ──────────────────────────────────────────────────── */
@@ -87,8 +90,12 @@ const profile = {
   /** Upload avatar. Expects a FormData with field 'avatar'. */
   uploadAvatar: (fd)      => upload('/api/profile/avatar', fd),
 
-  /** Resolve avatar image URL from key (returns absolute URL). */
-  avatarUrl: (key) => key ? `${BASE}/api/profile/avatar/${encodeURIComponent(key)}` : null,
+  /** Resolve avatar URL. Accepts a full Supabase Storage URL or legacy key. */
+  avatarUrl: (key) => {
+    if (!key) return null;
+    if (key.startsWith('http')) return key;       // Supabase Storage public URL
+    return `${BASE}/api/profile/avatar/${encodeURIComponent(key)}`; // legacy fallback
+  },
 
   /** Fetch own game settings from DB. Returns { settings } */
   getSettings:  ()      => req('GET', '/api/profile/settings'),
@@ -124,14 +131,13 @@ const friends = {
 
 const inbox = {
   /** Get pending challenges for the current user. */
-  list:    ()     => req('GET',  '/api/inbox'),
+  list:    ()     => req('GET',  '/api/friends/inbox'),
 
   /**
    * Send a challenge to a friend.
-   * { username, mode: 'versus'|'sprint'|'coop', room_code, message? }
-   * Generate room_code with: Math.random().toString(36).slice(2,8).toUpperCase()
+   * { username, mode: 'versus'|'sprint'|'coop', message? }
    */
-  challenge: (body) => req('POST', '/api/inbox/challenge', { body }),
+  challenge: (body) => req('POST', '/api/friends/inbox/challenge', { body }),
 
   /**
    * Respond to a challenge.
@@ -139,7 +145,7 @@ const inbox = {
    * Returns { room_code, mode } on accept.
    */
   respond: ({ challengeId, id, action }) =>
-    req('POST', '/api/inbox/respond', { body: { id: id ?? challengeId, action } }),
+    req('POST', '/api/friends/inbox/respond', { body: { id: id ?? challengeId, action } }),
 };
 
 /* ── Stats ───────────────────────────────────────────────────── */
@@ -156,17 +162,11 @@ const stats = {
 
 const matchmaking = {
   /**
-   * Open a WebSocket connection to the matchmaking queue.
-   * mode: 'ranked-versus' | 'casual-versus'
-   * Returns the raw WebSocket. The caller is responsible for:
-   *   1. Sending { type:'enqueue', ...userData } on open
-   *   2. Handling { type:'matchFound' } to navigate to game
-   *   3. Sending { type:'leave' } or ws.close() to exit queue
+   * Returns the Socket.io server base URL for game.html to connect to.
+   * Matchmaking is handled via Socket.io events (enqueue / dequeue / matchFound)
+   * on the shared game socket — not via a separate WebSocket anymore.
    */
-  connect(mode) {
-    const wsBase = BASE.replace(/^http/, 'ws');
-    return new WebSocket(`${wsBase}/matchmaking/${mode}`);
-  },
+  serverBase() { return BASE; },
 };
 
 /* ── Misc ─────────────────────────────────────────────────────── */
@@ -262,6 +262,28 @@ export async function injectNavUser(me) {
   } catch {}
   // Start challenge polling to show popup when challenged
   startChallengePolling(me);
+
+  // Show a persistent banner if email is not yet verified
+  if (me.emailVerified === false) {
+    if (!document.getElementById('emailVerifyBanner')) {
+      const banner = document.createElement('div');
+      banner.id = 'emailVerifyBanner';
+      banner.style.cssText = [
+        'position:fixed;bottom:0;left:0;right:0;z-index:9999',
+        'background:var(--accent);color:#000',
+        'padding:.55rem 1rem;font-size:.82rem;font-weight:600',
+        'display:flex;align-items:center;justify-content:center;gap:.75rem',
+        'box-shadow:0 -2px 10px rgba(0,0,0,.3)',
+      ].join(';');
+      banner.innerHTML = `
+        <span>&#9888; Please verify your email address to unlock all features.</span>
+        <a href="login.html" style="color:#000;text-decoration:underline;white-space:nowrap;">Sign in again after verifying</a>
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#000;cursor:pointer;font-size:1.1rem;line-height:1;padding:0 .25rem;" aria-label="Dismiss">&times;</button>
+      `;
+      document.body.appendChild(banner);
+    }
+  }
+
   return me;
 }
 
@@ -270,6 +292,8 @@ export async function injectNavUser(me) {
  * Safe to call multiple times - sets up only one interval.
  */
 let _challengePollInterval = null;
+let _presenceSocket        = null;
+let _checkChallengesFn     = null;
 export function startChallengePolling(me) {
   if (_challengePollInterval) return;  // already polling
   const storageKey       = 'seenChallengeIds';
@@ -349,8 +373,10 @@ export function startChallengePolling(me) {
   };
 
   // Run immediately, then every 5 seconds
+  _checkChallengesFn = checkChallenges;
   checkChallenges();
   _challengePollInterval = setInterval(checkChallenges, 5_000);
+  _ensurePresenceSocket(me.id);
 }
 
 /**
@@ -369,6 +395,43 @@ export function forgetChallenge(id) {
     seen.delete(sid);
     localStorage.setItem('seenChallengeIds', JSON.stringify([...seen]));
   } catch {}
+}
+
+/**
+ * Maintain a lightweight Socket.io connection for presence + real-time challenge push.
+ * Emits `identify` so the server marks the user online.
+ * Listens for `challenge_received` to instantly trigger inbox check.
+ */
+function _ensurePresenceSocket(userId) {
+  if (_presenceSocket) return;
+  function connect() {
+    _presenceSocket = window.io(BASE, { transports: ['websocket'], reconnection: true });
+    _presenceSocket.on('connect', () => {
+      _presenceSocket.emit('identify', { userId });
+    });
+    _presenceSocket.on('reconnect', () => {
+      _presenceSocket.emit('identify', { userId });
+    });
+    _presenceSocket.on('challenge_received', () => {
+      _checkChallengesFn?.();
+      window.dispatchEvent(new Event('challengeUpdate'));
+    });
+    _presenceSocket.on('challenge_cancelled', () => {
+      _checkChallengesFn?.();
+      window.dispatchEvent(new Event('challengeUpdate'));
+    });
+    _presenceSocket.on('disconnect', () => {
+      _presenceSocket = null;
+    });
+  }
+  if (window.io) {
+    connect();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.socket.io/4.8.0/socket.io.min.js';
+    s.onload = connect;
+    document.head.appendChild(s);
+  }
 }
 
 function showChallengePopup(message, challenge) {

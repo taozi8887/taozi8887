@@ -629,13 +629,18 @@ tbody td.muted { color: var(--text2); }
 
 /* ── Loading spinner ──────────────────────────────────────────── */
 .spinner {
+  display: block;
   width: 32px; height: 32px;
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
+  transform-origin: center center;
+  will-change: transform;
   animation: spin .6s linear infinite;
+  flex-shrink: 0;
+  align-self: center;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ── Page loader ──────────────────────────────────────────────── */
 #page-loader {

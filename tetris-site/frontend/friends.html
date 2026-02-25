@@ -151,6 +151,7 @@
   let me = null;
 
   let _autoRefreshInterval = null;
+  let _lastInboxIds = null;
 
   async function init() {
     me = await injectNavUser(null);
@@ -158,6 +159,7 @@
     await loadAll();
     // Auto-refresh every 5 s so the Watch button appears quickly when a friend starts a game
     _autoRefreshInterval = setInterval(loadAll, 5_000);
+    window.addEventListener('challengeUpdate', loadAll);
   }
 
   async function loadAll() {
@@ -250,7 +252,7 @@
   function friendCard(f) {
     const u    = f.friend;
     const rank = getRank(u.elo || 1000);
-    const avSrc = u.avatarUrl ? (u.avatarUrl.startsWith('http') ? u.avatarUrl : API.BASE + u.avatarUrl) : '';
+    const avSrc = u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : API.BASE + u.avatar_url) : '';
     const avContent = avSrc
       ? `<img class="avatar sm" src="${avSrc}" alt="" onerror="this.style.display='none'">`
       : `<div class="avatar sm flex-center" style="font-size:.75rem;color:var(--text3)">${(u.username||'?').slice(0,2).toUpperCase()}</div>`;
@@ -278,6 +280,9 @@
   function renderInbox(challenges) {
     const inboxList  = document.getElementById('inboxList');
     const inboxCount = document.getElementById('inboxCount');
+    const newIds = challenges.map(c => String(c.id)).sort().join(',');
+    if (newIds === _lastInboxIds) return; // no change, skip re-render
+    _lastInboxIds = newIds;
     if (challenges.length) {
       inboxCount.textContent = challenges.length;
       inboxCount.classList.remove('hidden');
@@ -285,7 +290,7 @@
         const fromName    = c.from?.display_name || c.from?.username || c.from_username || '?';
         const fromUser    = c.from?.username || c.from_username || '?';
         const eloStr      = c.from?.elo != null ? ` <span class="small muted">${c.from.elo} ELO</span>` : '';
-        const expiresAt   = c.expires_at || 0;
+        const expiresAt   = c.expires_at ? new Date(c.expires_at).getTime() : 0;
         return `
           <div class="challenge-item" id="ch-${c.id}" data-expires="${expiresAt}">
             <div style="flex:1;min-width:0">

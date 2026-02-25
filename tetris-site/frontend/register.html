@@ -26,6 +26,7 @@
 
     <div id="errBox" class="form-error hidden" style="margin-bottom: 5px;"></div>
 
+    <!-- Registration form -->
     <form id="regForm" class="form-group" novalidate>
       <div class="field">
         <label for="username">Username</label>
@@ -51,6 +52,15 @@
       </div>
       <button type="submit" class="btn primary" id="submitBtn">Create account</button>
     </form>
+
+    <!-- Email verification notice (shown after successful registration) -->
+    <div id="verifyNotice" class="hidden" style="text-align:center;padding:1rem 0;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">&#9993;</div>
+      <h3 style="margin:0 0 .5rem;">Check your inbox</h3>
+      <p class="muted" style="font-size:.85rem;margin:0 0 1rem;">We sent a verification link to <strong id="verifyEmail"></strong>.<br>Click it to activate your account, then sign in.</p>
+      <a href="login.html" class="btn primary" style="width:100%;">Go to Sign In</a>
+      <p class="muted" style="font-size:.75rem;margin-top:.75rem;">Didn&rsquo;t get an email? Check your spam folder.</p>
+    </div>
   </div>
 
   <p class="auth-footer">
@@ -93,10 +103,18 @@
     errBox.classList.add('hidden');
 
     try {
-      await API.auth.register({ username, email, password });
-      // Cookie is set; redirect to own profile so user can personalise immediately
-      const redir = new URLSearchParams(location.search).get('redir') || 'profile.html';
-      location.href = redir;
+      const data = await API.auth.register({ username, email, password });
+      if (data?.needsVerification) {
+        // Show email verification notice
+        document.getElementById('regForm').classList.add('hidden');
+        document.getElementById('verifyEmail').textContent = email;
+        document.getElementById('verifyNotice').classList.remove('hidden');
+        document.querySelector('.auth-title').textContent = 'Verify your email';
+      } else {
+        // Legacy path (email already confirmed, e.g. admin flow)
+        const redir = new URLSearchParams(location.search).get('redir') || 'profile.html';
+        location.href = redir;
+      }
     } catch (err) {
       showErr(err.message || 'Registration failed.');
       submitBtn.disabled    = false;
