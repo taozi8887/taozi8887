@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile - Taotris</title>
   <link rel="stylesheet" href="style.css">
@@ -20,6 +21,13 @@
     }
     .profile-bio {
       font-size: .9rem; color: var(--text2); max-width: 480px; margin: .5rem 0;
+      overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+    }
+    .profile-bio.expanded { display: block; overflow: visible; -webkit-line-clamp: unset; }
+    .bio-toggle {
+      background: none; border: none; color: var(--accent); font-size: .75rem;
+      cursor: pointer; padding: .1rem 0; font-family: var(--mono); letter-spacing: .03em;
+      display: none; margin-top: .1rem;
     }
     .profile-meta {
       display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
@@ -318,7 +326,7 @@
         </div>
         <div class="field">
           <label for="editBio">Bio</label>
-          <textarea id="editBio" class="input" maxlength="200" placeholder="A short bio…"></textarea>
+          <textarea id="editBio" class="input" maxlength="5000" placeholder="A short bio…"></textarea>
         </div>
         <div class="field">
           <label for="editCountry">Country code (ISO 2)</label>
@@ -490,12 +498,23 @@
         <div class="xp-bar-label">Level ${lvlInfo.level} &nbsp;&bull;&nbsp; ${Math.round(lvlInfo.xpCurrent)} / ${lvlInfo.xpNeeded} XP to next</div>
         <div class="xp-bar-outer" style="margin-top:.75rem"><div class="xp-bar-fill" style="width:${lvlInfo.pct}%"></div></div>
       </div>
-      ${data.bio ? `<p class="profile-bio">${escHtml(data.bio)}</p>` : ''}
+      ${data.bio ? `<p class="profile-bio" id="profileBioEl">${escHtml(data.bio)}</p><button class="bio-toggle" id="bioToggleBtn" onclick="window.toggleBio()">View full</button>` : ''}
       <div class="profile-meta">
         ${data.country ? `<span>🌐 ${data.country.toUpperCase()}</span>` : ''}
       </div>
     `;
     headerEl.appendChild(info);
+
+    // Bio truncation: show toggle button only when text is actually clipped
+    if (data.bio) {
+      requestAnimationFrame(() => {
+        const bioEl  = document.getElementById('profileBioEl');
+        const togBtn = document.getElementById('bioToggleBtn');
+        if (bioEl && togBtn && bioEl.scrollHeight > bioEl.clientHeight + 2) {
+          togBtn.style.display = 'block';
+        }
+      });
+    }
 
     // Stats - 4 sections
     const s = data.stats || {};
@@ -728,6 +747,14 @@
     if (detail && detail.classList.contains('match-detail')) {
       detail.classList.toggle('open');
     }
+  };
+
+  window.toggleBio = () => {
+    const bioEl  = document.getElementById('profileBioEl');
+    const togBtn = document.getElementById('bioToggleBtn');
+    if (!bioEl || !togBtn) return;
+    bioEl.classList.toggle('expanded');
+    togBtn.textContent = bioEl.classList.contains('expanded') ? 'Show less' : 'View full';
   };
 
   window.switchTab = (tab) => {
