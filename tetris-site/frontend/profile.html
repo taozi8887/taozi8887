@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="borders.css">
   <script src="cursor.js" defer></script>
+  <script type="module" src="notifications.js"></script>
   <style>
     .profile-header {
       display: flex; gap: 1.5rem; align-items: flex-start;
@@ -333,6 +334,8 @@
 
   <!-- All Time Stats tab -->
   <div id="tabAlltime" class="hidden">
+    <!-- ELO History Chart -->
+    <div id="eloChartSection" style="margin-bottom:2.25rem"></div>
     <p class="small muted" style="margin-bottom:1.25rem">Combined totals and bests across all game modes.</p>
     <div class="stat-grid">
       <div class="stat-cell"><div class="label">Total games</div><div class="value" id="atGames">-</div></div>
@@ -603,7 +606,6 @@
       <div class="flex gap-s" style="align-items:center;margin-bottom:.4rem;margin-top:.4rem">
         <span class="rank-tooltip-wrap"><span class="rank-badge ${rank.name}">${rank.name}</span><span class="rank-tooltip">${rank.name} rank</span></span>
         <span class="elo-number">${fmtNum(data.elo)}</span>
-        <div class="elo-sparkline-wrap" id="eloSparklineWrap"></div>
       </div>
       <div class="xp-bar-section">
         <div class="xp-bar-label">Level ${lvlInfo.level} &nbsp;&bull;&nbsp; ${Math.round(lvlInfo.xpCurrent)} / ${lvlInfo.xpNeeded} XP to next</div>
@@ -730,8 +732,8 @@
 
     // Matches - backend returns recent_matches (snake_case)
     renderMatches(data.recent_matches || [], data.id, isOwn);
-    // ELO sparkline
-    drawEloSparkline(data.recent_matches || [], data.id);
+    // ELO history chart (All Time tab)
+    drawEloChart(data.username);
 
     if (isOwn) {
       document.getElementById('editTabBtn').style.display = '';
@@ -769,36 +771,181 @@
     return html;
   }
 
-  function drawEloSparkline(matches, userId) {
-    const wrap = document.getElementById('eloSparklineWrap');
-    if (!wrap) return;
-    const pts = matches
-      .map(m => m.p1_id === userId ? m.p1_elo : m.p2_elo)
-      .filter(e => e != null)
-      .reverse();
-    if (pts.length < 2) return;
-    const W = 120, H = 30;
-    const mn = Math.min(...pts) - 15, mx = Math.max(...pts) + 15;
-    const xi = i => (i / (pts.length - 1)) * W;
-    const yi = v => H - ((v - mn) / (mx - mn)) * (H - 4) - 2;
+  async function drawEloChart(username) {
+    const section = document.getElementById('eloChartSection');
+    if (!section) return;
+    section.innerHTML = '<p class="small muted" style="text-align:center;padding:1rem 0;opacity:.6">Loading ELO history…</p>';
+
+    let resp;
+    try { resp = await API.profile.eloHistory(username); }
+    catch (e) {
+      section.innerHTML = '<p class="small muted" style="text-align:center;padding:1.5rem 0">ELO history unavailable.</p>';
+      return;
+    }
+
+    const pts = resp?.points || [];
+    if (pts.length < 2) {
+      section.innerHTML = '<p class="small muted" style="text-align:center;padding:1.5rem 0">Play at least one ranked game to see ELO history.</p>';
+      return;
+    }
+
+    const DPR  = Math.min(window.devicePixelRatio || 1, 2);
+    const PADL = 54, PADR = 14, PADT = 18, PADB = 36;
+    const W    = Math.max(section.clientWidth || 300, 300);
+    const H    = 220;
+    const cW   = W - PADL - PADR;
+    const cH   = H - PADT - PADB;
+
+    const elos   = pts.map(p => p.elo);
+    const rawMin = Math.min(...elos), rawMax = Math.max(...elos);
+    const range  = rawMax - rawMin || 100;
+    const yPad   = Math.max(40, range * 0.12);
+    const yMin   = Math.floor((rawMin - yPad) / 10) * 10;
+    const yMax   = Math.ceil((rawMax  + yPad) / 10) * 10;
+
+    const toX = i   => PADL + (i / (pts.length - 1)) * cW;
+    const toY = elo => PADT + (1 - (elo - yMin) / (yMax - yMin)) * cH;
+
+    // Rank ELO thresholds shown as dashed reference lines (from elo.js RANKS)
+    const RANK_LINES = [
+      [1000, 'Bronze',      'rgba(205,127,50,.22)'],
+      [1200, 'Silver',      'rgba(170,170,170,.22)'],
+      [1400, 'Gold',        'rgba(255,215,0,.22)'],
+      [1600, 'Platinum',    'rgba(74,255,218,.22)'],
+      [1800, 'Diamond',     'rgba(96,239,255,.22)'],
+      [2000, 'Master',      'rgba(180,111,240,.22)'],
+      [2200, 'Grandmaster', 'rgba(200,255,74,.28)'],
+      [2600, 'Challenger',  'rgba(255,215,0,.35)'],
+    ];
+
     const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    canvas.id = 'eloSparkline';
-    canvas.title = `ELO trend (last ${pts.length} matches)`;
+    canvas.width  = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.cssText = `width:${W}px;height:${H}px;cursor:crosshair;display:block;border-radius:8px;`;
+
     const ctx = canvas.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, 'rgba(200,255,74,.22)');
-    grad.addColorStop(1, 'rgba(200,255,74,0)');
-    ctx.beginPath();
-    ctx.moveTo(xi(0), yi(pts[0]));
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(xi(i), yi(pts[i]));
-    ctx.lineTo(xi(pts.length - 1), H); ctx.lineTo(0, H); ctx.closePath();
-    ctx.fillStyle = grad; ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(xi(0), yi(pts[0]));
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(xi(i), yi(pts[i]));
-    ctx.strokeStyle = '#c8ff4a'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.scale(DPR, DPR);
+
+    function draw(hoverIdx) {
+      ctx.clearRect(0, 0, W, H);
+
+      // Chart panel background
+      ctx.fillStyle = 'rgba(255,255,255,.025)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(PADL, PADT, cW, cH, 4);
+      else ctx.rect(PADL, PADT, cW, cH);
+      ctx.fill();
+
+      // Rank reference lines
+      ctx.setLineDash([4, 5]);
+      ctx.lineWidth = 1;
+      for (const [threshold, name, color] of RANK_LINES) {
+        if (threshold < yMin || threshold > yMax) continue;
+        const y = toY(threshold);
+        ctx.strokeStyle = color;
+        ctx.beginPath(); ctx.moveTo(PADL, y); ctx.lineTo(PADL + cW, y); ctx.stroke();
+        ctx.fillStyle = color.replace(/[\d.]+\)$/, '.55)');
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText(name, PADL + cW - 3, y - 2);
+      }
+      ctx.setLineDash([]);
+
+      // Y-axis: 5 tick labels + light gridlines
+      const yTicks = 5;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.font = '10px monospace';
+      for (let i = 0; i <= yTicks; i++) {
+        const elo = yMin + (yMax - yMin) * (i / yTicks);
+        const y   = toY(elo);
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.fillText(Math.round(elo), PADL - 5, y);
+        ctx.strokeStyle = 'rgba(255,255,255,.04)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(PADL, y); ctx.lineTo(PADL + cW, y); ctx.stroke();
+      }
+
+      // X-axis: game number ticks
+      const xTickCount = Math.min(pts.length - 1, 8);
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      for (let i = 0; i <= xTickCount; i++) {
+        const idx = Math.round((i / xTickCount) * (pts.length - 1));
+        ctx.fillText('G' + pts[idx].match_num, toX(idx), PADT + cH + 6);
+      }
+
+      // Clip to chart area for line + fill
+      ctx.save();
+      ctx.beginPath(); ctx.rect(PADL, PADT, cW, cH); ctx.clip();
+
+      // Filled area
+      const grad = ctx.createLinearGradient(0, PADT, 0, PADT + cH);
+      grad.addColorStop(0, 'rgba(200,255,74,.18)');
+      grad.addColorStop(1, 'rgba(200,255,74,0)');
+      ctx.beginPath();
+      ctx.moveTo(toX(0), toY(pts[0].elo));
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(i), toY(pts[i].elo));
+      ctx.lineTo(toX(pts.length - 1), PADT + cH);
+      ctx.lineTo(toX(0), PADT + cH);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(toX(0), toY(pts[0].elo));
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(i), toY(pts[i].elo));
+      ctx.strokeStyle = '#c8ff4a'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Hover crosshair
+      if (hoverIdx != null) {
+        const hx = toX(hoverIdx), hy = toY(pts[hoverIdx].elo);
+        ctx.strokeStyle = 'rgba(200,255,74,.3)';
+        ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(hx, PADT); ctx.lineTo(hx, PADT + cH); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#c8ff4a'; ctx.fill();
+      }
+      ctx.restore();
+
+      // Always-visible current ELO dot
+      ctx.beginPath();
+      ctx.arc(toX(pts.length - 1), toY(pts[pts.length - 1].elo), 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#c8ff4a'; ctx.fill();
+    }
+
+    draw(null);
+
+    // Hover tooltip
+    const tip  = document.createElement('div');
+    tip.style.cssText = 'display:none;position:absolute;background:var(--bg3);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 11px;font-size:.78rem;pointer-events:none;z-index:10;line-height:1.6;white-space:nowrap;';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;';
     wrap.appendChild(canvas);
+    wrap.appendChild(tip);
+
+    section.innerHTML = `<p class="section-title" style="margin-bottom:.75rem">ELO History <span style="font-family:var(--mono);font-size:.72rem;color:var(--text3);font-weight:400">${pts.length - 1} ranked games</span></p>`;
+    section.appendChild(wrap);
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx   = e.clientX - rect.left;
+      if (mx < PADL || mx > PADL + cW) { tip.style.display = 'none'; draw(null); return; }
+      const idx  = Math.max(0, Math.min(pts.length - 1, Math.round((mx - PADL) / cW * (pts.length - 1))));
+      draw(idx);
+      const pt   = pts[idx];
+      const sign = pt.delta > 0 ? '+' : '';
+      const dClr = pt.delta >= 0 ? '#c8ff4a' : '#ff6b6b';
+      const wonStr  = pt.won === true ? '<span style="color:#c8ff4a"> W</span>' : pt.won === false ? '<span style="color:#ff6b6b"> L</span>' : '';
+      const dateStr = pt.played_at ? new Date(pt.played_at).toLocaleDateString() : 'Starting ELO';
+      tip.innerHTML = `<strong style="font-size:.85rem">${pt.elo} ELO</strong>${wonStr}<br><span style="color:${dClr}">${sign}${pt.delta}</span><br><span style="color:var(--text3);font-size:.72rem">${dateStr}</span>`;
+      let tx = mx + 10;
+      if (tx + 130 > W) tx = mx - 138;
+      tip.style.left = tx + 'px';
+      tip.style.top  = Math.max(0, toY(pt.elo) - 30) + 'px';
+      tip.style.display = 'block';
+    });
+    canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; draw(null); });
   }
 
   function renderMatches(matches, userId, isOwn) {

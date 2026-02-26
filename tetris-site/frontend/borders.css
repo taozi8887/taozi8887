@@ -18,6 +18,10 @@
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
+  /* Pre-promote spinning rings to their own GPU compositor layer so the
+     browser rasterises the conic-gradient ONCE into a texture and only
+     applies a matrix rotation each frame — no per-frame repaints. */
+  will-change: transform;
 }
 
 /* ── 1. Default ────────────────────────────────────────────────── */
@@ -247,3 +251,237 @@
 .border-grandmaster .border-frame::before { inset: -11px; background: conic-gradient(rgba(180,0,255,.9) 0% 8%,rgba(255,180,0,.8) 9% 12%,rgba(255,255,100,.6) 13% 15%,transparent 16% 24%,rgba(160,0,230,.9) 25% 33%,rgba(255,160,0,.8) 34% 37%,rgba(255,255,100,.5) 38% 40%,transparent 41% 49%,rgba(180,0,255,.9) 50% 58%,rgba(255,180,0,.8) 59% 62%,rgba(255,255,100,.6) 63% 65%,transparent 66% 74%,rgba(160,0,230,.9) 75% 83%,rgba(255,160,0,.8) 84% 87%,rgba(255,255,100,.5) 88% 90%,transparent 91%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.4px); animation: gm-spin 2.5s linear infinite; }
 @keyframes gm-spin { to { transform: rotate(360deg); } }
 .border-grandmaster .border-frame::after { inset: -16px; background: conic-gradient(transparent 0% 10%,rgba(255,200,0,.10) 15% 35%,transparent 40% 60%,rgba(180,0,255,.10) 65% 85%,transparent 90%); animation: gm-spin 6s linear infinite reverse; filter: blur(1px); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PLANNED BORDERS — not yet in DB; shown on new-cos.html dev preview
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Hat (uncommon) ────────────────────────────────────────────── */
+.border-hat .avatar { box-shadow: 0 0 0 2px #555,0 0 10px rgba(80,80,80,.5); }
+.border-hat .border-frame::before { inset: -8px; border: 1px dashed rgba(120,120,130,.4); animation: hat-rotate 10s linear infinite; }
+@keyframes hat-rotate { to { transform: rotate(360deg); } }
+
+/* ── Speedster (uncommon) ──────────────────────────────────────── */
+.border-speedster .avatar { box-shadow: 0 0 0 2px rgba(220,220,230,.6),0 0 12px rgba(220,220,230,.25); }
+.border-speedster .border-frame::before { inset: -6px; background: conic-gradient(transparent 0% 70%,rgba(255,255,255,.5) 78%,rgba(255,255,255,.9) 82%,rgba(255,255,255,.5) 86%,transparent 88%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: speed-streak 1.2s linear infinite; filter: blur(.5px); }
+@keyframes speed-streak { to { transform: rotate(360deg); } }
+
+
+/* ── Combo (uncommon) ──────────────────────────────────────────── */
+.border-combo .avatar { box-shadow: 0 0 0 2px #ff8c00,0 0 10px rgba(255,140,0,.35); }
+.border-combo .border-frame::before { inset: -8px; background: conic-gradient(rgba(255,140,0,.8) 0% 5%,transparent 6% 27%,rgba(255,140,0,.7) 28% 33%,transparent 34% 55%,rgba(255,140,0,.8) 56% 61%,transparent 62% 83%,rgba(255,140,0,.7) 84% 89%,transparent 90%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: combo-chain 2s linear infinite; }
+@keyframes combo-chain { to { transform: rotate(360deg); } }
+
+/* ── Streak (rare) ─────────────────────────────────────────────── */
+.border-streak .avatar { box-shadow: 0 0 0 3px #4aff6e,0 0 14px rgba(74,255,110,.5),0 0 28px rgba(74,255,110,.2); animation: streak-pulse 2s ease-in-out infinite; }
+@keyframes streak-pulse { 0%,100%{box-shadow:0 0 0 3px #4aff6e,0 0 14px rgba(74,255,110,.5)}50%{box-shadow:0 0 0 4px #6aff8e,0 0 22px rgba(74,255,110,.8)} }
+.border-streak .border-frame::before { inset: -10px; border: 1px solid rgba(74,255,110,.25); animation: streak-pulse 2s ease-in-out infinite; }
+
+/* ── B2B Chain (rare) ──────────────────────────────────────────── */
+.border-b2b-chain .avatar { background: var(--bg3) padding-box, linear-gradient(135deg,#8b4800,#cc7700,#ffaa00,#cc7700,#8b4800) border-box; border: 3px solid transparent; box-shadow: 0 0 14px rgba(255,170,0,.4); animation: b2b-pulse 1.8s ease-in-out infinite; }
+@keyframes b2b-pulse { 0%,100%{box-shadow:0 0 14px rgba(255,170,0,.4)}50%{box-shadow:0 0 22px rgba(255,180,0,.65)} }
+.border-b2b-chain .border-frame::before { inset: -9px; background: conic-gradient(rgba(255,160,0,.85) 0% 6%,transparent 7% 23%,rgba(255,140,0,.8) 24% 30%,transparent 31% 47%,rgba(255,160,0,.85) 48% 54%,transparent 55% 71%,rgba(255,140,0,.8) 72% 78%,transparent 79%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); animation: b2b-links 1.8s linear infinite; }
+@keyframes b2b-links { to { transform: rotate(360deg); } }
+
+/* ── Sprint Ace (rare) ─────────────────────────────────────────── */
+.border-sprint-ace .avatar { background: var(--bg3) padding-box, conic-gradient(#cc8800,#ffcc00,#ffe680,#ffcc00,#cc8800,#ffdd40,#ffcc00,#cc8800) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(255,204,0,.45); animation: ace-shimmer 3s linear infinite; }
+@keyframes ace-shimmer { to { filter: brightness(1.08) hue-rotate(5deg); } }
+.border-sprint-ace .border-frame::before { inset: -9px; background: conic-gradient(transparent 0% 60%,rgba(255,220,0,.6) 65%,rgba(255,255,180,.9) 68%,rgba(255,220,0,.6) 72%,transparent 73%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: ace-shot 2s linear infinite; filter: blur(.5px); }
+@keyframes ace-shot { to { transform: rotate(360deg); } }
+
+/* ── Comeback (rare) ───────────────────────────────────────────── */
+.border-comeback .avatar { background: var(--bg3) padding-box, conic-gradient(#883300,#cc5500,#ff7700,#ff9944,#ff7700,#cc5500,#883300) border-box; border: 3px solid transparent; box-shadow: 0 4px 18px rgba(255,100,0,.45); animation: comeback-rise 2s ease-in-out infinite; }
+@keyframes comeback-rise { 0%,100%{box-shadow:0 4px 18px rgba(255,100,0,.45);filter:brightness(1)}50%{box-shadow:0 6px 28px rgba(255,120,0,.7);filter:brightness(1.1)} }
+.border-comeback .border-frame::before { inset: -12px; background: radial-gradient(ellipse 80% 110% at 50% 90%,rgba(255,100,0,.35) 0%,rgba(255,60,0,.12) 55%,transparent 75%); filter: blur(3px); animation: comeback-burst 2s ease-in-out infinite alternate; }
+@keyframes comeback-burst { 0%{transform:scaleY(.85);opacity:.6}100%{transform:scaleY(1.1);opacity:1} }
+
+/* ── Duo (rare) ────────────────────────────────────────────────── */
+.border-duo .avatar { background: var(--bg3) padding-box, conic-gradient(#0044cc,#4466ff,#aa44ff,#cc00ff,#aa44ff,#4466ff,#0044cc,#5577ff,#4466ff,#0044cc) border-box; border: 3px solid transparent; box-shadow: 0 0 14px rgba(100,100,255,.45); animation: duo-shift 4s linear infinite; }
+@keyframes duo-shift { to { filter: hue-rotate(20deg); } }
+.border-duo .border-frame::before { inset: -9px; background: conic-gradient(rgba(80,120,255,.9) 0% 8%,transparent 9% 25%,rgba(160,80,255,.9) 26% 34%,transparent 35% 51%,rgba(80,120,255,.9) 52% 60%,transparent 61% 77%,rgba(160,80,255,.9) 78% 86%,transparent 87%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); filter: blur(.4px); animation: duo-spin 3s linear infinite; }
+@keyframes duo-spin { to { transform: rotate(360deg); } }
+
+/* ── T-Spin (epic) ─────────────────────────────────────────────── */
+.border-tspin .avatar { background: var(--bg3) padding-box, conic-gradient(#004888,#0077cc,#00aaff,#22ccff,#00aaff,#0077cc,#004888) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(0,170,255,.5),0 0 36px rgba(0,170,255,.15); animation: tspin-breathe 2.5s ease-in-out infinite; }
+@keyframes tspin-breathe { 0%,100%{box-shadow:0 0 18px rgba(0,170,255,.5)}50%{box-shadow:0 0 28px rgba(0,200,255,.75)} }
+.border-tspin .border-frame::before { inset: -9px; background: conic-gradient(rgba(0,170,255,.9) 0% 6%,rgba(100,220,255,.6) 7% 9%,transparent 10% 18%,rgba(0,150,220,.9) 19% 25%,rgba(80,210,255,.55) 26% 28%,transparent 29% 37%,rgba(0,170,255,.9) 38% 44%,rgba(100,220,255,.6) 45% 47%,transparent 48% 56%,rgba(0,150,220,.9) 57% 63%,rgba(80,210,255,.55) 64% 66%,transparent 67% 75%,rgba(0,170,255,.9) 76% 82%,rgba(100,220,255,.6) 83% 85%,transparent 86%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.5px); animation: tspin-spin 2s linear infinite; }
+@keyframes tspin-spin { to { transform: rotate(360deg); } }
+.border-tspin .border-frame::after { inset: -13px; background: radial-gradient(circle,rgba(0,160,255,.1) 40%,transparent 70%); animation: tspin-breathe 2.5s ease-in-out infinite; }
+
+/* ── Demolisher (epic) ─────────────────────────────────────────── */
+.border-demolisher .avatar { background: var(--bg3) padding-box, conic-gradient(#660000,#cc0000,#ff2200,#ff6600,#ff2200,#cc0000,#660000) border-box; border: 3px solid transparent; box-shadow: 0 0 20px rgba(255,40,0,.6),0 0 42px rgba(255,80,0,.2); animation: demo-pulse 1.4s ease-in-out infinite; }
+@keyframes demo-pulse { 0%,100%{box-shadow:0 0 20px rgba(255,40,0,.6)}50%{box-shadow:0 0 34px rgba(255,60,0,.85)} }
+.border-demolisher .border-frame::before { inset: -12px; background: conic-gradient(transparent 0% 8%,#ff3300 10%,#ff8800 11%,transparent 12%,transparent 25%,#ff2200 27%,#ff6600 28%,transparent 29%,transparent 44%,#ff4400 46%,transparent 47%,transparent 60%,#ff2200 62%,#ff7700 63%,transparent 64%,transparent 79%,#ff3300 81%,#ff8800 82%,transparent 83%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); animation: demo-shards 1s linear infinite; filter: blur(.3px); }
+@keyframes demo-shards { to { transform: rotate(360deg); } }
+.border-demolisher .border-frame::after { inset: -18px; background: radial-gradient(circle,rgba(255,50,0,.15) 40%,transparent 70%); animation: demo-pulse 1.4s ease-in-out infinite; filter: blur(4px); }
+
+/* ── Five Star (epic) ──────────────────────────────────────────── */
+.border-five-star .avatar { background: var(--bg3) padding-box, conic-gradient(#886600,#ccaa00,#ffdd00,#ffe880,#ffdd00,#ccaa00,#886600,#bbaa00,#ffdd00,#886600) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(255,210,0,.5),0 0 32px rgba(255,195,0,.2); animation: fivestar-glow 3s ease-in-out infinite; }
+@keyframes fivestar-glow { 0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)} }
+.border-five-star .border-frame::before { inset: -9px; background: conic-gradient(rgba(255,215,0,.9) 0% 4%,rgba(255,245,120,.5) 5% 7%,transparent 8% 15%,rgba(255,210,0,.85) 16% 20%,rgba(255,240,100,.45) 21% 23%,transparent 24% 31%,rgba(255,215,0,.9) 32% 36%,rgba(255,245,120,.5) 37% 39%,transparent 40% 47%,rgba(255,210,0,.85) 48% 52%,rgba(255,240,100,.45) 53% 55%,transparent 56% 63%,rgba(255,215,0,.9) 64% 68%,rgba(255,245,120,.5) 69% 71%,transparent 72% 79%,rgba(255,210,0,.85) 80% 84%,rgba(255,240,100,.45) 85% 87%,transparent 88%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); filter: blur(.3px); animation: fivestar-orbs 6s linear infinite; }
+@keyframes fivestar-orbs { to { transform: rotate(360deg); } }
+
+/* ── Ghost Run (epic) ──────────────────────────────────────────── */
+.border-ghost-run .avatar { border: 2px solid rgba(180,180,220,.35); box-shadow: 0 0 14px rgba(180,180,220,.25),inset 0 0 12px rgba(180,180,220,.07); animation: ghostrun-fade 3s ease-in-out infinite; }
+@keyframes ghostrun-fade { 0%,100%{opacity:1;box-shadow:0 0 14px rgba(180,180,220,.25)}50%{opacity:.55;box-shadow:0 0 26px rgba(200,200,240,.5)} }
+.border-ghost-run .border-frame::before { inset: -10px; border: 1px dashed rgba(200,200,240,.2); animation: ghostrun-ring 3s ease-in-out infinite; }
+@keyframes ghostrun-ring { 0%,100%{opacity:.4;inset:-10px}50%{opacity:0;inset:-20px} }
+.border-ghost-run .border-frame::after { inset: -14px; border: 1px solid rgba(200,200,240,.1); animation: ghostrun-fade 3s ease-in-out infinite .8s; }
+
+/* ── Sub-30 (epic) ─────────────────────────────────────────────── */
+.border-sub30 .avatar { background: var(--bg3) padding-box, conic-gradient(#003388,#0055cc,#2277ff,#c8ff4a,#2277ff,#0055cc,#003388) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(50,130,255,.55),0 0 36px rgba(200,255,74,.1); animation: sub30-storm 1.6s linear infinite; }
+@keyframes sub30-storm { to { filter: hue-rotate(15deg) brightness(1.08); } }
+.border-sub30 .border-frame::before { inset: -10px; background: conic-gradient(transparent 0% 7%,#c8ff4a 9%,#4a8fff 10%,transparent 11%,transparent 22%,#4affda 24%,transparent 25%,transparent 38%,#c8ff4a 40%,#4a8fff 41%,transparent 42%,transparent 55%,#4affda 57%,transparent 58%,transparent 72%,#c8ff4a 74%,transparent 75%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: sub30-fast 1s linear infinite; filter: blur(.4px); }
+@keyframes sub30-fast { to { transform: rotate(-360deg); } }
+.border-sub30 .border-frame::after { inset: -18px; background: radial-gradient(circle,rgba(50,130,255,.1) 40%,transparent 70%); animation: sub30-flash 2s ease-in-out infinite; }
+@keyframes sub30-flash { 0%,88%,100%{opacity:.3}90%{opacity:1;filter:brightness(2)}92%{opacity:.2} }
+
+/* ── Siege (epic) ──────────────────────────────────────────────── */
+.border-siege .avatar { background: var(--bg3) padding-box, conic-gradient(#443300,#887700,#bbaa00,#aa9900,#887700,#443300) border-box; border: 3px solid transparent; box-shadow: 0 0 12px rgba(180,160,0,.4),inset 0 0 8px rgba(0,0,0,.6); animation: siege-hold 4s ease-in-out infinite; }
+@keyframes siege-hold { 0%,100%{box-shadow:0 0 12px rgba(180,160,0,.4)}50%{box-shadow:0 0 20px rgba(200,180,0,.6)} }
+.border-siege .border-frame::before { inset: -8px; border: 2px solid rgba(190,170,0,.3); animation: siege-hold 4s ease-in-out infinite; }
+.border-siege .border-frame::after { inset: -12px; border: 1px solid rgba(190,170,0,.12); animation: siege-hold 4s ease-in-out infinite .5s; }
+
+/* ── Ice Cold (epic) ───────────────────────────────────────────── */
+.border-ice-cold .avatar { background: var(--bg3) padding-box, conic-gradient(#001844,#003888,#0066cc,#44aaff,#0066cc,#003888,#001844,#002266,#0066cc,#001844) border-box; border: 3px solid transparent; box-shadow: 0 0 20px rgba(0,100,210,.55),0 0 40px rgba(0,180,255,.12); animation: icecold-deep 3s ease-in-out infinite; }
+@keyframes icecold-deep { 0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.18) saturate(1.4) hue-rotate(-8deg)} }
+.border-ice-cold .border-frame::before { inset: -9px; background: conic-gradient(transparent 0% 50%,rgba(100,200,255,.55) 55%,rgba(200,240,255,.88) 60%,rgba(100,200,255,.55) 65%,transparent 67%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: icecold-arc 4.5s linear infinite; filter: blur(.8px); }
+@keyframes icecold-arc { to { transform: rotate(360deg); } }
+.border-ice-cold .border-frame::after { inset: -4px; border: 1px solid rgba(100,180,255,.2); animation: icecold-deep 3s ease-in-out infinite; filter: blur(.5px); }
+
+/* ── Machine (legendary) ───────────────────────────────────────── */
+.border-machine .avatar { background: var(--bg3) padding-box, conic-gradient(#223344,#445566,#7799bb,#99bbdd,#7799bb,#445566,#223344,#556677,#7799bb,#223344) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(120,180,220,.45),0 0 32px rgba(100,160,200,.15); animation: machine-tick 2s steps(8) infinite; }
+@keyframes machine-tick { to { filter: hue-rotate(5deg) brightness(1.06); } }
+.border-machine .border-frame::before { inset: -10px; background: conic-gradient(rgba(140,190,220,.9) 0% 5%,rgba(200,225,240,.5) 6% 8%,transparent 9% 20%,rgba(120,175,210,.85) 21% 26%,rgba(190,215,235,.45) 27% 29%,transparent 30% 41%,rgba(140,190,220,.9) 42% 47%,rgba(200,225,240,.5) 48% 50%,transparent 51% 62%,rgba(120,175,210,.85) 63% 68%,rgba(190,215,235,.45) 69% 71%,transparent 72% 83%,rgba(140,190,220,.9) 84% 89%,rgba(200,225,240,.5) 90% 92%,transparent 93%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); animation: machine-cogs 4s linear infinite; filter: blur(.3px); }
+@keyframes machine-cogs { to { transform: rotate(360deg); } }
+.border-machine .border-frame::after { inset: -14px; border: 1px solid rgba(140,190,220,.18); animation: machine-tick 2s steps(8) infinite; filter: blur(.5px); }
+
+/* ── Godspeed (legendary) ──────────────────────────────────────── */
+.border-godspeed .avatar { background: var(--bg3) padding-box, linear-gradient(135deg,#bbbbcc,#ffffff,#eeeeff,#ffffff,#bbbbcc) border-box; border: 3px solid transparent; box-shadow: 0 0 22px rgba(255,255,255,.65),0 0 48px rgba(255,255,255,.2); animation: godspeed-blaze 1s linear infinite; }
+@keyframes godspeed-blaze { to { filter: brightness(1.12) hue-rotate(2deg); } }
+.border-godspeed .border-frame::before { inset: -8px; background: conic-gradient(transparent 0% 55%,rgba(255,255,255,.55) 63%,rgba(255,255,255,.95) 67%,rgba(255,255,255,.55) 71%,transparent 73%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: godspeed-streak .7s linear infinite; filter: blur(.4px); }
+@keyframes godspeed-streak { to { transform: rotate(360deg); } }
+.border-godspeed .border-frame::after { inset: -18px; background: radial-gradient(circle,rgba(255,255,255,.15) 30%,transparent 70%); animation: godspeed-halo 1.2s ease-in-out infinite alternate; }
+@keyframes godspeed-halo { 0%{opacity:.4}100%{opacity:.9} }
+
+/* ── Legend (legendary) ────────────────────────────────────────── */
+.border-legend .avatar { background: var(--bg3) padding-box, conic-gradient(#441100,#883300,#cc5500,#ff8800,#ffbb44,#ff8800,#cc5500,#883300,#441100) border-box; border: 4px solid transparent; box-shadow: 0 0 20px rgba(255,120,0,.55),0 0 44px rgba(255,80,0,.2); animation: legend-burn 1.5s ease-in-out infinite; }
+@keyframes legend-burn { 0%,100%{box-shadow:0 0 20px rgba(255,120,0,.55)}50%{box-shadow:0 0 32px rgba(255,140,0,.8)} }
+.border-legend .border-frame::before { inset: -12px; background: conic-gradient(transparent 0% 7%,#ffaa00 8%,#ff6600 9%,#ffdd00 10%,transparent 11%,transparent 24%,#ff8800 25%,#ffcc00 26%,transparent 27%,transparent 41%,#ffaa00 42%,#ff5500 43%,#ffdd00 44%,transparent 45%,transparent 58%,#ff8800 59%,#ffcc00 60%,transparent 61%,transparent 75%,#ffaa00 76%,#ff6600 77%,transparent 78%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); animation: legend-sparks 1.2s linear infinite; filter: blur(.3px); }
+@keyframes legend-sparks { to { transform: rotate(360deg); } }
+.border-legend .border-frame::after { inset: -18px; background: radial-gradient(ellipse 90% 60% at 50% 85%,rgba(255,100,0,.3) 0%,transparent 70%); filter: blur(5px); animation: legend-glow 1.5s ease-in-out infinite alternate; }
+@keyframes legend-glow { 0%{transform:scaleY(.85);opacity:.5}100%{transform:scaleY(1.12);opacity:.9} }
+
+/* ── Fire Rain (legendary) ─────────────────────────────────────── */
+.border-fire-rain .avatar { background: var(--bg3) padding-box, conic-gradient(#440000,#880000,#cc2200,#ff4400,#ff2200,#cc0000,#880000,#440000) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(220,30,0,.55),0 4px 28px rgba(200,0,0,.3); animation: frain-pulse 1.2s ease-in-out infinite; }
+@keyframes frain-pulse { 0%,100%{box-shadow:0 0 18px rgba(220,30,0,.55)}50%{box-shadow:0 0 28px rgba(255,40,0,.75)} }
+.border-fire-rain .border-frame::before { inset: -10px; background: conic-gradient(transparent 0% 5%,rgba(255,80,0,.7) 6%,rgba(255,200,0,.4) 7%,transparent 8%,transparent 15%,rgba(220,50,0,.65) 16%,transparent 17%,transparent 25%,rgba(255,100,0,.7) 26%,rgba(255,180,0,.35) 27%,transparent 28%,transparent 36%,rgba(200,40,0,.6) 37%,transparent 38%,transparent 46%,rgba(255,80,0,.7) 47%,rgba(255,200,0,.4) 48%,transparent 49%,transparent 58%,rgba(220,50,0,.65) 59%,transparent 60%,transparent 68%,rgba(255,100,0,.7) 69%,rgba(255,180,0,.35) 70%,transparent 71%,transparent 80%,rgba(200,40,0,.6) 81%,transparent 82%,transparent 90%,rgba(255,80,0,.7) 91%,transparent 92%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); animation: frain-fall .9s linear infinite; filter: blur(.4px); }
+@keyframes frain-fall { to { transform: rotate(360deg); } }
+
+/* ── Immortal (legendary) ──────────────────────────────────────── */
+.border-immortal .avatar { background: var(--bg3) padding-box, conic-gradient(#44aacc,#77ccee,#aaeeff,#ffffff,#aaeeff,#77ccee,#44aacc) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(120,210,240,.55); animation: immortal-pulse 2.5s ease-in-out infinite; }
+@keyframes immortal-pulse { 0%,100%{box-shadow:0 0 18px rgba(120,210,240,.55);filter:brightness(1)}50%{box-shadow:0 0 28px rgba(160,230,255,.8);filter:brightness(1.12)} }
+.border-immortal .border-frame::before { inset: -10px; background: conic-gradient(rgba(160,230,255,.9) 0% 5%,rgba(255,255,255,.6) 6% 8%,transparent 9% 24%,rgba(140,210,240,.85) 25% 30%,rgba(255,255,255,.5) 31% 33%,transparent 34% 49%,rgba(160,230,255,.9) 50% 55%,rgba(255,255,255,.6) 56% 58%,transparent 59% 74%,rgba(140,210,240,.85) 75% 80%,rgba(255,255,255,.5) 81% 83%,transparent 84%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.4px); animation: immortal-spin 6s linear infinite; }
+@keyframes immortal-spin { to { transform: rotate(360deg); } }
+.border-immortal .border-frame::after { inset: -4px; border: 1px solid rgba(140,210,240,.22); animation: immortal-pulse 2.5s ease-in-out infinite; filter: blur(.5px); }
+
+/* ── All-Clear (legendary) ─────────────────────────────────────── */
+.border-all-clear .avatar { background: var(--bg3) padding-box, conic-gradient(#fffacd,#ffd700,#ffffff,#ffe080,#ffd700,#fffef0,#ffffff,#ffd700,#fffacd) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(255,215,0,.5),0 0 32px rgba(255,240,200,.15); animation: allclear-burst 1.8s ease-in-out infinite; }
+@keyframes allclear-burst { 0%,100%{box-shadow:0 0 16px rgba(255,215,0,.5);filter:brightness(1)}50%{box-shadow:0 0 28px rgba(255,240,0,.8);filter:brightness(1.2)} }
+.border-all-clear .border-frame::before { inset: -9px; background: conic-gradient(rgba(255,240,100,.95) 0% 6%,rgba(255,255,200,.6) 7% 9%,transparent 10% 16%,rgba(255,230,60,.9) 17% 23%,rgba(255,255,190,.55) 24% 26%,transparent 27% 33%,rgba(255,240,100,.95) 34% 40%,rgba(255,255,200,.6) 41% 43%,transparent 44% 50%,rgba(255,230,60,.9) 51% 57%,rgba(255,255,190,.55) 58% 60%,transparent 61% 67%,rgba(255,240,100,.95) 68% 74%,rgba(255,255,200,.6) 75% 77%,transparent 78% 84%,rgba(255,230,60,.9) 85% 91%,rgba(255,255,190,.55) 92% 94%,transparent 95%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.3px); animation: allclear-rays 5s linear infinite; }
+@keyframes allclear-rays { to { transform: rotate(360deg); } }
+
+/* ── Iron (legendary) ──────────────────────────────────────────── */
+.border-iron .avatar { background: var(--bg3) padding-box, conic-gradient(#222228,#444450,#686872,#555560,#686872,#444450,#222228) border-box; border: 3px solid transparent; box-shadow: 0 0 12px rgba(120,120,140,.45); animation: iron-steady 5s linear infinite; }
+@keyframes iron-steady { to { filter: brightness(1.04); } }
+.border-iron .border-frame::before { inset: -8px; background: conic-gradient(rgba(180,180,200,.85) 0% 4%,rgba(230,230,240,.45) 5% 7%,transparent 8% 23%,rgba(160,160,180,.8) 24% 28%,rgba(220,220,235,.4) 29% 31%,transparent 32% 47%,rgba(180,180,200,.85) 48% 52%,rgba(230,230,240,.45) 53% 55%,transparent 56% 71%,rgba(160,160,180,.8) 72% 76%,rgba(220,220,235,.4) 77% 79%,transparent 80%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.3px); animation: iron-turn 12s linear infinite; }
+@keyframes iron-turn { to { transform: rotate(360deg); } }
+.border-iron .border-frame::after { inset: -11px; border: 1px solid rgba(160,160,180,.14); animation: iron-steady 5s linear infinite; }
+
+/* ── Platinum League (legendary) ───────────────────────────────── */
+.border-pl-league .avatar { background: var(--bg3) padding-box, conic-gradient(#77a8d4,#aacce8,#ddeeff,#ffffff,#ddeeff,#aacce8,#77a8d4) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(160,200,235,.5),0 0 36px rgba(160,200,235,.18); animation: pll-shimmer 3.5s ease-in-out infinite; }
+@keyframes pll-shimmer { 0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.18) saturate(1.3)} }
+.border-pl-league .border-frame::before { inset: -10px; background: conic-gradient(transparent 0% 25%,rgba(210,235,255,.6) 30%,rgba(255,255,255,.92) 34%,rgba(210,235,255,.6) 38%,transparent 40% 72%,rgba(200,225,255,.4) 76%,rgba(255,255,255,.75) 79%,rgba(200,225,255,.4) 82%,transparent 83%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: pll-arc 4.5s linear infinite; filter: blur(.6px); }
+@keyframes pll-arc { to { transform: rotate(360deg); } }
+.border-pl-league .border-frame::after { inset: -4px; border: 1px solid rgba(160,200,235,.28); animation: pll-shimmer 3.5s ease-in-out infinite; filter: blur(.5px); }
+
+/* ── Diamond League (legendary) ────────────────────────────────── */
+.border-di-league .avatar { background: var(--bg3) padding-box, conic-gradient(#40ccee,#88e8ff,#ccf4ff,#ffffff,#ccf4ff,#88e8ff,#40ccee) border-box; border: 3px solid transparent; box-shadow: 0 0 22px rgba(80,220,255,.55),0 0 50px rgba(80,220,255,.15); animation: dil-pulse 2.2s ease-in-out infinite; }
+@keyframes dil-pulse { 0%,100%{filter:brightness(1) saturate(1);box-shadow:0 0 22px rgba(80,220,255,.55)}50%{filter:brightness(1.28) saturate(1.5);box-shadow:0 0 36px rgba(80,220,255,.9)} }
+.border-di-league .border-frame::before { inset: -11px; border: 2px dashed rgba(80,220,255,.4); animation: dil-ring 3.8s linear infinite; }
+@keyframes dil-ring { to { transform: rotate(360deg); } }
+.border-di-league .border-frame::after { inset: -3px; background: conic-gradient(transparent 0% 58%,rgba(255,255,255,.5) 63%,rgba(255,255,255,.88) 66%,rgba(255,255,255,.5) 69%,transparent 70%); mask: radial-gradient(farthest-side,transparent 72%,black 74%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 72%,black 74%,black 100%); animation: dil-flare 3.5s linear infinite; filter: blur(1px); }
+@keyframes dil-flare { to { transform: rotate(360deg); } }
+
+/* ── Coop Legend (legendary) ───────────────────────────────────── */
+.border-coop-legend .avatar { background: var(--bg3) padding-box, conic-gradient(#004488,#2266aa,#4488cc,#6699dd,#4488cc,#2266aa,#004488,#336699,#4488cc,#004488) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(70,140,210,.5); animation: coop-pulse 3s ease-in-out infinite; }
+@keyframes coop-pulse { 0%,100%{box-shadow:0 0 16px rgba(70,140,210,.5)}50%{box-shadow:0 0 26px rgba(90,160,230,.75)} }
+.border-coop-legend .border-frame::before { inset: -9px; background: conic-gradient(rgba(80,160,220,.9) 0% 8%,transparent 9% 25%,rgba(60,140,200,.85) 26% 34%,transparent 35% 51%,rgba(80,160,220,.9) 52% 60%,transparent 61% 77%,rgba(60,140,200,.85) 78% 86%,transparent 87%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.4px); animation: coop-spin 4s linear infinite; }
+@keyframes coop-spin { to { transform: rotate(360deg); } }
+.border-coop-legend .border-frame::after { inset: -13px; border: 1px solid rgba(80,160,220,.15); animation: coop-pulse 3s ease-in-out infinite .5s; }
+
+/* ── Space (legendary) ─────────────────────────────────────────── */
+.border-space .avatar { background: var(--bg3) padding-box, conic-gradient(#110022,#4400aa,#8822ee,#cc66ff,#8822ee,#4400aa,#110022,#330088,#8822ee,#110022) border-box; border: 3px solid transparent; box-shadow: 0 0 16px rgba(160,80,240,.45); animation: space-drift 8s linear infinite; }
+@keyframes space-drift { from{filter:hue-rotate(0deg)}to{filter:hue-rotate(360deg)} }
+.border-space .border-frame::before { inset: -8px; background: conic-gradient(rgba(180,80,255,.85) 0% 4%,transparent 5% 12%,rgba(140,60,220,.8) 13% 17%,transparent 18% 25%,rgba(200,100,255,.85) 26% 30%,transparent 31% 38%,rgba(160,70,240,.8) 39% 43%,transparent 44% 51%,rgba(180,80,255,.85) 52% 56%,transparent 57% 64%,rgba(140,60,220,.8) 65% 69%,transparent 70% 77%,rgba(200,100,255,.85) 78% 82%,transparent 83% 90%,rgba(160,70,240,.8) 91% 95%,transparent 96%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.5px); animation: space-stars 7s linear infinite; }
+@keyframes space-stars { to { transform: rotate(360deg); } }
+.border-space .border-frame::after { inset: -10px; border: 1px solid rgba(160,80,240,.15); animation: space-drift 8s linear infinite; filter: blur(.5px); }
+
+/* ── Time Lord (mythic) ────────────────────────────────────────── */
+.border-time-lord .avatar { background: var(--bg3) padding-box, conic-gradient(#004444,#006666,#00aabb,#22ccdd,#00aabb,#006666,#004444,#008899,#00aabb,#004444) border-box; border: 3px solid transparent; box-shadow: 0 0 18px rgba(0,180,200,.5),0 0 40px rgba(0,180,200,.15); animation: timelord-spin 3s linear infinite; }
+@keyframes timelord-spin { to { filter: hue-rotate(20deg); } }
+.border-time-lord .border-frame::before { inset: -10px; background: conic-gradient(rgba(0,200,220,.9) 0% 4%,rgba(100,240,255,.6) 5% 7%,transparent 8% 13%,rgba(0,180,200,.85) 14% 18%,rgba(80,230,250,.55) 19% 21%,transparent 22% 27%,rgba(0,200,220,.9) 28% 32%,rgba(100,240,255,.6) 33% 35%,transparent 36% 41%,rgba(0,180,200,.85) 42% 46%,rgba(80,230,250,.55) 47% 49%,transparent 50% 55%,rgba(0,200,220,.9) 56% 60%,rgba(100,240,255,.6) 61% 63%,transparent 64% 69%,rgba(0,180,200,.85) 70% 74%,rgba(80,230,250,.55) 75% 77%,transparent 78% 83%,rgba(0,200,220,.9) 84% 88%,rgba(100,240,255,.6) 89% 91%,transparent 92%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.3px); animation: timelord-tick 2s linear infinite; }
+@keyframes timelord-tick { to { transform: rotate(-360deg); } }
+.border-time-lord .border-frame::after { inset: -14px; background: radial-gradient(circle,rgba(0,180,200,.1) 40%,transparent 70%); animation: timelord-spin 3s linear infinite; filter: blur(1px); }
+
+/* ── Eternal (mythic) ──────────────────────────────────────────── */
+.border-eternal .avatar { background: var(--bg3) padding-box, conic-gradient(#660066,#aa00cc,#dd22ff,#ff88ee,#dd22ff,#aa00cc,#660066,#990099,#dd22ff,#660066) border-box; border: 4px solid transparent; box-shadow: 0 0 20px rgba(200,0,220,.55),0 0 44px rgba(200,0,220,.18); animation: eternal-pulse 2s ease-in-out infinite; }
+@keyframes eternal-pulse { 0%,100%{box-shadow:0 0 20px rgba(200,0,220,.55)}50%{box-shadow:0 0 34px rgba(220,0,240,.8)} }
+.border-eternal .border-frame::before { inset: -11px; background: conic-gradient(rgba(200,0,220,.9) 0% 8%,rgba(255,100,240,.7) 9% 11%,transparent 12% 22%,rgba(180,0,200,.9) 23% 31%,rgba(240,80,230,.65) 32% 34%,transparent 35% 45%,rgba(200,0,220,.9) 46% 54%,rgba(255,100,240,.7) 55% 57%,transparent 58% 68%,rgba(180,0,200,.9) 69% 77%,rgba(240,80,230,.65) 78% 80%,transparent 81%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.4px); animation: eternal-loop 3s linear infinite; }
+@keyframes eternal-loop { to { transform: rotate(360deg); } }
+.border-eternal .border-frame::after { inset: -15px; background: radial-gradient(circle,rgba(200,0,220,.12) 40%,transparent 70%); animation: eternal-pulse 2s ease-in-out infinite; filter: blur(2px); }
+
+/* ── Untouchable (mythic) ──────────────────────────────────────── */
+.border-untouchable .avatar { background: var(--bg3) padding-box, conic-gradient(#181830,#303060,#505090,#7070b0,#505090,#303060,#181830) border-box; border: 4px solid transparent; box-shadow: 0 0 22px rgba(100,100,180,.6),inset 0 0 16px rgba(0,0,0,.9); animation: untch-breathe 3.5s ease-in-out infinite; }
+@keyframes untch-breathe { 0%,100%{box-shadow:0 0 22px rgba(100,100,180,.6),inset 0 0 16px rgba(0,0,0,.9)}50%{box-shadow:0 0 34px rgba(120,120,200,.8),inset 0 0 22px rgba(0,0,0,1);filter:brightness(1.1)} }
+.border-untouchable .border-frame::before { inset: -10px; background: conic-gradient(rgba(160,160,220,.9) 0% 5%,rgba(210,210,255,.5) 6% 8%,transparent 9% 23%,rgba(140,140,200,.85) 24% 29%,rgba(200,200,240,.45) 30% 32%,transparent 33% 47%,rgba(160,160,220,.9) 48% 53%,rgba(210,210,255,.5) 54% 56%,transparent 57% 71%,rgba(140,140,200,.85) 72% 77%,rgba(200,200,240,.45) 78% 80%,transparent 81%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.4px); animation: untch-orbit 10s linear infinite; }
+@keyframes untch-orbit { to { transform: rotate(360deg); } }
+.border-untouchable .border-frame::after { inset: -12px; border: 2px solid rgba(120,120,180,.22); animation: untch-breathe 3.5s ease-in-out infinite; filter: blur(1px); }
+
+/* ── True King (mythic) ────────────────────────────────────────── */
+.border-true-king .avatar { background: var(--bg3) padding-box, conic-gradient(#885500,#cc8800,#ffbb00,#ffee66,#ffbb00,#cc8800,#885500,#bb9900,#ffcc00,#885500) border-box; border: 4px solid transparent; box-shadow: 0 0 24px rgba(255,185,0,.6),0 0 52px rgba(255,185,0,.22); animation: tking-pulse 2s ease-in-out infinite; }
+@keyframes tking-pulse { 0%,100%{box-shadow:0 0 24px rgba(255,185,0,.6),0 0 52px rgba(255,185,0,.22)}50%{box-shadow:0 0 38px rgba(255,205,0,.85),0 0 72px rgba(255,200,0,.4)} }
+.border-true-king .border-frame::before { inset: -12px; background: conic-gradient(#ff8800,#ffcc00,#ffee00,#fffacd,#ffee00,#ffcc00,#ff8800,#ffdd00,#ffee00,#ff8800); mask: radial-gradient(farthest-side,transparent 85%,black 87%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 85%,black 87%,black 100%); animation: tking-crown 2s linear infinite; filter: blur(.4px); }
+@keyframes tking-crown { to { transform: rotate(360deg); } }
+.border-true-king .border-frame::after { inset: -22px; background: radial-gradient(circle,rgba(255,190,0,.18) 55%,transparent 100%); animation: tking-halo 2s ease-in-out infinite alternate; }
+@keyframes tking-halo { 0%{opacity:.6;transform:scale(.94)}100%{opacity:1;transform:scale(1.06)} }
+
+/* ── Void King (mythic) ────────────────────────────────────────── */
+.border-void-king .avatar { background: var(--bg3) padding-box, conic-gradient(#050008,#200030,#440066,#7700bb,#440066,#200030,#050008) border-box; border: 3px solid transparent; box-shadow: 0 0 14px rgba(100,0,180,.7),inset 0 0 20px rgba(0,0,0,1); animation: voidking-breathe 3.5s ease-in-out infinite; }
+@keyframes voidking-breathe { 0%,100%{box-shadow:0 0 14px rgba(100,0,180,.7),inset 0 0 20px rgba(0,0,0,1)}50%{box-shadow:0 0 22px rgba(140,0,220,.9),inset 0 0 28px rgba(0,0,0,1);filter:brightness(1.12)} }
+.border-void-king .border-frame::before { inset: -8px; background: conic-gradient(rgba(120,0,200,.9) 0% 7%,transparent 9% 18%,rgba(80,0,150,.85) 19% 26%,transparent 28% 37%,rgba(130,0,210,.9) 38% 45%,transparent 47% 56%,rgba(90,0,160,.85) 57% 64%,transparent 66% 75%,rgba(120,0,200,.9) 76% 83%,transparent 85% 100%); mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 83%,black 85%,black 100%); filter: blur(.7px); animation: voidking-turn 5.5s linear infinite; }
+@keyframes voidking-turn { to { transform: rotate(360deg); } }
+.border-void-king .border-frame::after { inset: -11px; border: 1px solid rgba(100,0,180,.2); animation: voidking-breathe 3.5s ease-in-out infinite; filter: blur(1.5px); }
+
+/* ── Perfection (mythic) ───────────────────────────────────────── */
+.border-perfection .avatar { background: var(--bg3) padding-box, conic-gradient(#eeeeee,#ffffff,#eeeeee,#ffffff,#eeeeee,#ffffff,#eeeeee) border-box; border: 3px solid transparent; box-shadow: 0 0 20px rgba(255,255,255,.65),inset 0 0 10px rgba(255,255,255,.08); animation: perf-pulse 2s ease-in-out infinite; }
+@keyframes perf-pulse { 0%,100%{box-shadow:0 0 20px rgba(255,255,255,.65);filter:brightness(1)}50%{box-shadow:0 0 32px rgba(255,255,255,.95);filter:brightness(1.2)} }
+.border-perfection .border-frame::before { inset: -9px; background: conic-gradient(transparent 0% 40%,rgba(255,255,255,.5) 47%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.5) 53%,transparent 55%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: perf-aim 4s linear infinite; filter: blur(.6px); }
+@keyframes perf-aim { to { transform: rotate(360deg); } }
+.border-perfection .border-frame::after { inset: -13px; border: 1px solid rgba(255,255,255,.25); animation: perf-pulse 2s ease-in-out infinite; filter: blur(.8px); }
+
+/* ── Rainbow Storm (mythic) ────────────────────────────────────── */
+.border-rainbow-storm .avatar { background: var(--bg3) padding-box, conic-gradient(#ff4a6e,#ff9b4a,#f0f000,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e) border-box; border: 4px solid transparent; animation: rstorm-spin 2s linear infinite; }
+@keyframes rstorm-spin { to { filter: hue-rotate(360deg) brightness(1.08); } }
+.border-rainbow-storm .border-frame::before { inset: -11px; background: conic-gradient(#ff4a6e,#ff9b4a,#f0f000,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: rstorm-contra 1.5s linear infinite; filter: blur(.4px); }
+@keyframes rstorm-contra { to { transform: rotate(-360deg); filter: hue-rotate(-360deg); } }
+.border-rainbow-storm .border-frame::after { inset: -18px; background: conic-gradient(transparent 0% 6%,#60efff 9%,transparent 11%,transparent 24%,#c8ff4a 27%,transparent 29%,transparent 42%,#ff4a6e 45%,transparent 47%,transparent 60%,#c87dff 63%,transparent 65%,transparent 78%,#4affda 81%,transparent 83%); mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 84%,black 86%,black 100%); animation: rstorm-spark 1s linear infinite; filter: blur(.3px); }
+@keyframes rstorm-spark { to { transform: rotate(360deg); filter: hue-rotate(360deg); } }
+
+/* ── The Absolute (mythic) ─────────────────────────────────────── */
+.border-absolute .avatar { background: var(--bg3) padding-box, conic-gradient(#ff4a6e,#ff9b4a,#ffee00,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e) border-box; border: 4px solid transparent; filter: saturate(1.4); animation: absolute-spin 2.5s linear infinite; }
+@keyframes absolute-spin { to { filter: saturate(1.4) hue-rotate(360deg) brightness(1.1); } }
+.border-absolute .border-frame::before { inset: -13px; background: conic-gradient(#ff4a6e,#ff9b4a,#ffee00,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e); mask: radial-gradient(farthest-side,transparent 85%,black 87%,black 100%); -webkit-mask: radial-gradient(farthest-side,transparent 85%,black 87%,black 100%); animation: absolute-contra 3.5s linear infinite; filter: blur(.5px); }
+@keyframes absolute-contra { to { transform: rotate(-360deg); filter: hue-rotate(360deg); } }
+.border-absolute .border-frame::after { inset: -24px; background: conic-gradient(rgba(255,74,110,.14),rgba(74,255,218,.1),rgba(200,125,255,.14),rgba(255,74,110,.14)); filter: blur(8px); animation: absolute-halo 2.5s linear infinite; }
+@keyframes absolute-halo { to { transform: rotate(360deg); filter: hue-rotate(360deg); } }

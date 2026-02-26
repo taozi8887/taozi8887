@@ -84,6 +84,9 @@ const profile = {
   /** Get a public profile by username. */
   getByName: (username)   => req('GET',  `/api/profile/${encodeURIComponent(username)}`),
 
+  /** Get ELO history points for a username (up to 200 ranked games). */
+  eloHistory: (username)  => req('GET',  `/api/profile/${encodeURIComponent(username)}/elo-history`),
+
   /** Update own profile. { bio?, country?, display_name? } */
   update:    (body)       => req('PUT',  '/api/profile', { body }),
 
@@ -188,7 +191,21 @@ const cosmetics = {
   /** Unequip a cosmetic. { type: 'border'|'title' } */
   unequip: (body)  => req('PUT', '/api/cosmetics/unequip', { body }),
 };
+/* ── Notifications / Achievement Inbox ────────────────────── */
 
+const notifications = {
+  /** Get newest 50 notifications (unread first). */
+  list:        ()    => req('GET',    '/api/notifications'),
+
+  /** Mark all unread notifications as read. */
+  markAllRead: ()    => req('PATCH',  '/api/notifications/read-all'),
+
+  /** Delete (dismiss) a single notification by id. */
+  dismiss:     (id)  => req('DELETE', `/api/notifications/${id}`),
+
+  /** Delete all notifications (clear inbox). */
+  clearAll:    ()    => req('DELETE', '/api/notifications/all'),
+};
 /* ── Misc ─────────────────────────────────────────────────────── */
 
 const health = {
@@ -197,7 +214,7 @@ const health = {
 
 /* ── Exported API object ──────────────────────────────────────── */
 
-const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, cosmetics, BASE,
+const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, cosmetics, notifications, BASE,
   clearNavCache: () => { try { sessionStorage.removeItem(_NAV_CACHE_KEY); } catch {} },
 };
 export default API;
@@ -396,6 +413,9 @@ export async function injectNavUser(me) {
       document.body.appendChild(banner);
     }
   }
+
+  // Notify any loaded notification module that the user is now known
+  if (me) window.dispatchEvent(new CustomEvent('navUserReady', { detail: me }));
 
   return me;
 }

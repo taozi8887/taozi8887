@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmetics Reference · Taotris Dev</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="borders.css">
+  <script src="cursor.js" defer></script>
+  <style>
+    /* ── Layout ── */
+    .ref-page { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; }
+    .ref-hero  { padding: 40px 0 32px; }
+    .ref-hero h1 { font-size: 1.8rem; font-weight: 700; margin: 0 0 .3rem; }
+    .ref-section { margin-bottom: 48px; }
+    .ref-section h2 { font-size: 1rem; font-weight: 600; margin: 0 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .ref-section h2 span { font-size: .7rem; color: var(--text3); font-weight: 400; margin-left: 8px; font-family: var(--mono); }
+
+    /* ── Rarity tags ── */
+    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px;
+      font-size: .58rem; font-family: var(--mono); font-weight: 500; letter-spacing: .06em;
+      text-transform: uppercase; white-space: nowrap; vertical-align: middle; }
+    .tag-common    { background: rgba(136,136,144,.15); color: #9898a8; border: 1px solid rgba(136,136,144,.25); }
+    .tag-uncommon  { background: rgba(74,255,110,.1);  color: #4aff6e; border: 1px solid rgba(74,255,110,.25); }
+    .tag-rare      { background: rgba(74,130,255,.12); color: #7aadff; border: 1px solid rgba(74,130,255,.35); }
+    .tag-epic      { background: rgba(200,125,255,.12); color: #c87dff; border: 1px solid rgba(200,125,255,.3); }
+    .tag-legendary { background: rgba(255,200,0,.1); color: #ffd700; border: 1px solid rgba(255,200,0,.3); animation: legendary-shimmer 3s ease-in-out infinite; }
+    .tag-mythic    { background: rgba(255,255,255,.05); border: 1px solid transparent; background-clip: padding-box; position: relative; z-index: 0; animation: mythic-text 4s linear infinite; font-weight: 600; text-shadow: 0 0 10px currentColor; }
+    .tag-mythic::before { content: ''; position: absolute; inset: -1px; border-radius: 5px; background: conic-gradient(#ff4a6e,#ff9b4a,#ffee00,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e); z-index: -1; animation: mythic-border 4s linear infinite; }
+    .tag-special   { background: rgba(255,180,50,.1); color: #ffb432; border: 1px solid rgba(255,180,50,.3); }
+    @keyframes legendary-shimmer { 0%,100%{box-shadow:0 0 12px rgba(255,200,0,.2)}50%{box-shadow:0 0 18px rgba(255,200,0,.45)} }
+    @keyframes mythic-border { to { filter: hue-rotate(360deg); } }
+    @keyframes mythic-text { 0%{color:#ff6b6b}16%{color:#ffaa40}32%{color:#c8ff4a}48%{color:#4affda}64%{color:#4a8fff}80%{color:#c87dff}100%{color:#ff6b6b} }
+
+    /* ── Mismatch table ── */
+    .mismatch-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .mismatch-table th { text-align: left; padding: 6px 12px; color: var(--text3); font-weight: 500; font-family: var(--mono); font-size: .68rem; border-bottom: 1px solid var(--border); }
+    .mismatch-table td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .warn { color: #ffaa40; font-size: .7rem; }
+
+    /* ── Border grid ── */
+    .border-ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .border-ref-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+    .border-ref-label { font-size: .72rem; color: var(--text2); font-family: var(--mono); }
+    /* avatar placeholder used in border grid */
+    .ref-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+
+    /* ── Title grid ── */
+    .title-ref-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .title-ref-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .title-ref-slug { font-size: .65rem; color: var(--text3); font-family: var(--mono); }
+
+    /* ── Achievement list ── */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .filter-pill { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent;
+      color: var(--text2); font-size: .7rem; font-family: var(--mono); cursor: pointer; transition: background .12s, color .12s; }
+    .filter-pill:hover  { border-color: rgba(255,255,255,.2); color: var(--text); }
+    .filter-pill.active { background: rgba(200,255,74,.12); border-color: rgba(200,255,74,.4); color: var(--accent); }
+    .ach-ref-list { display: flex; flex-direction: column; gap: 6px; }
+    .ach-ref-row  { display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; }
+    .ach-ref-row.new-item { border-color: rgba(200,255,74,.15); background: linear-gradient(90deg, rgba(200,255,74,.04) 0%, var(--bg2) 50%); }
+    .ach-ref-icon { font-size: 1.1rem; width: 28px; text-align: center; flex-shrink: 0; }
+    .ach-ref-name { font-weight: 500; min-width: 180px; flex-shrink: 0; }
+    .ach-ref-desc { color: var(--text2); font-size: .72rem; flex: 1; }
+    .ach-warn     { color: #ffaa40; font-size: .68rem; }
+    .new-badge { font-size: .58rem; font-family: var(--mono); color: var(--accent); border: 1px solid rgba(200,255,74,.3); padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+    .ach-count-label { color: var(--text3); font-size: .72rem; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Taotris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="cosmetics.html">Cosmetics</a>
+    </div>
+    <div class="nav-user">
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+<div class="nav-drawer" id="navDrawer">
+  <button class="nav-drawer-close" aria-label="Close" onclick="toggleDrawer()">✕</button>
+  <a href="index.html">Home</a>
+  <a href="cosmetics.html">Cosmetics</a>
+</div>
+
+<main class="ref-page">
+
+  <div class="ref-hero">
+    <h1>Cosmetics Reference</h1>
+    <p style="color:var(--text3);font-size:.8rem">Dev preview — nothing here is in the DB yet unless already live. Confirm rarities before committing new entries.</p>
+  </div>
+
+  <!-- ── Rarity Consistency Warnings ───────────────────────────────────── -->
+  <div class="ref-section">
+    <h2>⚠ Rarity Consistency Issues <span>borders, titles, and achievements sharing the same rank should share the same rarity tier</span></h2>
+    <p style="color:var(--text3);font-size:.75rem;margin:0 0 12px">Based on actual DB values from migrations. All rank tiers are now consistent — no mismatches.</p>
+    <table class="mismatch-table">
+      <thead><tr><th>Name</th><th>Border</th><th>Achievement</th><th>Title</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Default</td><td><span class="tag tag-common">Common</span></td><td><span class="tag tag-common">Common ✓</span></td><td><span class="tag tag-common">Common ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Bronze / Bronze-tier</td><td><span class="tag tag-uncommon">Uncommon</span></td><td><span class="tag tag-uncommon">Uncommon ✓</span></td><td><span class="tag tag-uncommon">Uncommon ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Silver</td><td><span class="tag tag-uncommon">Uncommon</span></td><td><span class="tag tag-uncommon">Uncommon ✓</span></td><td><span class="tag tag-uncommon">Uncommon ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Gold</td><td><span class="tag tag-rare">Rare</span></td><td><span class="tag tag-rare">Rare ✓</span></td><td><span class="tag tag-rare">Rare ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Platinum</td><td><span class="tag tag-rare">Rare</span></td><td><span class="tag tag-rare">Rare ✓</span></td><td><span class="tag tag-rare">Rare ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td><strong style="color:#ff4a6e">Diamond</strong></td><td><span class="tag tag-epic">Epic</span></td><td><span class="tag tag-epic">Epic ✓</span></td><td><span class="tag tag-epic">Epic ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Master</td><td><span class="tag tag-epic">Epic</span></td><td><span class="tag tag-epic">Epic ✓</span></td><td><span class="tag tag-epic">Epic ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Grandmaster</td><td><span class="tag tag-legendary">Legendary</span></td><td><span class="tag tag-legendary">Legendary ✓</span></td><td><span class="tag tag-legendary">Legendary ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Molten Core</td><td><span class="tag tag-legendary">Legendary</span></td><td><span class="tag tag-legendary">Legendary ✓</span></td><td><span class="tag tag-legendary">Legendary ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+        <tr><td>Challenger / Tetris King</td><td><span class="tag tag-mythic">Mythic</span></td><td><span class="tag tag-mythic">Mythic ✓</span></td><td><span class="tag tag-mythic">Mythic ✓</span></td><td style="color:var(--text3)">Consistent</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Borders ────────────────────────────────────────────────────────── -->
+  <div class="ref-section">
+    <h2>Borders <span id="borderCountLabel"></span></h2>
+    <div class="border-ref-grid" id="borderGrid"></div>
+  </div>
+
+  <!-- ── Titles ─────────────────────────────────────────────────────────── -->
+  <div class="ref-section">
+    <h2>Titles <span>existing in DB</span></h2>
+    <div class="title-ref-grid" id="titleGrid"></div>
+  </div>
+
+  <!-- ── Achievements ───────────────────────────────────────────────────── -->
+  <div class="ref-section">
+    <h2>Achievements <span id="achCountLabel"></span></h2>
+    <div class="filter-bar" id="rarityBar">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="common">Common</button>
+      <button class="filter-pill" data-filter="uncommon">Uncommon</button>
+      <button class="filter-pill" data-filter="rare">Rare</button>
+      <button class="filter-pill" data-filter="epic">Epic</button>
+      <button class="filter-pill" data-filter="legendary">Legendary</button>
+      <button class="filter-pill" data-filter="mythic">Mythic</button>
+      <button class="filter-pill" data-filter="new">🆕 Pending DB</button>
+    </div>
+    <div class="ach-count-label" id="achCount"></div>
+    <div class="ach-ref-list" id="achList"></div>
+  </div>
+
+</main>
+
+<script>
+// ── Border data ─────────────────────────────────────────────────────────
+const BORDERS = [
+  // ── existing — emojis match DB migrations exactly ──────────────────────
+  { slug:'border-default',      name:'Default',         rarity:'common',    emoji:'⬜' },
+  { slug:'border-bronze',       name:'Bronze',          rarity:'uncommon',  emoji:'🟫' },
+  { slug:'border-silver',       name:'Silver',          rarity:'uncommon',  emoji:'⬛' },
+  { slug:'border-neon-green',   name:'Neon Green',      rarity:'uncommon',  emoji:'💚' },
+  { slug:'border-neon-cyan',    name:'Neon Cyan',       rarity:'uncommon',  emoji:'🩵' },
+  { slug:'border-gold',         name:'Gold',            rarity:'rare',      emoji:'🟡' },
+  { slug:'border-storm',        name:'Storm',           rarity:'rare',      emoji:'⛈️' },
+  { slug:'border-fire',         name:'Fire',            rarity:'rare',      emoji:'🔥' },
+  { slug:'border-neon-purple',  name:'Neon Purple',     rarity:'rare',      emoji:'💜' },
+  { slug:'border-platinum',     name:'Platinum',        rarity:'rare',      emoji:'🪙' },
+  { slug:'border-neon-pink',    name:'Neon Pink',       rarity:'epic',      emoji:'🩷' },
+  { slug:'border-toxic',        name:'Toxic',           rarity:'epic',      emoji:'☣️' },
+  { slug:'border-ice',          name:'Ice',             rarity:'epic',      emoji:'❄️' },
+  { slug:'border-glitch',       name:'Glitch',          rarity:'epic',      emoji:'📡' },
+  { slug:'border-void',         name:'Void',            rarity:'epic',      emoji:'🌑' },
+  { slug:'border-galaxy',       name:'Galaxy',          rarity:'epic',      emoji:'🌌' },
+  { slug:'border-ghost',        name:'Ghost',           rarity:'epic',      emoji:'👻' },
+  { slug:'border-pixel',        name:'Pixel',           rarity:'epic',      emoji:'👾' },
+  { slug:'border-bloodmoon',    name:'Blood Moon',      rarity:'epic',      emoji:'🩸' },
+  { slug:'border-master',       name:'Master',          rarity:'epic',      emoji:'🔮' },
+  { slug:'border-molten',       name:'Molten',          rarity:'legendary', emoji:'🌋' },
+  { slug:'border-diamond',      name:'Diamond',         rarity:'epic',      emoji:'💎' },
+  { slug:'border-obsidian',     name:'Obsidian',        rarity:'legendary', emoji:'💀' },
+  { slug:'border-solar',        name:'Solar',           rarity:'legendary', emoji:'☀️' },
+  { slug:'border-challenger',   name:'Challenger',      rarity:'mythic',    emoji:'👑' },
+  { slug:'border-grandmaster',  name:'Grandmaster',     rarity:'legendary', emoji:'👑' },
+  { slug:'border-rainbow',      name:'Rainbow',         rarity:'mythic',    emoji:'🌈' },
+  { slug:'border-tetromino',    name:'Tetromino',       rarity:'mythic',    emoji:'🟦' },
+  { slug:'border-astral',       name:'Astral',          rarity:'mythic',    emoji:'🌟' },
+  // ── planned (not yet in DB) ─────────────────────────────────────────────
+  { slug:'border-hat',          name:'Hat Trick',       rarity:'uncommon',  emoji:'🎩', isNew:true },
+  { slug:'border-speedster',    name:'Speedster',       rarity:'uncommon',  emoji:'💨', isNew:true },
+  { slug:'border-combo',        name:'Combo',           rarity:'uncommon',  emoji:'🔗', isNew:true },
+  { slug:'border-streak',       name:'Streak',          rarity:'rare',      emoji:'🔢', isNew:true },
+  { slug:'border-b2b-chain',    name:'B2B Chain',       rarity:'rare',      emoji:'⛓️', isNew:true },
+  { slug:'border-sprint-ace',   name:'Sprint Ace',      rarity:'rare',      emoji:'🏎️', isNew:true },
+  { slug:'border-comeback',     name:'Comeback',        rarity:'rare',      emoji:'💪', isNew:true },
+  { slug:'border-duo',          name:'Duo',             rarity:'rare',      emoji:'🤜', isNew:true },
+  { slug:'border-tspin',        name:'T-Spin',          rarity:'epic',      emoji:'🌀', isNew:true },
+  { slug:'border-demolisher',   name:'Demolisher',      rarity:'epic',      emoji:'💥', isNew:true },
+  { slug:'border-five-star',    name:'Five Star',       rarity:'epic',      emoji:'⭐', isNew:true },
+  { slug:'border-ghost-run',    name:'Ghost Run',       rarity:'epic',      emoji:'👁️', isNew:true },
+  { slug:'border-sub30',        name:'Sub-30',          rarity:'epic',      emoji:'⚡', isNew:true },
+  { slug:'border-siege',        name:'Siege',           rarity:'epic',      emoji:'🛡️', isNew:true },
+  { slug:'border-ice-cold',     name:'Ice Cold',        rarity:'epic',      emoji:'🧊', isNew:true },
+  { slug:'border-machine',      name:'Machine',         rarity:'legendary', emoji:'🤖', isNew:true },
+  { slug:'border-godspeed',     name:'Godspeed',        rarity:'legendary', emoji:'💫', isNew:true },
+  { slug:'border-legend',       name:'Legend',          rarity:'legendary', emoji:'🔱', isNew:true },
+  { slug:'border-fire-rain',    name:'Fire Rain',       rarity:'legendary', emoji:'🌧️', isNew:true },
+  { slug:'border-immortal',     name:'Immortal',        rarity:'legendary', emoji:'⚡', isNew:true },
+  { slug:'border-all-clear',    name:'All-Clear',       rarity:'legendary', emoji:'🌟', isNew:true },
+  { slug:'border-iron',         name:'Iron Mind',       rarity:'legendary', emoji:'🧠', isNew:true },
+  { slug:'border-pl-league',    name:'Platinum League', rarity:'legendary', emoji:'🪙', isNew:true },
+  { slug:'border-di-league',    name:'Diamond League',  rarity:'legendary', emoji:'💎', isNew:true },
+  { slug:'border-coop-legend',  name:'Coop Legend',     rarity:'legendary', emoji:'🏅', isNew:true },
+  { slug:'border-space',        name:'Space',           rarity:'legendary', emoji:'🌠', isNew:true },
+  { slug:'border-time-lord',    name:'Time Lord',       rarity:'mythic',    emoji:'⏳', isNew:true },
+  { slug:'border-eternal',      name:'Eternal',         rarity:'mythic',    emoji:'♾️', isNew:true },
+  { slug:'border-untouchable',  name:'Untouchable',     rarity:'mythic',    emoji:'🛡️', isNew:true },
+  { slug:'border-true-king',    name:'True King',       rarity:'mythic',    emoji:'👑', isNew:true },
+  { slug:'border-void-king',    name:'Void King',       rarity:'mythic',    emoji:'🌑', isNew:true },
+  { slug:'border-perfection',   name:'Perfection',      rarity:'mythic',    emoji:'🎯', isNew:true },
+  { slug:'border-rainbow-storm',name:'Rainbow Storm',   rarity:'mythic',    emoji:'🌈', isNew:true },
+  { slug:'border-absolute',     name:'The Absolute',    rarity:'mythic',    emoji:'✴️', isNew:true },
+];
+
+// ── Title data ─────────────────────────────────────────────────────────
+const TITLES = [
+  // ── existing — icons match DB migrations exactly ────────────────────────
+  { slug:'title-casual',         name:'Casual',           rarity:'common',    icon:'🎮' },
+  { slug:'title-new-blood',      name:'New Blood',         rarity:'common',    icon:'📦' },
+  { slug:'title-returner',       name:'Returner',          rarity:'common',    icon:'🔄' },
+  { slug:'title-veteran',        name:'Veteran',           rarity:'uncommon',  icon:'🕹️' },
+  { slug:'title-marathoner',     name:'Marathoner',        rarity:'uncommon',  icon:'🏃' },
+  { slug:'title-squad-up',       name:'Squad Up',          rarity:'uncommon',  icon:'🤝' },
+  { slug:'title-silver-stripes', name:'Silver Stripes',    rarity:'uncommon',  icon:'🥈' },
+  { slug:'title-line-clearer',   name:'Line Clearer',      rarity:'uncommon',  icon:'🧱' },
+  { slug:'title-grinder',        name:'Grinder',           rarity:'uncommon',  icon:'📈' },
+  { slug:'title-speed-demon',    name:'Speed Demon',       rarity:'rare',      icon:'⚡' },
+  { slug:'title-on-fire',        name:'On Fire',           rarity:'rare',      icon:'🔥' },
+  { slug:'title-back-to-back',   name:'Back-to-Back',      rarity:'rare',      icon:'🌊' },
+  { slug:'title-prism',          name:'Prism',             rarity:'rare',      icon:'🌈' },
+  { slug:'title-sharpshooter',   name:'Sharpshooter',      rarity:'rare',      icon:'🎯' },
+  { slug:'title-ironclad',       name:'Ironclad',          rarity:'rare',      icon:'🎖️' },
+  { slug:'title-diamond-status', name:'Diamond Status',    rarity:'epic',      icon:'💎' },
+  { slug:'title-flood',          name:'Flood',             rarity:'rare',      icon:'💧' },
+  { slug:'title-platinum-peak',  name:'Platinum Peak',     rarity:'rare',      icon:'🪙' },
+  { slug:'title-cold-blooded',   name:'Cold-Blooded',      rarity:'epic',      icon:'🧊' },
+  { slug:'title-showboat',       name:'Showboat',          rarity:'epic',      icon:'🎪' },
+  { slug:'title-no-hold',        name:'No Hold',           rarity:'epic',      icon:'☣️' },
+  { slug:'title-glitched-out',   name:'Glitched Out',      rarity:'epic',      icon:'📡' },
+  { slug:'title-void-walker',    name:'Void Walker',       rarity:'epic',      icon:'💜' },
+  { slug:'title-infinite-loop',  name:'Infinite Loop',     rarity:'epic',      icon:'🌀' },
+  { slug:'title-the-phantom',    name:'The Phantom',       rarity:'epic',      icon:'👻' },
+  { slug:'title-8-bit',          name:'8-Bit',             rarity:'epic',      icon:'💻' },
+  { slug:'title-survivor',       name:'Survivor',          rarity:'epic',      icon:'🩸' },
+  { slug:'title-master-class',   name:'Master Class',      rarity:'epic',      icon:'🔮' },
+  { slug:'title-no-mercy',       name:'No Mercy',          rarity:'legendary', icon:'💀' },
+  { slug:'title-solar-flare',    name:'Solar Flare',       rarity:'legendary', icon:'☀️' },
+  { slug:'title-molten-core',    name:'Molten Core',       rarity:'legendary', icon:'🌋' },
+  { slug:'title-tetris-king',    name:'Tetris King',       rarity:'mythic',    icon:'👑' },
+  { slug:'title-the-champion',   name:'The Champion',      rarity:'legendary', icon:'🏆' },
+  { slug:'title-grandmaster-gambit', name:'Grandmaster Gambit', rarity:'legendary', icon:'👑' },
+  { slug:'title-galaxy-brain',   name:'Galaxy Brain',      rarity:'mythic',    icon:'🌌' },
+  { slug:'title-transcendent',   name:'Transcendent',      rarity:'mythic',    icon:'✨' },
+  { slug:'title-god-of-tetris',  name:'God of Tetris',     rarity:'mythic',    icon:'🎆' },
+  { slug:'title-dev',            name:'Developer',         rarity:'special',   icon:'🛠️' },
+  { slug:'title-mod',            name:'Moderator',         rarity:'special',   icon:'🛡️' },
+  // ── planned (not yet in DB) ─────────────────────────────────────────────
+  { slug:'title-newcomer',       name:'Newcomer',          rarity:'common',    icon:'⚔️', isNew:true },
+  { slug:'title-partner',        name:'Partner',           rarity:'common',    icon:'🤝', isNew:true },
+  { slug:'title-victor',         name:'Victor',            rarity:'common',    icon:'🎉', isNew:true },
+  { slug:'title-stacker',        name:'Stacker',           rarity:'common',    icon:'📦', isNew:true },
+  { slug:'title-jogger',         name:'Jogger',            rarity:'common',    icon:'🏁', isNew:true },
+  { slug:'title-hat-trick',      name:'Hat Trick',         rarity:'uncommon',  icon:'🎩', isNew:true },
+  { slug:'title-road-runner',    name:'Road Runner',       rarity:'uncommon',  icon:'💨', isNew:true },
+  { slug:'title-crew-member',    name:'Crew Member',       rarity:'uncommon',  icon:'👥', isNew:true },
+  { slug:'title-combo-lord',     name:'Combo Lord',        rarity:'uncommon',  icon:'🔗', isNew:true },
+  { slug:'title-wall-builder',   name:'Wall Builder',      rarity:'uncommon',  icon:'🏗️', isNew:true },
+  { slug:'title-treadmill',      name:'On the Treadmill',  rarity:'uncommon',  icon:'⚙️', isNew:true },
+  { slug:'title-on-a-roll',      name:'On a Roll',         rarity:'rare',      icon:'🔢', isNew:true },
+  { slug:'title-chain-breaker',  name:'Chain Breaker',     rarity:'rare',      icon:'⛓️', isNew:true },
+  { slug:'title-ace',            name:'Ace',               rarity:'rare',      icon:'🏎️', isNew:true },
+  { slug:'title-comeback',       name:'Comeback',          rarity:'rare',      icon:'💪', isNew:true },
+  { slug:'title-challenger-rise',name:'Challenger Rising', rarity:'rare',      icon:'⭐', isNew:true },
+  { slug:'title-dynamic-duo',    name:'Dynamic Duo',       rarity:'rare',      icon:'🤜', isNew:true },
+  { slug:'title-piece-master',   name:'Piece Master',      rarity:'rare',      icon:'🧩', isNew:true },
+  { slug:'title-tspin-newbie',   name:'T-Spin Newbie',     rarity:'rare',      icon:'🌀', isNew:true },
+  { slug:'title-warlord',        name:'Warlord',           rarity:'rare',      icon:'🧱', isNew:true },
+  { slug:'title-spin-doctor',    name:'Spin Doctor',       rarity:'epic',      icon:'🌀', isNew:true },
+  { slug:'title-bare-handed',    name:'Bare-Handed',       rarity:'epic',      icon:'✊', isNew:true },
+  { slug:'title-absolute-zero',  name:'Absolute Zero',     rarity:'epic',      icon:'❄️', isNew:true },
+  { slug:'title-the-siege',      name:'The Siege',         rarity:'epic',      icon:'💠', isNew:true },
+  { slug:'title-sub-30',         name:'Sub-30',            rarity:'epic',      icon:'⚡', isNew:true },
+  { slug:'title-clear-eyed',     name:'Clear-Eyed',        rarity:'epic',      icon:'👁️', isNew:true },
+  { slug:'title-galaxy-grinder', name:'Galaxy Grinder',    rarity:'epic',      icon:'🌌', isNew:true },
+  { slug:'title-nuke',           name:'Nuke',              rarity:'epic',      icon:'💥', isNew:true },
+  { slug:'title-five-star',      name:'Five-Star',         rarity:'epic',      icon:'⭐', isNew:true },
+  { slug:'title-flawless',       name:'Flawless',          rarity:'epic',      icon:'🎯', isNew:true },
+  { slug:'title-coop-champ',     name:'Coop Champ',        rarity:'epic',      icon:'🏅', isNew:true },
+  { slug:'title-phantom-runner', name:'Phantom Runner',    rarity:'epic',      icon:'👻', isNew:true },
+  { slug:'title-under-siege',    name:'Under Siege',       rarity:'epic',      icon:'🛡️', isNew:true },
+  { slug:'title-obsidian-rank',  name:'Obsidian Rank',     rarity:'epic',      icon:'💠', isNew:true },
+  { slug:'title-the-machine',    name:'The Machine',       rarity:'legendary', icon:'🤖', isNew:true },
+  { slug:'title-godspeed',       name:'Godspeed',          rarity:'legendary', icon:'💫', isNew:true },
+  { slug:'title-saint',          name:'The Saint',         rarity:'legendary', icon:'📅', isNew:true },
+  { slug:'title-legend',         name:'Legend',            rarity:'legendary', icon:'🔥', isNew:true },
+  { slug:'title-fire-god',       name:'Fire God',          rarity:'legendary', icon:'🌧️', isNew:true },
+  { slug:'title-immortal',       name:'Immortal',          rarity:'legendary', icon:'⚡', isNew:true },
+  { slug:'title-clear-god',      name:'Clear God',         rarity:'legendary', icon:'🌟', isNew:true },
+  { slug:'title-spin-lord',      name:'Spin Lord',         rarity:'legendary', icon:'🌀', isNew:true },
+  { slug:'title-astral',         name:'Astral',            rarity:'legendary', icon:'🌠', isNew:true },
+  { slug:'title-iron-will',      name:'Iron Will',         rarity:'legendary', icon:'🧠', isNew:true },
+  { slug:'title-platinum-lord',  name:'Platinum Lord',     rarity:'legendary', icon:'🪙', isNew:true },
+  { slug:'title-diamond-lord',   name:'Diamond Lord',      rarity:'legendary', icon:'💎', isNew:true },
+  { slug:'title-coop-legend',    name:'Coop Legend',       rarity:'legendary', icon:'🏅', isNew:true },
+  { slug:'title-time-lord',      name:'Time Lord',         rarity:'mythic',    icon:'⏳', isNew:true },
+  { slug:'title-eternal',        name:'Eternal',           rarity:'mythic',    icon:'♾️', isNew:true },
+  { slug:'title-untouchable',    name:'The Untouchable',   rarity:'mythic',    icon:'🛡️', isNew:true },
+  { slug:'title-true-king',      name:'True King',         rarity:'mythic',    icon:'👑', isNew:true },
+  { slug:'title-void-lord',      name:'Void Lord',         rarity:'mythic',    icon:'🌑', isNew:true },
+  { slug:'title-perfect',        name:'Perfect',           rarity:'mythic',    icon:'🎯', isNew:true },
+  { slug:'title-rainbow-lord',   name:'Rainbow Lord',      rarity:'mythic',    icon:'🌈', isNew:true },
+  { slug:'title-the-absolute',   name:'The Absolute',      rarity:'mythic',    icon:'✴️', isNew:true },
+];
+
+// ── Achievement data — existing (37) + pending (64) ──────────────────────
+const ACHIEVEMENTS = [
+  // COMMON — existing
+  { slug:'first-drop',         rarity:'common',    icon:'🎮', name:'First Drop',         desc:'Play your very first game.' },
+  { slug:'welcome-aboard',     rarity:'common',    icon:'📦', name:'Welcome Aboard',      desc:'Register an account.' },
+  { slug:'long-time-no-see',   rarity:'common',    icon:'🔄', name:'Long Time No See',    desc:'Log back in after 30+ days away.' },
+  // COMMON — pending
+  { slug:'versus-debut',       rarity:'common',    icon:'⚔️', name:'Versus Debut',        desc:'First versus match.', isNew:true },
+  { slug:'coop-debut',         rarity:'common',    icon:'🤝', name:'Coop Debut',          desc:'First coop match.', isNew:true },
+  { slug:'first-win',          rarity:'common',    icon:'🎉', name:'First Win',           desc:'Win your first versus match.', isNew:true },
+  { slug:'line-clear',         rarity:'common',    icon:'✨', name:'Line Clear',          desc:'Clear your first line.', isNew:true },
+  { slug:'block-starter',      rarity:'common',    icon:'📦', name:'Block Starter',       desc:'Complete 5 games.', isNew:true },
+  // UNCOMMON — existing
+  { slug:'veteran-presence',   rarity:'uncommon',  icon:'🕹️', name:'Veteran Presence',    desc:'Play 50 total games.' },
+  { slug:'sprint-debut',       rarity:'uncommon',  icon:'🏃', name:'Sprint Debut',        desc:'Complete your first 40-line sprint run.' },
+  { slug:'team-player',        rarity:'uncommon',  icon:'🤝', name:'Team Player',         desc:'Play 20 co-op games with a partner.' },
+  { slug:'silver-lining',      rarity:'uncommon',  icon:'🥈', name:'Silver Lining',       desc:'Reach Silver rank on the ranked ladder.' },
+  { slug:'line-mind',          rarity:'uncommon',  icon:'🧱', name:'Line Mind',           desc:'Clear 1,000 lines across all games.' },
+  { slug:'century-mark',       rarity:'uncommon',  icon:'�', name:'Century Mark',        desc:'Play 100 total games.' },
+  // UNCOMMON — pending
+  { slug:'hat-trick',          rarity:'uncommon',  icon:'🎩', name:'Hat Trick',           desc:'Win 3 matches in a row.', isNew:true },
+  { slug:'grind-time',         rarity:'uncommon',  icon:'⚙️', name:'Grind Time',          desc:'Play 200 games.', isNew:true },
+  { slug:'sprint-runner',      rarity:'uncommon',  icon:'🏃', name:'Sprint Runner',       desc:'Finish 10 sprints.', isNew:true },
+  { slug:'speedster',          rarity:'uncommon',  icon:'💨', name:'Speedster',           desc:'Sprint in under 2 minutes.', isNew:true },
+  { slug:'combo-curious',      rarity:'uncommon',  icon:'🔗', name:'Combo Curious',       desc:'5-combo in any game.', isNew:true },
+  { slug:'garbage-getter',     rarity:'uncommon',  icon:'🗑️', name:'Garbage Getter',      desc:'Receive 500 total garbage lines.', isNew:true },
+  { slug:'line-worker',        rarity:'uncommon',  icon:'🏗️', name:'Line Worker',         desc:'Clear 5,000 lines.', isNew:true },
+  { slug:'bronze-tier',        rarity:'uncommon',  icon:'🥉', name:'Bronze Tier',         desc:'Reach 1,050 ELO.', isNew:true },
+  { slug:'coop-crew',          rarity:'uncommon',  icon:'👥', name:'Coop Crew',           desc:'Play 50 coop games.', isNew:true },
+  // RARE — existing
+  { slug:'speed-demon',        rarity:'rare',      icon:'⚡', name:'Speed Demon',         desc:'Complete a 40-line sprint in under 60 seconds.' },
+  { slug:'on-fire',            rarity:'rare',      icon:'🔥', name:'On Fire',             desc:'Win 5 games in a row.' },
+  { slug:'b2b-king',           rarity:'rare',      icon:'🌊', name:'B2B King',            desc:'Land 5 back-to-back Tetrises in a single game.', warn:'⚠ Rare ach rewards border-molten (legendary) — reward rarity exceeds achievement rarity.' },
+  { slug:'rainbow-run',        rarity:'rare',      icon:'🌈', name:'Rainbow Run',         desc:'Place all 7 tetromino types in one game without topping out.' },
+  { slug:'sharpshooter',       rarity:'rare',      icon:'🎯', name:'Sharpshooter',        desc:'Finish 20 games with zero finesse errors.' },
+  { slug:'gold-rush',          rarity:'rare',      icon:'🥇', name:'Gold Rush',           desc:'Climb to Gold rank on the ranked ladder.' },
+  { slug:'platinum-peak',      rarity:'rare',      icon:'🪙', name:'Platinum Peak',       desc:'Reach Platinum rank on the ranked ladder.' },
+  { slug:'diamond-status',     rarity:'epic',      icon:'💎', name:'Diamond Status',      desc:'Reach Diamond rank on the ranked ladder.' },
+  { slug:'under-pressure',     rarity:'rare',      icon:'�', name:'Under Pressure',      desc:'Send 100 garbage lines in a single game.' },
+  // RARE — pending
+  { slug:'double-digit-streak',rarity:'rare',      icon:'🔟', name:'Double Digit Streak', desc:'Win 10 in a row.', isNew:true },
+  { slug:'b2b-master',         rarity:'rare',      icon:'🏆', name:'B2B Master',          desc:'B2B chain of 10.', isNew:true },
+  { slug:'sprint-ace',         rarity:'rare',      icon:'🏎️', name:'Sprint Ace',          desc:'Sprint in under 45 seconds.', isNew:true },
+  { slug:'finesse-fifty',      rarity:'rare',      icon:'🎯', name:'Finesse Fifty',       desc:'50 games with perfect finesse.', isNew:true },
+  { slug:'tspin-rookie',       rarity:'rare',      icon:'🌀', name:'T-Spin Rookie',       desc:'5 T-spin doubles.', isNew:true },
+  { slug:'wall-street',        rarity:'rare',      icon:'🧱', name:'Wall Street',         desc:'Send 1,000 total garbage lines.', isNew:true },
+  { slug:'garbage-wall',       rarity:'rare',      icon:'🗑️', name:'Garbage Wall',        desc:'Receive 20+ garbage in one game.', isNew:true },
+  { slug:'comeback-kid',       rarity:'rare',      icon:'💪', name:'Comeback Kid',        desc:'First comeback win.', isNew:true },
+  { slug:'challenger-tier',    rarity:'rare',      icon:'⭐', name:'Challenger Tier',     desc:'Reach 1,700 ELO.', isNew:true },
+  { slug:'sprint-200',         rarity:'rare',      icon:'🏃', name:'Marathon Sprinter',   desc:'Finish 50 sprints.', isNew:true },
+  { slug:'duo-dynamic',        rarity:'rare',      icon:'🤜', name:'Duo Dynamic',         desc:'Win 10 coop matches.', isNew:true },
+  { slug:'block-stacker',      rarity:'rare',      icon:'🧊', name:'Block Stacker',       desc:'Hit 100 Tetrises (four-line clears).', isNew:true },
+  // EPIC — existing
+  { slug:'cold-blooded',       rarity:'epic',      icon:'🧊', name:'Cold-Blooded',        desc:'Win 10 comeback games from critical board height.' },
+  { slug:'showboat',           rarity:'epic',      icon:'🎪', name:'Showboat',            desc:'Land a T-spin triple 25 times.' },
+  { slug:'toxic-play',         rarity:'epic',      icon:'☣️', name:'Toxic Play',          desc:'Win 5 ranked games without ever using the hold piece.' },
+  { slug:'glitched-out',       rarity:'epic',      icon:'📡', name:'Glitched Out',        desc:'Report a verified bug that gets patched. One of a kind.' },
+  { slug:'masters-degree',     rarity:'epic',      icon:'🔮', name:"Master's Degree",     desc:"Reach Master rank on the ranked ladder." },
+  { slug:'grandmaster-gambit', rarity:'legendary', icon:'👑', name:'Grandmaster Gambit',  desc:'Reach Grandmaster rank on the ranked ladder.' },
+  { slug:'void-walker',        rarity:'epic',      icon:'🌑', name:'Void Walker',         desc:'Surpass 2,200 ELO — elite Grandmaster territory.' },
+  { slug:'infinite-loop',      rarity:'epic',      icon:'🌀', name:'Infinite Loop',       desc:'Play 1,000 total games.' },
+  { slug:'the-phantom',        rarity:'epic',      icon:'👻', name:'The Phantom',         desc:'Win a ranked game without receiving any garbage lines.' },
+  { slug:'8-bit-brain',        rarity:'epic',      icon:'�', name:'8-Bit Brain',         desc:'Complete a sprint with at least one All-Clear.' },
+  { slug:'near-death',         rarity:'epic',      icon:'🩸', name:'Near Death',          desc:'Win 20 games after your board reached the top 2 rows.' },
+  // EPIC — pending
+  { slug:'tspin-hunter',       rarity:'epic',      icon:'🌀', name:'T-Spin Hunter',       desc:'100 T-spin triples.', isNew:true },
+  { slug:'no-hold-hero',       rarity:'epic',      icon:'✊', name:'No-Hold Hero',        desc:'Win 15 without hold.', isNew:true },
+  { slug:'ice-cold',           rarity:'epic',      icon:'❄️', name:'Ice Cold',            desc:'25 comeback wins.', isNew:true },
+  { slug:'obsidian-rank',      rarity:'epic',      icon:'💠', name:'Obsidian Rank',       desc:'Reach 1,900 ELO.', isNew:true },
+  { slug:'sprint-sub30',       rarity:'epic',      icon:'⚡', name:'Sub-30 Sprint',       desc:'Sprint in under 30 seconds.', isNew:true },
+  { slug:'all-clear-king',     rarity:'epic',      icon:'👑', name:'All-Clear King',      desc:'5 all-clears in sprint.', isNew:true },
+  { slug:'galaxy-grind',       rarity:'epic',      icon:'🌌', name:'Galaxy Grind',        desc:'Place 50,000 pieces.', isNew:true },
+  { slug:'demolisher',         rarity:'epic',      icon:'💥', name:'Demolisher',          desc:'Send 200+ garbage in one game.', isNew:true },
+  { slug:'five-star',          rarity:'epic',      icon:'⭐', name:'Five Star',           desc:'Win 500 versus matches.', isNew:true },
+  { slug:'no-miss',            rarity:'epic',      icon:'🎯', name:'No Miss',             desc:'100 games with perfect finesse.', isNew:true },
+  { slug:'coop-champion',      rarity:'epic',      icon:'🏅', name:'Coop Champion',       desc:'Win 100 coop matches.', isNew:true },
+  { slug:'quad-stacker',       rarity:'epic',      icon:'🟦', name:'Quad Stacker',        desc:'Hit 500 Tetrises (four-line clears).', isNew:true },
+  { slug:'ghost-runs',         rarity:'epic',      icon:'👁️', name:'Ghost Runs',          desc:'Play 2,000 total games.', isNew:true },
+  { slug:'under-siege',        rarity:'epic',      icon:'🛡️', name:'Under Siege',         desc:'Receive 1,000 total garbage lines.', isNew:true },
+  // LEGENDARY — existing
+  { slug:'no-mercy',           rarity:'legendary', icon:'💀', name:'No Mercy',            desc:'Win 20 games in a row without a single loss.' },
+  { slug:'committed',          rarity:'legendary', icon:'☀️', name:'Committed',           desc:'Log in and play at least one game for 7 consecutive days.' },
+  { slug:'molten-core',        rarity:'legendary', icon:'🌋', name:'Molten Core',         desc:'Reach 1,500 ELO rating.' },
+  { slug:'tetris-king',        rarity:'mythic',    icon:'👑', name:'Tetris King',         desc:'Reach Challenger rank (2,300+ ELO) — the absolute highest tier.' },
+  { slug:'the-champion',       rarity:'legendary', icon:'🏆', name:'The Champion',        desc:'End a full ranked season as the #1 player in your region.' },
+  // LEGENDARY — pending
+  { slug:'machine',            rarity:'legendary', icon:'🤖', name:'Machine',             desc:'Win 1,000 versus matches.', isNew:true },
+  { slug:'sprint-godspeed',    rarity:'legendary', icon:'💫', name:'Godspeed',            desc:'Sprint in under 20 seconds.', isNew:true },
+  { slug:'seven-day-saint',    rarity:'legendary', icon:'📅', name:'Seven-Day Saint',     desc:'30-day login streak.', isNew:true },
+  { slug:'legendary-streak',   rarity:'legendary', icon:'🔥', name:'Legendary Streak',    desc:'Win 50 in a row.', isNew:true },
+  { slug:'fire-rain',          rarity:'legendary', icon:'🌧️', name:'Fire Rain',           desc:'Send 10,000 total garbage lines.', isNew:true },
+  { slug:'immortal',           rarity:'legendary', icon:'⚡', name:'Immortal',            desc:'Play 5,000 games.', isNew:true },
+  { slug:'all-clear-god',      rarity:'legendary', icon:'🌟', name:'All-Clear God',       desc:'50 all-clears.', isNew:true },
+  { slug:'tspin-master',       rarity:'legendary', icon:'🌀', name:'T-Spin Master',       desc:'500 T-spin triples.', isNew:true },
+  { slug:'astral-realm',       rarity:'legendary', icon:'🌠', name:'Astral Realm',        desc:'Place 500,000 pieces.', isNew:true },
+  { slug:'iron-mind',          rarity:'legendary', icon:'🧠', name:'Iron Mind',           desc:'500 games with perfect finesse.', isNew:true },
+  { slug:'platinum-league',    rarity:'legendary', icon:'🪙', name:'Platinum League',     desc:'Reach 2,050 ELO.', isNew:true },
+  { slug:'diamond-league',     rarity:'legendary', icon:'💎', name:'Diamond League',      desc:'Reach 2,150 ELO.', isNew:true },
+  { slug:'coop-legend',        rarity:'legendary', icon:'🏅', name:'Coop Legend',         desc:'Win 500 coop matches.', isNew:true },
+  // MYTHIC — existing
+  { slug:'galaxy-brain',       rarity:'mythic',    icon:'🌌', name:'Galaxy Brain',        desc:'Place 10,000 pieces across all games.' },
+  { slug:'transcendent',       rarity:'mythic',    icon:'✨', name:'Transcendent',        desc:'Unlock every other achievement in the game.' },
+  { slug:'god-of-tetris',      rarity:'mythic',    icon:'🎆', name:'God of Tetris',       desc:'Hold the #1 position on the all-time ELO leaderboard.' },
+  // MYTHIC — pending
+  { slug:'time-lord',          rarity:'mythic',    icon:'⏳', name:'Time Lord',           desc:'Play 10,000 games.', isNew:true },
+  { slug:'eternal-grind',      rarity:'mythic',    icon:'♾️', name:'Eternal Grind',       desc:'Place 1,000,000 pieces.', isNew:true },
+  { slug:'the-untouchable',    rarity:'mythic',    icon:'🛡️', name:'The Untouchable',     desc:'Win 100 in a row.', isNew:true },
+  { slug:'true-king',          rarity:'mythic',    icon:'👑', name:'True King',           desc:'Win 10,000 versus matches.', isNew:true },
+  { slug:'void-master',        rarity:'mythic',    icon:'🌑', name:'Void Master',         desc:'Send 100,000 total garbage lines.', isNew:true },
+  { slug:'perfect-run',        rarity:'mythic',    icon:'🎯', name:'Perfect Run',         desc:'1,000 games with perfect finesse.', isNew:true },
+  { slug:'rainbow-eternal',    rarity:'mythic',    icon:'🌈', name:'Rainbow Eternal',     desc:'100 rainbow games.', isNew:true },
+  { slug:'the-absolute',       rarity:'mythic',    icon:'🌟', name:'The Absolute',        desc:'Undisputed #1 all-time. Admin-granted.', isNew:true },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const RARITY_RANK = { common:1, uncommon:2, rare:3, epic:4, legendary:5, mythic:6, special:7 };
+const TAG_CLASS   = { common:'tag-common', uncommon:'tag-uncommon', rare:'tag-rare',
+                      epic:'tag-epic', legendary:'tag-legendary', mythic:'tag-mythic', special:'tag-special' };
+
+// ── Render borders ─────────────────────────────────────────────────────────
+function renderBorders() {
+  document.getElementById('borderCountLabel').textContent = `${BORDERS.length} total`;
+  document.getElementById('borderGrid').innerHTML = BORDERS.map(b => `
+    <div class="border-ref-card">
+      <div class="${b.slug}">
+        <div class="border-frame"><div class="ref-avatar avatar">${b.emoji}</div></div>
+      </div>
+      <div class="border-ref-label">${b.name}</div>
+      <span class="tag ${TAG_CLASS[b.rarity]}">${b.rarity}</span>
+    </div>`).join('');
+}
+
+// ── Render titles ──────────────────────────────────────────────────────────
+function renderTitles() {
+  document.getElementById('titleGrid').innerHTML = TITLES.map(t => `
+    <div class="title-ref-card">
+      <span class="tag ${TAG_CLASS[t.rarity]}">${t.icon} ${t.name}</span>
+      <div class="title-ref-slug">${t.slug}</div>
+    </div>`).join('');
+}
+
+// ── Render achievements ────────────────────────────────────────────────────
+let achFilter = 'all';
+
+function renderAch() {
+  let list = ACHIEVEMENTS.filter(a => {
+    if (achFilter === 'new') return !!a.isNew;
+    if (achFilter !== 'all') return a.rarity === achFilter;
+    return true;
+  });
+  list.sort((a, b) => RARITY_RANK[a.rarity] - RARITY_RANK[b.rarity]);
+
+  const inDb = ACHIEVEMENTS.filter(a => !a.isNew).length;
+  const pending = ACHIEVEMENTS.filter(a => a.isNew).length;
+  document.getElementById('achCountLabel').textContent = `${inDb} in DB + ${pending} pending = ${ACHIEVEMENTS.length} total`;
+  document.getElementById('achCount').textContent = `Showing ${list.length}`;
+
+  document.getElementById('achList').innerHTML = list.map(a => `
+    <div class="ach-ref-row${a.isNew ? ' new-item' : ''}">
+      <span class="ach-ref-icon">${a.icon}</span>
+      <span class="ach-ref-name">${a.name}</span>
+      <span class="tag ${TAG_CLASS[a.rarity]}">${a.rarity}</span>
+      ${a.isNew ? '<span class="new-badge">NEW</span>' : ''}
+      <span class="ach-ref-desc">${a.desc}${a.warn ? ' <span class="ach-warn">' + a.warn + '</span>' : ''}</span>
+    </div>`).join('');
+}
+
+// ── Filter bar ────────────────────────────────────────────────────────────
+document.getElementById('rarityBar').querySelectorAll('.filter-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.getElementById('rarityBar').querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    achFilter = p.dataset.filter;
+    renderAch();
+  });
+});
+
+// ── Nav helper ────────────────────────────────────────────────────────────
+function toggleDrawer() {
+  const d = document.getElementById('navDrawer');
+  const h = document.getElementById('navHamburger');
+  const open = d.classList.toggle('open');
+  h.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderBorders();
+renderTitles();
+renderAch();
+</script>
+
+</body>
+</html>

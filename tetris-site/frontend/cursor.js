@@ -58,7 +58,7 @@
       top: 0; left: 0;
       transform: translate(-50%, -50%);
       transition: width .12s ease, height .12s ease, background .12s ease, opacity .2s ease;
-      will-change: transform, left, top;
+      will-change: transform, translate;
     }
 
     #_cur-ring {
@@ -79,7 +79,7 @@
         border-color .22s ease,
         border-width .22s ease,
         box-shadow .22s ease;
-      will-change: left, top;
+      will-change: transform, translate;
     }
 
     /* hover */
@@ -182,7 +182,7 @@
       animation: _curSpin 2.8s linear infinite;
     }
     @keyframes _curSpin {
-      to { transform: translate(-50%, -50%) rotate(360deg); }
+      to { rotate: 360deg; }
     }
 
     /* ── Precision state: canvas / drawing ── */
@@ -292,10 +292,8 @@
   if (_savedPos) {
     // Place cursor at saved position and show immediately -
     // first mousemove will snap to real position within one frame anyway
-    dot.style.left  = _savedPos.x + 'px';
-    dot.style.top   = _savedPos.y + 'px';
-    ring.style.left = _savedPos.x + 'px';
-    ring.style.top  = _savedPos.y + 'px';
+    dot.style.translate  = `${_savedPos.x}px ${_savedPos.y}px`;
+    ring.style.translate = `${_savedPos.x}px ${_savedPos.y}px`;
     // No _out - visible straight away
 
     // Restore the previous page's cursor visual state (mode classes + ring size)
@@ -359,10 +357,8 @@
     // Magnetic pull toward nav links
     const px = magTarget ? mx + (magTarget.cx - mx) * 0.28 : mx;
     const py = magTarget ? my + (magTarget.cy - my) * 0.28 : my;
-    dot.style.left = px + 'px';
-    dot.style.top  = py + 'px';
-    label.style.left = mx + 'px';
-    label.style.top  = my + 'px';
+    dot.style.translate   = `${px}px ${py}px`;
+    label.style.translate = `${mx}px ${my}px`;
 
     // Update text-reveal clip position (element-relative coords for clip-path)
     if (currentHeading) {
@@ -394,6 +390,8 @@
 
   document.addEventListener('mouseleave', () => {
     isOut = true;
+    _lastHoverEl = null; // force re-evaluate on re-entry
+    setMode(null, null, null);
     dot.classList.add('_out');
     ring.classList.add('_out');
   });
@@ -406,6 +404,10 @@
 
   /* ── Smooth ring animation (lerp) ── */
   let lastTrailTime = 0;
+  // rAF-throttled hover evaluation: instead of mouseover/mouseout firing on every
+  // nested element (extremely expensive on dense pages like cosmetics), we sample
+  // elementFromPoint once per frame inside the animation loop.
+  let _lastHoverEl = null;
   function tick(ts) {
     const lerpSpeed = currentMode === '_precision' ? 0.22
                     : currentMode === '_glow'      ? 1.0   // snaps exactly to cursor
@@ -426,8 +428,7 @@
       rx += (mx - rx) * lerpSpeed;
       ry += (my - ry) * lerpSpeed;
     }
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
+    ring.style.translate = `${rx}px ${ry}px`;
 
     // Emit trail particle every ~35ms while moving
     const dist = Math.hypot(mx - rx, my - ry);
@@ -435,10 +436,19 @@
       lastTrailTime = ts;
       const t = document.createElement('div');
       t.className = '_cur-trail';
-      t.style.left = rx + 'px';
-      t.style.top  = ry + 'px';
+      t.style.translate = `${rx}px ${ry}px`;
       document.body.appendChild(t);
       t.addEventListener('animationend', () => t.remove(), { once: true });
+    }
+
+    // Evaluate hover mode once per frame - far cheaper than mouseover/mouseout
+    // firing on every element boundary crossing (critical on dense pages).
+    if (_mouseReady && !isOut) {
+      const hoverEl = document.elementFromPoint(mx, my);
+      if (hoverEl !== _lastHoverEl) {
+        _lastHoverEl = hoverEl;
+        evaluateHover(hoverEl);
+      }
     }
 
     requestAnimationFrame(tick);
@@ -628,15 +638,6 @@
     }
   }
 
-  document.addEventListener('mouseover', e => {
-    if (!_mouseReady) return;
-    evaluateHover(e.target);
-  });
-
-  document.addEventListener('mouseout', e => {
-    setMode(null, null, null);
-  });
-
   /* ── Re-evaluate hover when page scrolls (cursor stays still, elements move) ── */
   window.addEventListener('scroll', () => {
     if (!_mouseReady || isOut) return;
@@ -671,8 +672,7 @@
 
     const r = document.createElement('div');
     r.className = '_cur-ripple';
-    r.style.left = e.clientX + 'px';
-    r.style.top  = e.clientY + 'px';
+    r.style.translate = `${e.clientX}px ${e.clientY}px`;
     document.body.appendChild(r);
     r.addEventListener('animationend', () => r.remove(), { once: true });
   });

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="borders.css">
   <script src="cursor.js" defer></script>
+  <script type="module" src="notifications.js"></script>
   <style>
     .section-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -128,6 +129,9 @@
     <button class="tab-btn" onclick="switchTab('requests')">
       Requests <span id="reqCount" class="badge-count hidden">0</span>
     </button>
+    <button class="tab-btn" onclick="switchTab('notifications')">
+      Notifications <span id="notifCount" class="badge-count hidden">0</span>
+    </button>
   </div>
 
   <!-- Friends tab -->
@@ -159,6 +163,17 @@
   <div id="tabRequests" class="hidden">
     <p class="small muted mb-m">Incoming friend requests.</p>
     <div id="reqList" class="flex col gap-s">
+      <div class="skeleton skeleton-friend-card"></div>
+      <div class="skeleton skeleton-friend-card"></div>
+    </div>
+  </div>
+  <!-- Notifications tab -->
+  <div id="tabNotifications" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <p class="small muted" style="margin:0">Achievement unlock notifications.</p>
+      <button class="btn sm ghost" id="notifClearAllBtn" onclick="clearAllNotifications()">Clear all</button>
+    </div>
+    <div id="notifList" class="flex col gap-s">
       <div class="skeleton skeleton-friend-card"></div>
       <div class="skeleton skeleton-friend-card"></div>
     </div>
@@ -208,9 +223,10 @@
 
   async function loadAll() {
     try {
-      const [friendsData, inboxData] = await Promise.all([
+      const [friendsData, inboxData, notifData] = await Promise.all([
         API.friends.list(),
         API.inbox.list(),
+        API.notifications.list().catch(() => ({ notifications: [] })),
       ]);
 
       // Backend returns all friendships in one array with status field
@@ -220,6 +236,7 @@
 
       renderFriends(accepted, pending);
       renderInbox(inboxData.challenges || []);
+      renderNotifications(notifData.notifications || []);
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -416,12 +433,92 @@
     }, 1000);
   }
 
+  const _RARITY_COLOR_N = { common:'#9898a8', uncommon:'#4aff6e', rare:'#7aadff', epic:'#c87dff', legendary:'#ffd700', mythic:'#ff6ec7', special:'#ff8c42' };
+  function _notifTimeAgo(isoStr) {
+    if (!isoStr) return '';
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60)  return 'just now';
+    const m = Math.floor(s / 60);
+    if (m < 60)  return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24)  return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  }
+  function renderNotifications(notifs) {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+    const unread = notifs.filter(n => !n.read).length;
+    const badge  = document.getElementById('notifCount');
+    // Only show badge when notifications tab is not active
+    const notifTabActive = !document.getElementById('tabNotifications')?.classList.contains('hidden');
+    if (badge) {
+      if (unread > 0 && !notifTabActive) {
+        badge.textContent = unread > 9 ? '9+' : unread;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+    if (!notifs.length) {
+      list.innerHTML = `<div class="empty-state-nice"><div class="es-icon">🏆</div><div class="es-title">No notifications yet</div><div class="es-sub">Achievement unlocks will appear here.</div></div>`;
+      return;
+    }
+    const newItems = notifs.filter(n => !n.read);
+    const oldItems = notifs.filter(n =>  n.read);
+    let html = '';
+    if (newItems.length) {
+      html += `<p class="small" style="margin:.25rem 0 .4rem;color:var(--accent);font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em">New</p>`;
+      html += newItems.map(n => _notifCardHTML(n)).join('');
+    }
+    if (oldItems.length) {
+      if (newItems.length) html += `<div style="height:1px;background:var(--border);margin:.5rem 0"></div>`;
+      html += `<p class="small muted" style="margin:.25rem 0 .4rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em">Earlier</p>`;
+      html += oldItems.map(n => _notifCardHTML(n)).join('');
+    }
+    list.innerHTML = html;
+    list.querySelectorAll('[data-notif-dismiss]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.notifDismiss, 10);
+        try { await API.notifications.dismiss(id); } catch {}
+        btn.closest('.challenge-item')?.remove();
+        if (!list.querySelector('.challenge-item')) renderNotifications([]);
+      });
+    });
+  }
+  function _notifCardHTML(n) {
+    const color  = _RARITY_COLOR_N[n.data?.rarity] ?? '#9898a8';
+    const border = n.data?.reward_border_slug ? `<span style="font-size:.6rem;padding:.1rem .35rem;border-radius:999px;background:rgba(100,200,255,.1);color:#60c8ff;border:1px solid rgba(100,200,255,.25)">+Border</span>` : '';
+    const title  = n.data?.reward_title_slug  ? `<span style="font-size:.6rem;padding:.1rem .35rem;border-radius:999px;background:rgba(200,155,255,.1);color:#c87dff;border:1px solid rgba(200,155,255,.25)">+Title</span>`  : '';
+    const tags   = border + title;
+    return `<div class="challenge-item" style="border-left:3px solid ${color}22;align-items:flex-start;gap:.65rem">
+      <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:${color}22;border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:.9rem;margin-top:2px">${n.icon ?? '🏆'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="challenge-from" style="font-size:.8rem">${escHtml(n.title)}</div>
+        <div class="small muted" style="margin-top:.15rem;line-height:1.4">${escHtml(n.body)}</div>
+        ${tags ? `<div style="display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.3rem">${tags}</div>` : ''}
+        <div style="font-size:.6rem;color:var(--text3);margin-top:.25rem;font-family:var(--mono)">${_notifTimeAgo(n.created_at)}</div>
+      </div>
+      <button data-notif-dismiss="${n.id}" class="btn sm ghost" style="flex-shrink:0;padding:.2rem .4rem;font-size:.72rem;margin-top:2px" title="Dismiss">✕</button>
+    </div>`;
+  }
+  window.clearAllNotifications = async () => {
+    try { await API.notifications.clearAll(); } catch {}
+    renderNotifications([]);
+  };
+
   window.switchTab = (tab) => {
-    document.getElementById('tabFriends').classList.toggle('hidden',  tab !== 'friends');
-    document.getElementById('tabInbox').classList.toggle('hidden',    tab !== 'inbox');
-    document.getElementById('tabRequests').classList.toggle('hidden', tab !== 'requests');
+    document.getElementById('tabFriends').classList.toggle('hidden',       tab !== 'friends');
+    document.getElementById('tabInbox').classList.toggle('hidden',         tab !== 'inbox');
+    document.getElementById('tabRequests').classList.toggle('hidden',      tab !== 'requests');
+    document.getElementById('tabNotifications').classList.toggle('hidden', tab !== 'notifications');
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick')?.includes(`'${tab}'`))?.classList.add('active');
+    // Mark all read when the notifications tab is opened
+    if (tab === 'notifications') {
+      document.getElementById('notifCount')?.classList.add('hidden');
+      API.notifications.markAllRead().catch(() => {});
+    }
   };
 
   window.sendRequest = async () => {

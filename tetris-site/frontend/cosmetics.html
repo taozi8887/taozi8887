@@ -6,7 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cosmetics — tetris.taozi4887.dev</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="borders.css">
 <script src="cursor.js" defer></script>
+<script type="module" src="notifications.js"></script>
 <style>
 /* ── Cosmetics-page layout ─────────────────────────────────────── */
 .cos-page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
@@ -59,6 +61,8 @@
 .border-item-wrap[data-rarity="epic"]      { background: linear-gradient(160deg, rgba(200,125,255,.09) 0%, var(--bg2) 55%); }
 .border-item-wrap[data-rarity="legendary"] { background: linear-gradient(160deg, rgba(255,200,0,.08)   0%, var(--bg2) 55%); }
 .border-item-wrap[data-rarity="mythic"]    { background: linear-gradient(160deg, rgba(200,125,255,.10) 0%, rgba(74,255,218,.05) 40%, var(--bg2) 70%); }
+/* Pause spinning CSS animations on off-screen cards to prevent GPU overload */
+.border-item-wrap.anim-pause * { animation-play-state: paused !important; }
 .border-equipped-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); font-size: .6rem; background: var(--accent); color: #000; padding: 2px 7px; border-radius: 999px; letter-spacing: .05em; white-space: nowrap; z-index: 10; }
 .border-equip-btn { display: block; width: 100%; text-align: center; margin-top: 1rem; padding: 5px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); background: transparent; color: var(--text2); font-size: .7rem; font-family: var(--mono); cursor: pointer; transition: all .15s; box-sizing: border-box; }
 .border-equip-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
@@ -410,6 +414,15 @@
       <button class="filter-pill" data-filter="locked">Locked</button>
       <button class="sort-toggle-btn" id="borderSortBtn" onclick="toggleBorderSort()">↑ Rank</button>
     </div>
+    <div class="filter-bar" id="borderRarityBar" style="margin-top:-10px">
+      <button class="filter-pill active" data-filter="all">All Rarities</button>
+      <button class="filter-pill" data-filter="common">Common</button>
+      <button class="filter-pill" data-filter="uncommon">Uncommon</button>
+      <button class="filter-pill" data-filter="rare">Rare</button>
+      <button class="filter-pill" data-filter="epic">Epic</button>
+      <button class="filter-pill" data-filter="legendary">Legendary</button>
+      <button class="filter-pill" data-filter="mythic">Mythic</button>
+    </div>
     <div class="border-grid" id="borderGrid">
       <div class="skeleton skeleton-card"></div>
       <div class="skeleton skeleton-card"></div>
@@ -436,6 +449,15 @@
       <button class="filter-pill" data-filter="locked">Locked</button>
       <button class="sort-toggle-btn" id="titleSortBtn" onclick="toggleTitleSort()">↑ Rank</button>
     </div>
+    <div class="filter-bar" id="titleRarityBar" style="margin-top:-10px">
+      <button class="filter-pill active" data-filter="all">All Rarities</button>
+      <button class="filter-pill" data-filter="common">Common</button>
+      <button class="filter-pill" data-filter="uncommon">Uncommon</button>
+      <button class="filter-pill" data-filter="rare">Rare</button>
+      <button class="filter-pill" data-filter="epic">Epic</button>
+      <button class="filter-pill" data-filter="legendary">Legendary</button>
+      <button class="filter-pill" data-filter="mythic">Mythic</button>
+    </div>
     <div class="title-grid" id="titleGrid">
       <div class="skeleton skeleton-card"></div>
       <div class="skeleton skeleton-card"></div>
@@ -448,10 +470,28 @@
 
   <!-- ── Achievements tab ────────────────────────────────────────── -->
   <div id="tab-achievements" class="cos-tab-content">
+    <div class="rarity-legend">
+      <div class="rarity-dot rd-common">Common</div>
+      <div class="rarity-dot rd-uncommon">Uncommon</div>
+      <div class="rarity-dot rd-rare">Rare</div>
+      <div class="rarity-dot rd-epic">Epic</div>
+      <div class="rarity-dot rd-legendary">Legendary</div>
+      <div class="rarity-dot rd-mythic">Mythic</div>
+    </div>
     <div class="filter-bar" id="achFilterBar">
       <button class="filter-pill active" data-filter="all">All</button>
       <button class="filter-pill" data-filter="earned">Earned</button>
       <button class="filter-pill" data-filter="locked">Locked</button>
+      <button class="sort-toggle-btn" id="achSortBtn" onclick="toggleAchSort()">↑ Rank</button>
+    </div>
+    <div class="filter-bar" id="achRarityBar" style="margin-top:-10px">
+      <button class="filter-pill active" data-filter="all">All Rarities</button>
+      <button class="filter-pill" data-filter="common">Common</button>
+      <button class="filter-pill" data-filter="uncommon">Uncommon</button>
+      <button class="filter-pill" data-filter="rare">Rare</button>
+      <button class="filter-pill" data-filter="epic">Epic</button>
+      <button class="filter-pill" data-filter="legendary">Legendary</button>
+      <button class="filter-pill" data-filter="mythic">Mythic</button>
     </div>
     <div class="achievement-grid" id="achievementGrid">
       <div class="skeleton skeleton-card"></div>
@@ -489,9 +529,27 @@ let equippedTitle  = null;
 let borderFilter = 'all';
 let titleFilter  = 'all';
 let achFilter    = 'all';
+let borderRarityFilter = 'all';
+let titleRarityFilter  = 'all';
+let achRarityFilter    = 'all';
 let borderSortAsc = true;  // true = common first
 let titleSortAsc  = true;
+let achSortAsc    = true;
 const RARITY_RANK = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6, special: 99 };
+
+// ── Off-screen animation pausing (IntersectionObserver) ──────────
+let _borderAnimObs = null;
+function observeBorderAnims() {
+  if (!_borderAnimObs) {
+    _borderAnimObs = new IntersectionObserver(entries => {
+      for (const e of entries)
+        e.target.classList.toggle('anim-pause', !e.isIntersecting);
+    }, { rootMargin: '300px 0px' });
+  }
+  // Disconnect stale refs from the previous render, then re-observe
+  _borderAnimObs.disconnect();
+  document.querySelectorAll('#borderGrid .border-item-wrap').forEach(el => _borderAnimObs.observe(el));
+}
 
 // ── Rarity tag colour helper ───────────────────────────────────────
 function rarityClass(r, slug) {
@@ -505,6 +563,7 @@ function fmtNum(n) { return n >= 1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : Str
 
 // ── Border rendering ───────────────────────────────────────────────
 const BORDER_EMOJIS = {
+  // ── Original borders (migrations 002-004) ─────────────────────
   'border-default':'😎','border-bronze':'🎮','border-silver':'🎮','border-gold':'🎮',
   'border-diamond':'🎮','border-challenger':'🏆','border-neon-green':'⚡','border-neon-cyan':'🧊',
   'border-neon-pink':'💥','border-neon-purple':'🔮','border-rainbow':'🌈','border-fire':'🔥',
@@ -513,6 +572,17 @@ const BORDER_EMOJIS = {
   'border-glitch':'📡','border-solar':'☀️','border-bloodmoon':'🩸','border-tetromino':'🟦',
   'border-obsidian':'💀','border-astral':'🌟',
   'border-platinum':'🪙','border-master':'🔮','border-grandmaster':'👑',
+  // ── Migration 006 borders ──────────────────────────────────────
+  'border-hat':'🎩','border-speedster':'💨','border-combo':'🔗','border-streak':'🔢',
+  'border-b2b-chain':'⛓️','border-sprint-ace':'🏎️','border-comeback':'💪','border-duo':'🤜',
+  'border-tspin':'🌀','border-demolisher':'💥','border-five-star':'⭐','border-ghost-run':'👁️',
+  'border-sub30':'⚡','border-siege':'🛡️','border-ice-cold':'🧊',
+  'border-machine':'🤖','border-godspeed':'💫','border-legend':'🔱','border-fire-rain':'🌧️',
+  'border-immortal':'⚡','border-all-clear':'🌟','border-iron':'🧠','border-pl-league':'🪙',
+  'border-di-league':'💎','border-coop-legend':'🏅','border-space':'🌠',
+  'border-time-lord':'⏳','border-eternal':'♾️','border-untouchable':'🛡️',
+  'border-true-king':'👑','border-void-king':'🌑','border-perfection':'🎯',
+  'border-rainbow-storm':'🌈','border-absolute':'✴️',
 };
 
 function renderBorderItem(cos) {
@@ -559,10 +629,12 @@ function renderBorders() {
     if (borderFilter === 'owned')  return c.owned;
     if (borderFilter === 'locked') return !c.owned;
     return true;
-  });
+  }).filter(c => borderRarityFilter === 'all' || c.rarity === borderRarityFilter);
   const grid = document.getElementById('borderGrid');
   if (!filtered.length) { grid.innerHTML = '<div class="cos-empty">No borders match this filter.</div>'; return; }
   grid.innerHTML = filtered.map(renderBorderItem).join('');
+  // Pause spinning CSS animations on cards scrolled far off-screen
+  observeBorderAnims();
 }
 
 function renderTitles() {
@@ -576,7 +648,7 @@ function renderTitles() {
     if (titleFilter === 'owned')  return c.owned;
     if (titleFilter === 'locked') return !c.owned;
     return true;
-  });
+  }).filter(c => titleRarityFilter === 'all' || c.rarity === titleRarityFilter);
   const grid = document.getElementById('titleGrid');
   if (!filtered.length) { grid.innerHTML = '<div class="cos-empty">No titles match this filter.</div>'; return; }
 
@@ -620,12 +692,21 @@ window.toggleTitleSort = () => {
   renderTitles();
 };
 
+window.toggleAchSort = () => {
+  achSortAsc = !achSortAsc;
+  document.getElementById('achSortBtn').textContent = achSortAsc ? '\u2191 Rank' : '\u2193 Rank';
+  renderAchievements();
+};
+
 function renderAchievements() {
-  const filtered = allAchievements.filter(a => {
+  let filtered = allAchievements.filter(a => {
     if (achFilter === 'earned') return a.earned;
     if (achFilter === 'locked') return !a.earned;
     return true;
-  });
+  }).filter(a => achRarityFilter === 'all' || a.rarity === achRarityFilter);
+  filtered.sort((a, b) => achSortAsc
+    ? (RARITY_RANK[a.rarity] || 0) - (RARITY_RANK[b.rarity] || 0)
+    : (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0));
   const grid = document.getElementById('achievementGrid');
   if (!filtered.length) { grid.innerHTML = '<div class="cos-empty">No achievements match this filter.</div>'; return; }
 
@@ -750,15 +831,19 @@ function attachFilter(barId, onChange) {
 attachFilter('borderFilterBar', v => { borderFilter = v; renderBorders(); });
 attachFilter('titleFilterBar',  v => { titleFilter  = v; renderTitles(); });
 attachFilter('achFilterBar',    v => { achFilter    = v; renderAchievements(); });
+attachFilter('borderRarityBar', v => { borderRarityFilter = v; renderBorders(); });
+attachFilter('titleRarityBar',  v => { titleRarityFilter  = v; renderTitles(); });
+attachFilter('achRarityBar',    v => { achRarityFilter    = v; renderAchievements(); });
 
 // ── Init ───────────────────────────────────────────────────────────
 async function loadCatalogue() {
   const data = await API.cosmetics.getAll();
   allCosmetics    = data.cosmetics    || [];
   allAchievements = data.achievements || [];
-  // If both arrays came back empty, treat it as a failure so callers can retry
-  if (!allCosmetics.length && !allAchievements.length) {
-    throw new Error('Catalogue returned empty — possible cold-start');
+  // Retry if either catalogue is empty — cosmetics must be present for
+  // the achievement reward previews (border/title lookups) to render
+  if (!allCosmetics.length || !allAchievements.length) {
+    throw new Error('Catalogue incomplete — possible cold-start');
   }
 }
 
