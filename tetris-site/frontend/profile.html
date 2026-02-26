@@ -404,7 +404,7 @@
 
     <div class="edit-section mt-m">
       <h3>Input Timing</h3>
-      <p class="small muted" style="margin-bottom:1rem">Competitive defaults: DAS 133ms · ARR 0ms</p>
+      <p class="small muted" style="margin-bottom:1rem">Competitive defaults: DAS 133ms · ARR 0ms · SDF 1ms</p>
       <div class="settings-row">
         <span class="settings-label">DAS - delayed auto-shift (ms)</span>
         <input class="settings-number" id="dasDelayInput" type="number" min="0" max="500">
@@ -412,6 +412,10 @@
       <div class="settings-row">
         <span class="settings-label">ARR - auto-repeat rate (ms)</span>
         <input class="settings-number" id="dasIntervalInput" type="number" min="0" max="200">
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">SDF - soft drop rate (ms, 0 = instant)</span>
+        <input class="settings-number" id="sdfIntervalInput" type="number" min="0" max="500">
       </div>
     </div>
 
@@ -1176,7 +1180,7 @@
     { id: 'pause',      label: 'Pause',        defaults: ['Escape',     'p'] },
     { id: 'restart',    label: 'Restart',      defaults: ['r',          ''] },
   ];
-  let _kb = {}, _das = 167, _arr = 33, _sfxOn = false, _bindSlot = null;
+  let _kb = {}, _das = 167, _arr = 33, _sdf = 33, _sfxOn = false, _bindSlot = null;
 
   function _loadSettings() {
     _kb = {}; _KB_DEFS.forEach(d => { _kb[d.id] = [...d.defaults]; });
@@ -1186,6 +1190,7 @@
         if (s.keybinds)                        Object.assign(_kb, s.keybinds);
         if (typeof s.dasDelay    === 'number') _das   = s.dasDelay;
         if (typeof s.dasInterval === 'number') _arr   = s.dasInterval;
+        if (typeof s.sdfInterval === 'number') _sdf   = s.sdfInterval;
         if (s.soundEnabled === true)           _sfxOn = true;
       }
     } catch {}
@@ -1194,7 +1199,7 @@
   function _persistSettings() {
     try {
       const cur = JSON.parse(localStorage.getItem(_SKEY) || '{}');
-      const merged = { ...cur, keybinds: _kb, dasDelay: _das, dasInterval: _arr, soundEnabled: _sfxOn };
+      const merged = { ...cur, keybinds: _kb, dasDelay: _das, dasInterval: _arr, sdfInterval: _sdf, soundEnabled: _sfxOn };
       localStorage.setItem(_SKEY, JSON.stringify(merged));
       // Also persist to DB (fire-and-forget)
       API.profile.saveSettings({ settings: merged }).catch(() => {});
@@ -1205,6 +1210,7 @@
     _loadSettings(); // populate from localStorage first (instant)
     document.getElementById('dasDelayInput').value    = _das;
     document.getElementById('dasIntervalInput').value = _arr;
+    document.getElementById('sdfIntervalInput').value = _sdf;
     const sfxBtn = document.getElementById('sfxToggleBtn');
     if (sfxBtn) { sfxBtn.textContent = _sfxOn ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', _sfxOn); }
     _buildKbRows();
@@ -1216,12 +1222,14 @@
         if (s.keybinds)                        Object.assign(_kb, s.keybinds);
         if (typeof s.dasDelay    === 'number') _das   = s.dasDelay;
         if (typeof s.dasInterval === 'number') _arr   = s.dasInterval;
+        if (typeof s.sdfInterval === 'number') _sdf   = s.sdfInterval;
         if (s.soundEnabled === true)           _sfxOn = true; else if (s.soundEnabled === false) _sfxOn = false;
         // Sync DB value back to localStorage too
         try { localStorage.setItem(_SKEY, JSON.stringify(s)); } catch {}
         // Refresh UI
         document.getElementById('dasDelayInput').value    = _das;
         document.getElementById('dasIntervalInput').value = _arr;
+        document.getElementById('sdfIntervalInput').value = _sdf;
         if (sfxBtn) { sfxBtn.textContent = _sfxOn ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', _sfxOn); }
         _buildKbRows();
       }
@@ -1291,6 +1299,7 @@
     if (_bindSlot) { _bindSlot.btnEl.classList.remove('listening'); _bindSlot = null; }
     _das = Math.max(0, parseInt(document.getElementById('dasDelayInput').value) || 0);
     _arr = Math.max(0, parseInt(document.getElementById('dasIntervalInput').value) || 0);
+    _sdf = Math.max(0, parseInt(document.getElementById('sdfIntervalInput').value) || 0);
     _persistSettings();
     const st = document.getElementById('settingsSaveStatus');
     st.textContent = 'Saved!'; st.style.color = 'var(--accent)';
@@ -1299,9 +1308,10 @@
 
   window.resetDefaultSettings = () => {
     _KB_DEFS.forEach(d => { _kb[d.id] = [...d.defaults]; });
-    _das = 167; _arr = 33;
+    _das = 167; _arr = 33; _sdf = 33;
     document.getElementById('dasDelayInput').value    = _das;
     document.getElementById('dasIntervalInput').value = _arr;
+    document.getElementById('sdfIntervalInput').value = _sdf;
     _buildKbRows();
   };
 
