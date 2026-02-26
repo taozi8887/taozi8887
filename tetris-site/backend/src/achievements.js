@@ -1,3 +1,5 @@
+import { createNotification } from './notifications.js';
+
 /**
  * Achievement definitions and check logic.
  *
@@ -205,9 +207,9 @@ const DEFINITIONS = [
   },
   {
     slug: 'near-death',
-    progressTotal: 10,
+    progressTotal: 20,
     grantRewards: true,
-    check: (_elo, stats) => Math.min(stats.comeback_wins ?? 0, 10),
+    check: (_elo, stats) => Math.min(stats.comeback_wins ?? 0, 20),
   },
   // ── LEGENDARY ────────────────────────────────────────────────────────────
   {
@@ -232,7 +234,7 @@ const DEFINITIONS = [
     slug: 'tetris-king',
     progressTotal: 1,
     grantRewards: true,
-    check: (elo) => elo >= 2000 ? 1 : 0,
+    check: (elo) => elo >= 2300 ? 1 : 0,
   },
   {
     slug: 'the-champion',
@@ -260,11 +262,404 @@ const DEFINITIONS = [
     grantRewards: false, // manually granted
     check: () => 0,
   },
+  // ── NEW DEFINITIONS (activated — requires DB migration 006) ─────────────
+  // ── COMMON (new) ──────────────────────────────────────────────────────────
+  {
+    slug: 'versus-debut',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.versus_played ?? 0, 1),
+  },
+  {
+    slug: 'coop-debut',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.coop_played ?? 0, 1),
+  },
+  {
+    slug: 'first-win',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.versus_won ?? 0, 1),
+  },
+  {
+    slug: 'line-clear',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.total_lines ?? 0, 1),
+  },
+
+
+  {
+    slug: 'block-starter',
+    progressTotal: 5,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.games_played ?? 0, 5),
+  },
+
+  // ── UNCOMMON (new) ────────────────────────────────────────────────────────
+  {
+    slug: 'hat-trick',
+    progressTotal: 3,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.win_streak_max ?? 0, 3),
+  },
+  {
+    slug: 'grind-time',
+    progressTotal: 200,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.games_played ?? 0, 200),
+  },
+  {
+    slug: 'sprint-runner',
+    progressTotal: 10,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.sprint_played ?? 0, 10),
+  },
+  {
+    slug: 'speedster',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => {
+      const t = stats.best_sprint_ms ?? 0;
+      return (t > 0 && t <= 120000) ? 1 : 0;
+    },
+  },
+  {
+    slug: 'combo-curious',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => (stats.max_combo ?? 0) >= 5 ? 1 : 0,
+  },
+  {
+    slug: 'garbage-getter',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_received_total ?? 0, 500),
+  },
+  {
+    slug: 'line-worker',
+    progressTotal: 5000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.total_lines ?? 0, 5000),
+  },
+  {
+    slug: 'bronze-tier',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (elo) => elo >= 1050 ? 1 : 0,
+  },
+  {
+    slug: 'coop-crew',
+    progressTotal: 50,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.coop_played ?? 0, 50),
+  },
+
+  // ── RARE (new) ────────────────────────────────────────────────────────────
+  {
+    slug: 'double-digit-streak',
+    progressTotal: 10,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.win_streak_max ?? 0, 10),
+  },
+  {
+    slug: 'b2b-master',
+    progressTotal: 10,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.b2b_max ?? 0, 10),
+  },
+  {
+    slug: 'sprint-ace',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => {
+      const t = stats.best_sprint_ms ?? 0;
+      return (t > 0 && t <= 45000) ? 1 : 0;
+    },
+  },
+  {
+    slug: 'finesse-fifty',
+    progressTotal: 50,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.finesse_perfect_games ?? 0, 50),
+  },
+  {
+    slug: 'tspin-rookie',
+    progressTotal: 5,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.t_spins ?? 0, 5),
+  },
+  {
+    slug: 'wall-street',
+    progressTotal: 1000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_sent_total ?? 0, 1000),
+  },
+  {
+    slug: 'garbage-wall',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_received_max_single ?? 0, 20),
+  },
+  {
+    slug: 'comeback-kid',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.comeback_wins ?? 0, 1),
+  },
+  {
+    slug: 'challenger-tier',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (elo) => elo >= 1700 ? 1 : 0,
+  },
+  {
+    slug: 'sprint-200',
+    progressTotal: 50,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.sprint_played ?? 0, 50),
+  },
+  {
+    slug: 'duo-dynamic',
+    progressTotal: 10,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.coop_won ?? 0, 10),
+  },
+
+  {
+    slug: 'block-stacker',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.tetrises ?? 0, 100),
+  },
+
+  // ── EPIC (new) ────────────────────────────────────────────────────────────
+  {
+    slug: 'tspin-hunter',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.tspin_triples ?? 0, 100),
+  },
+  {
+    slug: 'no-hold-hero',
+    progressTotal: 15,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.no_hold_wins ?? 0, 15),
+  },
+  {
+    slug: 'ice-cold',
+    progressTotal: 25,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.comeback_wins ?? 0, 25),
+  },
+  {
+    slug: 'obsidian-rank',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (elo) => elo >= 1900 ? 1 : 0,
+  },
+  {
+    slug: 'sprint-sub30',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => {
+      const t = stats.best_sprint_ms ?? 0;
+      return (t > 0 && t <= 30000) ? 1 : 0;
+    },
+  },
+  {
+    slug: 'all-clear-king',
+    progressTotal: 5,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.all_clear_sprint ?? 0, 5),
+  },
+  {
+    slug: 'galaxy-grind',
+    progressTotal: 50000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.pieces_placed ?? 0, 50000),
+  },
+  {
+    slug: 'demolisher',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => (stats.garbage_sent_max_single ?? 0) >= 200 ? 1 : 0,
+  },
+  {
+    slug: 'five-star',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.versus_won ?? 0, 500),
+  },
+  {
+    slug: 'no-miss',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.finesse_perfect_games ?? 0, 100),
+  },
+  {
+    slug: 'coop-champion',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.coop_won ?? 0, 100),
+  },
+  {
+    slug: 'quad-stacker',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.tetrises ?? 0, 500),
+  },
+  {
+    slug: 'ghost-runs',
+    progressTotal: 2000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.games_played ?? 0, 2000),
+  },
+  {
+    slug: 'under-siege',
+    progressTotal: 1000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_received_total ?? 0, 1000),
+  },
+
+  // ── LEGENDARY (new) ───────────────────────────────────────────────────────
+  {
+    slug: 'machine',
+    progressTotal: 1000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.versus_won ?? 0, 1000),
+  },
+  {
+    slug: 'sprint-godspeed',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (_elo, stats) => {
+      const t = stats.best_sprint_ms ?? 0;
+      return (t > 0 && t <= 20000) ? 1 : 0;
+    },
+  },
+  {
+    slug: 'seven-day-saint',
+    progressTotal: 30,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.days_streak_max ?? 0, 30),
+  },
+  {
+    slug: 'legendary-streak',
+    progressTotal: 50,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.win_streak_max ?? 0, 50),
+  },
+  {
+    slug: 'fire-rain',
+    progressTotal: 10000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_sent_total ?? 0, 10000),
+  },
+  {
+    slug: 'immortal',
+    progressTotal: 5000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.games_played ?? 0, 5000),
+  },
+  {
+    slug: 'all-clear-god',
+    progressTotal: 50,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.all_clear_sprint ?? 0, 50),
+  },
+  {
+    slug: 'tspin-master',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.tspin_triples ?? 0, 500),
+  },
+  {
+    slug: 'astral-realm',
+    progressTotal: 500000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.pieces_placed ?? 0, 500000),
+  },
+  {
+    slug: 'iron-mind',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.finesse_perfect_games ?? 0, 500),
+  },
+  {
+    slug: 'platinum-league',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (elo) => elo >= 2050 ? 1 : 0,
+  },
+  {
+    slug: 'diamond-league',
+    progressTotal: 1,
+    grantRewards: true,
+    check: (elo) => elo >= 2150 ? 1 : 0,
+  },
+  {
+    slug: 'coop-legend',
+    progressTotal: 500,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.coop_won ?? 0, 500),
+  },
+
+  // ── MYTHIC (new) ──────────────────────────────────────────────────────────
+  {
+    slug: 'time-lord',
+    progressTotal: 10000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.games_played ?? 0, 10000),
+  },
+  {
+    slug: 'eternal-grind',
+    progressTotal: 1000000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.pieces_placed ?? 0, 1000000),
+  },
+  {
+    slug: 'the-untouchable',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.win_streak_max ?? 0, 100),
+  },
+  {
+    slug: 'true-king',
+    progressTotal: 10000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.versus_won ?? 0, 10000),
+  },
+  {
+    slug: 'void-master',
+    progressTotal: 100000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.garbage_sent_total ?? 0, 100000),
+  },
+  {
+    slug: 'perfect-run',
+    progressTotal: 1000,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.finesse_perfect_games ?? 0, 1000),
+  },
+  {
+    slug: 'rainbow-eternal',
+    progressTotal: 100,
+    grantRewards: true,
+    check: (_elo, stats) => Math.min(stats.rainbow_games ?? 0, 100),
+  },
+  {
+    slug: 'the-absolute',
+    progressTotal: 1,
+    grantRewards: false, // manually granted to #1 all-time
+    check: () => 0,
+  },
 ];
 
 // Slugs that count toward 'transcendent' (excludes itself + manual-only)
 const TRANSCENDENT_EXCLUDES = new Set([
-  'transcendent', 'god-of-tetris', 'glitched-out', 'the-champion',
+  'transcendent', 'god-of-tetris', 'glitched-out', 'the-champion', 'the-absolute',
 ]);
 const TRANSCENDENT_SLUGS = DEFINITIONS
   .filter(d => !TRANSCENDENT_EXCLUDES.has(d.slug))
@@ -360,10 +755,10 @@ export async function checkAndUpdateAchievements(userId, supabase, context = {})
 
   // ── 6. Grant cosmetic rewards ────────────────────────────────────────────
   if (newlyEarned.length > 0) {
-    // Fetch reward slugs for newly earned achievements
+    // Fetch reward slugs + metadata for newly earned achievements
     const { data: achDefs } = await supabase
       .from('achievements')
-      .select('slug, reward_border_slug, reward_title_slug')
+      .select('slug, name, description, rarity, icon, reward_border_slug, reward_title_slug')
       .in('slug', newlyEarned);
 
     const cosmetics = [];
@@ -382,6 +777,29 @@ export async function checkAndUpdateAchievements(userId, supabase, context = {})
       await supabase
         .from('user_cosmetics')
         .upsert(cosmetics, { onConflict: 'user_id,cosmetic_slug', ignoreDuplicates: true });
+    }
+
+    // ── 7. Inbox notifications ──────────────────────────────────────────
+    const notifPayloads = (achDefs ?? []).map(ach => {
+      const rewards = [];
+      if (ach.reward_border_slug) rewards.push('Border unlocked');
+      if (ach.reward_title_slug)  rewards.push('Title unlocked');
+      const rewardNote = rewards.length ? ` — ${rewards.join(' & ')}` : '';
+      return {
+        type:  'achievement',
+        title: 'Achievement Unlocked!',
+        body:  `${ach.name || ach.slug}${rewardNote}`,
+        icon:  ach.icon  || '🏆',
+        data:  {
+          slug:               ach.slug,
+          rarity:             ach.rarity,
+          reward_border_slug: ach.reward_border_slug ?? null,
+          reward_title_slug:  ach.reward_title_slug  ?? null,
+        },
+      };
+    });
+    if (notifPayloads.length > 0) {
+      await createNotification(userId, notifPayloads, supabase);
     }
   }
 

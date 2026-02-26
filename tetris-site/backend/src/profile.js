@@ -141,6 +141,57 @@ router.get('/', requireAuth, async (req, res) => {
   return getProfileByUsername(req.user.username, res, req.user.id);
 });
 
+//  GET /api/profile/:username/elo-history 
+// Must be declared BEFORE /:username so Express matches the longer path first.
+router.get('/:username/elo-history', optionalAuth, async (req, res) => {
+  try {
+    const { data: user, error: uErr } = await supabase
+      .from('users')
+      .select('id, elo')
+      .eq('username', req.params.username)
+      .single();
+    if (uErr || !user) return res.status(404).json({ error: 'User not found.' });
+
+    // Fetch up to 200 ranked matches newest-first, only fields needed for reconstruction
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('id, played_at, p1_id, p2_id, p1_elo_delta, p2_elo_delta, winner_id')
+      .or(`p1_id.eq.${user.id},p2_id.eq.${user.id}`)
+      .eq('is_ranked', true)
+      .not('p1_elo_delta', 'is', null)
+      .order('played_at', { ascending: false })
+      .limit(200);
+
+    if (!matches?.length) return res.json({ points: [], current_elo: user.elo });
+
+    // Reconstruct ELO history backwards from current ELO (newest → oldest)
+    let runningElo = user.elo;
+    const points = [];
+    for (let i = 0; i < matches.length; i++) {
+      const m = matches[i];
+      const isP1  = m.p1_id === user.id;
+      const delta = isP1 ? (m.p1_elo_delta ?? 0) : (m.p2_elo_delta ?? 0);
+      const won   = m.winner_id === user.id;
+      points.push({
+        match_num: matches.length - i,   // 1 = oldest, N = most recent
+        elo: Math.round(runningElo),
+        delta,
+        won,
+        played_at: m.played_at,
+      });
+      runningElo -= delta;               // step back to ELO before this match
+    }
+    // Add the starting point (ELO before the oldest reconstructed match)
+    points.push({ match_num: 0, elo: Math.round(runningElo), delta: 0, won: null, played_at: null });
+    points.reverse();                    // now oldest → newest
+
+    res.json({ points, current_elo: user.elo });
+  } catch (err) {
+    console.error('GET elo-history:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 //  GET /api/profile/:username 
 router.get('/:username', optionalAuth, async (req, res) => {
   return getProfileByUsername(req.params.username, res, req.user?.id);

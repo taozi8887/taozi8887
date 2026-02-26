@@ -7,6 +7,7 @@ const ELO_K_REGULAR   = 16; // >= 30 games
 const ELO_FLOOR       = 100; // minimum ELO (can't go below this)
 
 export const RANKS = [
+  { name: 'Challenger',  min: 2600, color: '#ffd700' },
   { name: 'Grandmaster', min: 2200, color: '#c8ff4a' },
   { name: 'Master',      min: 2000, color: '#b46ff0' },
   { name: 'Diamond',     min: 1800, color: '#60efff' },

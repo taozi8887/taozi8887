@@ -125,6 +125,10 @@ export class GameRoom {
       piecesPlaced: 0,
       tSpinTriples: 0,
       wasCritical:  false,
+      noHoldWin:    false,
+      finessePerfect: false,
+      allClearSprint: false,
+      rainbow:      false,
       board:        null,
       combo:        -1,
       b2bChain:     -1,
@@ -296,6 +300,11 @@ export class GameRoom {
 
     else if (eventType === 'gameOver') {
       player.over = true;
+      // Capture per-game flags sent by client on top-out
+      if (data.noHold)        player.noHoldWin     = !!data.noHold;
+      if (data.finessePerfect)player.finessePerfect = !!data.finessePerfect;
+      if (data.allClear)      player.allClearSprint = !!data.allClear;
+      if (data.rainbow)       player.rainbow        = !!data.rainbow;
       const opp = this._opponent(player.id);
       // Notify opponent immediately (before the async DB work in _endGame)
       if (opp) {
@@ -445,6 +454,7 @@ export class GameRoom {
       p.tetrises = 0; p.tSpins = 0; p.maxCombo = 0; p.b2bMax = 0;
       p.garbageSent = 0; p.garbageReceived = 0; p.pendingGarbage = 0;
       p.piecesPlaced = 0; p.tSpinTriples = 0; p.wasCritical = false;
+      p.noHoldWin = false; p.finessePerfect = false; p.allClearSprint = false; p.rainbow = false;
       p.board = null;
       p.combo = -1; p.b2bChain = -1;
     }
@@ -727,16 +737,21 @@ export class GameRoom {
     // ── Extended stat columns (migration 002) ───────────────────────────────
     // Re-fetch updated row to avoid races with bests logic above
     const { data: updated } = await this.supabase.from('stats').select(
-      'win_streak_current, win_streak_max, tspin_triples, pieces_placed, garbage_sent_max_single, comeback_wins, zero_garbage_wins'
+      'win_streak_current, win_streak_max, tspin_triples, pieces_placed, garbage_sent_max_single, comeback_wins, zero_garbage_wins, garbage_received_total, garbage_sent_total, garbage_received_max_single, no_hold_wins, finesse_perfect_games, all_clear_sprint, rainbow_games'
     ).eq('user_id', p.userId).single();
     const u = updated || {};
 
     const extUpdates = {
       tspin_triples:  (u.tspin_triples  || 0) + (p.tSpinTriples || 0),
       pieces_placed:  (u.pieces_placed  || 0) + (p.piecesPlaced || 0),
+      garbage_received_total: (u.garbage_received_total || 0) + (p.garbageReceived || 0),
+      garbage_sent_total:     (u.garbage_sent_total     || 0) + (p.garbageSent     || 0),
     };
     if ((p.garbageSent || 0) > (u.garbage_sent_max_single || 0)) {
       extUpdates.garbage_sent_max_single = p.garbageSent;
+    }
+    if ((p.garbageReceived || 0) > (u.garbage_received_max_single || 0)) {
+      extUpdates.garbage_received_max_single = p.garbageReceived;
     }
 
     // Win/loss streak
@@ -753,6 +768,26 @@ export class GameRoom {
       extUpdates.comeback_wins = (u.comeback_wins || 0) + 1;
     }
 
+    // No-hold win
+    if (isWinner && p.noHoldWin) {
+      extUpdates.no_hold_wins = (u.no_hold_wins || 0) + 1;
+    }
+
+    // Finesse-perfect game
+    if (p.finessePerfect) {
+      extUpdates.finesse_perfect_games = (u.finesse_perfect_games || 0) + 1;
+    }
+
+    // All-clear (sprint mode)
+    if (this.mode === 'sprint' && p.allClearSprint) {
+      extUpdates.all_clear_sprint = (u.all_clear_sprint || 0) + 1;
+    }
+
+    // Rainbow game (all 7 pieces without topping out)
+    if (p.rainbow) {
+      extUpdates.rainbow_games = (u.rainbow_games || 0) + 1;
+    }
+
     // Zero-garbage win: won in versus mode without receiving any garbage
     if (isWinner && this.mode === 'versus' && (p.garbageReceived || 0) === 0) {
       extUpdates.zero_garbage_wins = (u.zero_garbage_wins || 0) + 1;
@@ -764,13 +799,18 @@ export class GameRoom {
     try {
       await updateDailyStreak(p.userId, this.supabase);
       const { newlyEarned } = await checkAndUpdateAchievements(p.userId, this.supabase, {
-        mode:          this.mode,
+        mode:            this.mode,
         isWinner,
-        garbageSent:   p.garbageSent || 0,
-        piecesPlaced:  p.piecesPlaced || 0,
-        tspinTriples:  p.tSpinTriples || 0,
-        comebackWin:   isWinner && p.wasCritical,
+        garbageSent:     p.garbageSent     || 0,
+        piecesPlaced:    p.piecesPlaced    || 0,
+        tspinTriples:    p.tSpinTriples    || 0,
+        comebackWin:     isWinner && p.wasCritical,
         garbageReceived: p.garbageReceived || 0,
+        noHold:          isWinner && p.noHoldWin,
+        finessePerfect:  p.finessePerfect  || false,
+        allClear:        p.allClearSprint  || false,
+        rainbow:         p.rainbow         || false,
+        sprintTimeMs:    this.mode === 'sprint' && isWinner ? (Date.now() - this.startTime) : 0,
       });
       if (newlyEarned.length > 0) {
         p.socket.emit('achievementsUnlocked', { achievements: newlyEarned });

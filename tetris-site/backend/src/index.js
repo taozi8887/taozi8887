@@ -24,6 +24,7 @@ import { router as profileRouter, initAvatarBucket } from './profile.js';
 import { router as statsRouter   } from './stats.js';
 import { router as friendsRouter } from './friends.js';
 import { router as cosmeticsRouter } from './cosmetics.js';
+import { router as notificationsRouter } from './notifications.js';
 
 const app    = express();
 const httpSv = createServer(app);
@@ -85,6 +86,7 @@ app.use('/api/profile',   profileRouter);
 app.use('/api/stats',     statsRouter);
 app.use('/api/friends',   friendsRouter);
 app.use('/api/cosmetics', cosmeticsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // GET /api/leaderboard
 app.get('/api/leaderboard', async (req, res) => {
