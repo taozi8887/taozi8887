@@ -1380,6 +1380,10 @@
           <span class="mq-range-label">ELO range</span>
           <span class="mq-range-val" id="mqRangeDisplay">±100</span>
         </div>
+        <div class="progress-bar-wrap" style="width:100%;margin:.5rem 0">
+          <div class="progress-bar-fill indeterminate" id="mqProgressBar"></div>
+        </div>
+        <div class="mq-stage-label" id="mqStageLabel">Finding players…</div>
         <div class="mq-wait-row"><span id="mqWaitTime">0:00</span> elapsed</div>
         <button class="btn sm ghost" onclick="cancelQueue()" style="margin-top:.25rem">Cancel</button>
       </div>
@@ -1513,12 +1517,15 @@
       <button class="btn sm" onclick="closeModal('settings')">Cancel</button>
       <button class="btn sm primary" onclick="applyAndSaveSettings()">Save</button>
     </div>
+    <div class="modal-kbd-hint" style="margin-top:.4rem;text-align:right"><kbd>Esc</kbd> cancel &middot; <kbd>Enter</kbd> save</div>
   </div>
 </div>
 
+<canvas id="confetti-canvas"></canvas>
+
 <footer id="footer">
   <div class="container">
-    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love &middot; <a href="privacy.html">Privacy</a> &middot; <a href="tos.html">Terms</a></p>
   </div>
 </footer>
 
@@ -1629,6 +1636,24 @@ function buildKeybindRows() {
     row.appendChild(slots);
     container.appendChild(row);
   });
+
+  // Conflict detection: highlight slots sharing the same key
+  const _keySlots = {};
+  container.querySelectorAll('.kbslot').forEach(btn => {
+    const k = keybinds[btn.dataset.defId]?.[+btn.dataset.slot];
+    if (k) { if (!_keySlots[k]) _keySlots[k] = []; _keySlots[k].push(btn); }
+  });
+  const _conflictKeys = new Set(Object.keys(_keySlots).filter(k => _keySlots[k].length > 1));
+  container.querySelectorAll('.kbslot').forEach(btn => {
+    const k = keybinds[btn.dataset.defId]?.[+btn.dataset.slot];
+    btn.classList.toggle('conflict', !!(k && _conflictKeys.has(k)));
+  });
+  let _cwEl = document.getElementById('kbConflictWarn');
+  if (_conflictKeys.size > 0) {
+    if (!_cwEl) { _cwEl = document.createElement('div'); _cwEl.id = 'kbConflictWarn'; _cwEl.className = 'kb-conflict-warning'; container.before(_cwEl); }
+    _cwEl.textContent = '⚠ One or more keys are assigned to multiple actions.';
+    _cwEl.classList.add('visible');
+  } else if (_cwEl) { _cwEl.classList.remove('visible'); }
 }
 
 function displayKey(k) {
@@ -2770,12 +2795,18 @@ function renderNextQueue() {
 // ═══════════════════════════════════════
 
 function updateScores() {
-  document.getElementById('scoreVal').textContent = score;
+  const _sv  = document.getElementById('scoreVal');
+  const _ssv = document.getElementById('sideScoreVal');
+  if (_sv)  _sv.textContent  = score;
+  if (_ssv) _ssv.textContent = score;
   document.getElementById('levelVal').textContent = level;
   document.getElementById('linesVal').textContent = lines;
-  document.getElementById('sideScoreVal').textContent = score;
   document.getElementById('sideLevelVal').textContent = level;
   document.getElementById('sideLinesVal').textContent = lines;
+
+  // Tick animation on score
+  if (_sv)  { _sv.classList.remove('score-tick');  requestAnimationFrame(() => _sv.classList.add('score-tick')); }
+  if (_ssv) { _ssv.classList.remove('score-tick'); requestAnimationFrame(() => _ssv.classList.add('score-tick')); }
 
   // Pop animation on score chip
   const chip = document.getElementById('scoreChip');
@@ -4085,6 +4116,17 @@ function enterQueue(mode) {
     if (wt) wt.textContent = m + ':' + s;
   }, 1000);
 
+  // Progress illusion — cycle stage labels to signal active search
+  const _STAGES = ['Finding players…', 'Expanding search range…', 'Almost there…'];
+  let _stageIdx = 0;
+  const _stageLbl = document.getElementById('mqStageLabel');
+  if (_stageLbl) _stageLbl.textContent = _STAGES[0];
+  clearInterval(window._mqStageCycle);
+  window._mqStageCycle = setInterval(() => {
+    _stageIdx = (_stageIdx + 1) % _STAGES.length;
+    if (_stageLbl) _stageLbl.textContent = _STAGES[_stageIdx];
+  }, 9000);
+
   mpSocket = io(MP_SERVER, { transports: ['websocket'], reconnection: false });
   mqWs = mpSocket; // alias for cancelQueue compatibility
 
@@ -4116,6 +4158,7 @@ function enterQueue(mode) {
 
   mpSocket.on('matchFound', (data) => {
     clearInterval(mqWaitTimer); mqWaitTimer = null;
+    clearInterval(window._mqStageCycle); window._mqStageCycle = null;
       const { roomCode, isRanked, gameMode } = data;
       // Server sends flat opponentName/opponentElo/opponentDisplayName (not nested object)
       const oppName = data.opponentDisplayName || data.opponentName || data.opponent?.displayName || data.opponent?.username || 'Opponent';
@@ -4214,6 +4257,7 @@ function enterQueue(mode) {
 
 function cancelQueue() {
   clearInterval(mqWaitTimer); mqWaitTimer = null;
+  clearInterval(window._mqStageCycle); window._mqStageCycle = null;
   if (_mqReadyTimeout) { clearTimeout(_mqReadyTimeout); _mqReadyTimeout = null; }
   if (window._mqStartTimeout) { clearTimeout(window._mqStartTimeout); window._mqStartTimeout = null; }
   window._mqInFoundPhase = false;
@@ -4640,6 +4684,16 @@ function handleMPGameEnd(msg) {
   }
 
   document.getElementById('mpEndScreen').classList.add('active');
+
+  // Rank-up confetti — fire when a ranked win pushes the player to a new rank
+  if (isRanked && msg.reason !== 'disconnect' && msg.winner === mpPlayerId) {
+    const _myDelta = (msg.eloDeltas || {})[mpPlayerId];
+    if (_myDelta > 0 && window._authUser?.elo != null && typeof window._getRankName === 'function') {
+      const _oldRank = window._getRankName(window._authUser.elo);
+      const _newRank = window._getRankName(window._authUser.elo + _myDelta);
+      if (_newRank !== _oldRank) setTimeout(launchConfetti, 500);
+    }
+  }
 
   // Refresh nav ELO display
   if (typeof window.__refreshElo === 'function') setTimeout(window.__refreshElo, 2500);
@@ -5227,6 +5281,40 @@ async function init() {
   } else {
     window.addEventListener('load', handleUrlParams, { once: true });
   }
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const C = ['#c8ff4a','#ff4a6e','#4affda','#c87dff','#ffd700','#4a6eff','#ff9b4a'];
+  const P = Array.from({length: 140}, (_, i) => ({
+    x: Math.random() * canvas.width, y: -10 - Math.random() * 120,
+    vx: (Math.random() - 0.5) * 5, vy: 2 + Math.random() * 4,
+    r: 3 + Math.random() * 5, color: C[i % C.length],
+    rot: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.25,
+    rect: Math.random() > 0.5
+  }));
+  let f = 0; const MAX = 260;
+  (function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of P) {
+      if (p.y > canvas.height + 20) continue;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.rot += p.spin; p.vy += 0.06;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - f / MAX);
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
+      if (p.rect) ctx.fillRect(-p.r, -p.r * .5, p.r * 2, p.r);
+      else { ctx.beginPath(); ctx.arc(0, 0, p.r * .6, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    f++;
+    if (alive && f < MAX) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  })();
 }
 
 init();

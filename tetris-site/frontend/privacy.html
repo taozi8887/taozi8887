@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Taotris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Taotris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="cosmetics.html">Cosmetics</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="logout()">Sign out</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-drawer" id="navDrawer">
+  <button class="nav-drawer-close" aria-label="Close" onclick="toggleDrawer()">✕</button>
+  <a href="index.html">Home</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+</div>
+
+<main class="container">
+  <div class="legal-page">
+    <a href="javascript:history.back()" class="back-nav-link" style="display:inline-block;margin-bottom:1.5rem">← Back</a>
+    <h1>Privacy Policy</h1>
+    <p class="legal-notice">Last updated: June 2025</p>
+
+    <p>Taotris ("we", "us", "our") respects your privacy. This policy explains what data we collect when you use <strong>tetris.taozi4887.dev</strong>, how we use it, and what rights you have.</p>
+
+    <h2>1. What We Collect</h2>
+    <p>When you register an account, we store:</p>
+    <ul>
+      <li>Your <strong>username</strong> and <strong>display name</strong></li>
+      <li>Your <strong>email address</strong> (used only for account recovery; never shared)</li>
+      <li>A <strong>hashed password</strong> (we never store your plain-text password)</li>
+      <li>An optional <strong>bio</strong> and <strong>country code</strong></li>
+      <li>An optional <strong>profile avatar</strong> image you upload</li>
+    </ul>
+    <p>When you play, we store:</p>
+    <ul>
+      <li>Game statistics (scores, lines, wins, losses, time played)</li>
+      <li>Match history (opponent names, ELO changes, timestamps)</li>
+      <li>XP, level, and cosmetic/achievement progress</li>
+    </ul>
+
+    <h2>2. Cookies &amp; Sessions</h2>
+    <p>We use a single <strong>HTTP-only session cookie</strong> to keep you signed in. This cookie:</p>
+    <ul>
+      <li>Contains only a session identifier — no personal data</li>
+      <li>Is deleted when your session expires or you sign out</li>
+      <li>Is not accessible to JavaScript (HTTP-only flag)</li>
+    </ul>
+    <p>We do <strong>not</strong> use advertising cookies, analytics cookies, or third-party tracking of any kind.</p>
+
+    <h2>3. How We Use Your Data</h2>
+    <p>We use your data solely to operate the game:</p>
+    <ul>
+      <li>Authenticating your account</li>
+      <li>Displaying stats, leaderboards, and match history</li>
+      <li>Awarding XP, cosmetics, and achievements</li>
+      <li>Enabling ranked matchmaking (ELO system)</li>
+      <li>Allowing you to add friends and send challenges</li>
+    </ul>
+    <p>We do <strong>not</strong> sell, rent, or share your data with third parties. We do not run ads.</p>
+
+    <h2>4. Data Storage &amp; Security</h2>
+    <p>Your data is stored in a PostgreSQL database hosted on a private server. Passwords are hashed with bcrypt. We use HTTPS for all connections. We take reasonable technical measures to protect your data, but no system is perfectly secure.</p>
+
+    <h2>5. Your Rights (GDPR &amp; Others)</h2>
+    <p>You have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of what data we hold about you</li>
+      <li><strong>Rectification</strong> — correct inaccurate data via your profile settings</li>
+      <li><strong>Erasure</strong> — permanently delete your account and all associated data via <a href="profile.html?tab=settings">Profile → Settings → Delete My Account</a></li>
+      <li><strong>Portability</strong> — request your data in a machine-readable format</li>
+      <li><strong>Objection</strong> — contact us if you have concerns about how we process your data</li>
+    </ul>
+
+    <h2>6. Data Retention</h2>
+    <p>We retain your account data for as long as your account is active. If you delete your account, all personal data is removed within 30 days. Match history entries that reference your account may be anonymised rather than deleted to preserve historical leaderboard integrity.</p>
+
+    <h2>7. Children</h2>
+    <p>Taotris is not directed at children under 13. We do not knowingly collect data from children under 13. If you believe a child has registered, contact us and we will delete the account.</p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>We may update this policy. Material changes will be noted with a new "Last updated" date at the top of this page. Continued use after changes constitutes acceptance.</p>
+
+    <h2>9. Contact</h2>
+    <p>Questions or requests: <a href="mailto:mail@taozi4887.dev">mail@taozi4887.dev</a> or Discord <strong>@taozi4887</strong>.</p>
+  </div>
+</main>
+
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="tos.html">Terms</a></p>
+  </div>
+</footer>
+
+<!-- Cookie banner -->
+<div id="cookie-banner" role="region" aria-label="Cookie notice">
+  <p>We use a session cookie to keep you signed in. No tracking, no ads. <a href="privacy.html">Learn more</a></p>
+  <div class="cookie-btns">
+    <button class="btn sm" onclick="acceptCookies()">Got it</button>
+  </div>
+</div>
+
+<script type="module">
+import API, { injectNavUser } from './api.js';
+const me = await injectNavUser(null);
+window.logout = async () => {
+  try { await API.auth.logout(); } catch {}
+  API.clearNavCache?.();
+  location.href = 'index.html';
+};
+</script>
+
+<script>
+function toggleDrawer() {
+  const d = document.getElementById('navDrawer');
+  const h = document.getElementById('navHamburger');
+  const open = d.classList.toggle('open');
+  h.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const d = document.getElementById('navDrawer');
+    if (d && d.classList.contains('open')) toggleDrawer();
+  }
+});
+
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner').classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => { document.getElementById('cookie-banner').classList.add('visible'); }, 900);
+  }
+})();
+</script>
+</body>
+</html>

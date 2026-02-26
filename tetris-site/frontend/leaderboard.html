@@ -77,9 +77,27 @@
       <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
+
+<!-- Mobile nav drawer -->
+<div class="nav-drawer" id="navDrawer">
+  <a href="index.html">Home</a>
+  <a href="leaderboard.html" class="active">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+  <a href="friends.html" id="drawerFriendsLink" style="display:none">Friends</a>
+  <div class="nav-drawer-user">
+    <a id="drawerLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
+    <button id="drawerLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
+  </div>
+</div>
 
 <div class="container">
   <div class="page-header">
@@ -118,7 +136,11 @@
           </tr>
         </thead>
         <tbody id="lbBody">
-          <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Loading…</td></tr>
+          <tr class="skeleton skeleton-row"><td colspan="5"></td></tr>
+          <tr class="skeleton skeleton-row"><td colspan="5"></td></tr>
+          <tr class="skeleton skeleton-row"><td colspan="5"></td></tr>
+          <tr class="skeleton skeleton-row"><td colspan="5"></td></tr>
+          <tr class="skeleton skeleton-row"><td colspan="5"></td></tr>
         </tbody>
       </table>
     </div>
@@ -132,9 +154,24 @@
 <footer id="footer">
   <div class="container">
     <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+    <p style="margin-top:.5rem;font-size:.7rem">
+      <a href="privacy.html">Privacy Policy</a> &middot;
+      <a href="tos.html">Terms of Service</a>
+    </p>
   </div>
 </footer>
 <div id="toast-container"></div>
+
+<!-- Cookie notice -->
+<div id="cookie-banner">
+  <span>🍪 This site uses a session cookie for login and no third-party trackers.
+    <a href="privacy.html">Privacy Policy</a> &middot; <a href="tos.html">Terms</a>
+  </span>
+  <div class="cookie-btns">
+    <button class="btn sm primary" onclick="acceptCookies()">Got it</button>
+    <a href="privacy.html" class="btn sm ghost">Learn more</a>
+  </div>
+</div>
 
 <!-- Rank tiers modal -->
 <div id="rankModal" class="modal-backdrop hidden" onclick="if(event.target===this)window.hideRankModal()">
@@ -235,7 +272,10 @@
   async function loadPage(p) {
     page = p;
     const tbody = document.getElementById('lbBody');
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">Loading…</td></tr>';
+    // Show skeleton rows while loading
+    tbody.innerHTML = Array(8).fill('').map(() =>
+      `<tr class="skeleton skeleton-row"><td colspan="5" style="height:52px"></td></tr>`
+    ).join('');
 
     try {
       const params = { page, limit: LIMIT };
@@ -258,8 +298,19 @@
   function renderTable(players, offset) {
     const tbody = document.getElementById('lbBody');
     if (!players.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3)">No players found.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state-nice"><div class="es-icon">🔍</div><div class="es-title">No players found</div><div class="es-sub">Try a different search or rank filter.</div></div></td></tr>`;
       return;
+    }
+
+    // Rank ELO range lookup for tooltips
+    const RANK_RANGES = {
+      Challenger: '2600+ ELO', Grandmaster: '2200–2599', Master: '2000–2199',
+      Diamond: '1800–1999', Platinum: '1600–1799', Gold: '1400–1599',
+      Silver: '1200–1399', Bronze: '1000–1199', Iron: '800–999', Unranked: '< 800'
+    };
+    function rankBadgeWithTooltip(rankName) {
+      const range = RANK_RANGES[rankName] || '';
+      return `<div class="rank-tooltip-wrap"><span class="rank-badge ${rankName}" style="font-size:.6rem">${rankName}</span><div class="rank-tooltip">${rankName}${range ? ' · ' + range : ''}</div></div>`;
     }
     const medals = ['🥇','🥈','🥉'];
     tbody.innerHTML = players.map((p, i) => {
@@ -290,7 +341,7 @@
                 <div class="flex gap-s" style="align-items:center;flex-wrap:wrap">
                   <a href="profile.html?u=${encodeURIComponent(p.username)}" style="margin-left:.5rem">${levelBadgeHTML(getLevel(p.xp||0))} ${escHtml(p.display_name || p.username)}</a>
                   ${p.display_name && p.display_name !== p.username ? `<span class="small muted">@${escHtml(p.username)}</span>` : ''}
-                  <span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span>
+                  ${rankBadgeWithTooltip(rank.name)}
                   ${titleTag}
                 </div>
               </div>
@@ -334,6 +385,33 @@
   }
 
   init();
+</script>
+
+<script>
+// ── Mobile hamburger ──────────────────────────────────────────────
+function toggleDrawer() {
+  const btn    = document.getElementById('navHamburger');
+  const drawer = document.getElementById('navDrawer');
+  const open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const drawer = document.getElementById('navDrawer');
+    if (drawer?.classList.contains('open')) toggleDrawer();
+  }
+});
+// ── Cookie banner ─────────────────────────────────────────────────
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner')?.classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => document.getElementById('cookie-banner')?.classList.add('visible'), 900);
+  }
+})();
 </script>
 </body>
 </html>

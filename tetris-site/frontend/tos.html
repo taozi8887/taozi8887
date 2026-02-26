@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service - Taotris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="cursor.js" defer></script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">Taotris</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="game.html">Play</a>
+      <a href="cosmetics.html">Cosmetics</a>
+      <a href="controls.html">Controls</a>
+      <a href="ranks.html">Ranks</a>
+    </div>
+    <div class="nav-user">
+      <span id="navUsername" class="small muted hidden"></span>
+      <a id="navAvatarLink" href="profile.html">
+        <div id="navAvatar" class="nav-avatar" style="display:none"></div>
+      </a>
+      <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
+      <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="logout()">Sign out</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-drawer" id="navDrawer">
+  <button class="nav-drawer-close" aria-label="Close" onclick="toggleDrawer()">✕</button>
+  <a href="index.html">Home</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+</div>
+
+<main class="container">
+  <div class="legal-page">
+    <a href="javascript:history.back()" class="back-nav-link" style="display:inline-block;margin-bottom:1.5rem">← Back</a>
+    <h1>Terms of Service</h1>
+    <p class="legal-notice">Last updated: June 2025</p>
+
+    <p>By creating an account or using <strong>tetris.taozi4887.dev</strong> ("the Site"), you agree to these Terms of Service ("Terms"). If you do not agree, do not use the Site.</p>
+
+    <h2>1. Eligibility</h2>
+    <p>You must be at least 13 years old to use the Site. By using the Site, you represent that you meet this requirement. If you are under 18, you confirm you have parental or guardian permission.</p>
+
+    <h2>2. Accounts</h2>
+    <p>You are responsible for keeping your account credentials secure. You may not share your account, create multiple accounts to manipulate rankings, or impersonate other users. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+
+    <h2>3. Fair Play</h2>
+    <p>Using automation, bots, scripts, or exploits to gain unfair advantages is prohibited. Intentionally forfeiting ranked games to manipulate ELO ("griefing") is prohibited. We may remove ELO, reset statistics, or ban accounts for violations.</p>
+
+    <h2>4. User Content</h2>
+    <p>Your username, display name, and bio are visible to other players. You agree not to use offensive, hateful, discriminatory, or illegal content in any field visible to others. We reserve the right to remove content or terminate accounts that post such material.</p>
+    <p>Profile avatars must not contain nudity, hate symbols, or copyrighted material you do not have rights to. We may remove avatars that violate this policy.</p>
+
+    <h2>5. Cosmetics &amp; Achievements</h2>
+    <p>Cosmetics (borders, titles) are earned through in-game achievements. They are tied to your account and have no monetary value. We may alter, add, or remove cosmetics and achievements at any time without compensation.</p>
+
+    <h2>6. Availability &amp; Changes</h2>
+    <p>The Site is provided as-is for free. We do not guarantee uptime, data preservation, or that any feature will remain available. We may modify or discontinue the Site or any feature at any time without notice.</p>
+
+    <h2>7. Disclaimer of Warranties</h2>
+    <p>THE SITE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT THE SITE WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS.</p>
+
+    <h2>8. Limitation of Liability</h2>
+    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE ARE NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING FROM YOUR USE OF THE SITE.</p>
+
+    <h2>9. Termination</h2>
+    <p>We may suspend or permanently ban accounts that violate these Terms. You may delete your own account at any time via <a href="profile.html?tab=settings">Profile → Settings → Delete My Account</a>.</p>
+
+    <h2>10. Governing Law</h2>
+    <p>These Terms are governed by applicable law. Disputes will be resolved in the jurisdiction of the Site operator.</p>
+
+    <h2>11. Changes to These Terms</h2>
+    <p>We may update these Terms at any time. Continued use after changes constitutes acceptance of the updated Terms. We will update the "Last updated" date at the top of this page when changes are made.</p>
+
+    <h2>12. Contact</h2>
+    <p>Questions about these Terms: <a href="mailto:mail@taozi4887.dev">mail@taozi4887.dev</a> or Discord <strong>@taozi4887</strong>.</p>
+  </div>
+</main>
+
+<footer id="footer">
+  <div class="container">
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="tos.html">Terms</a></p>
+  </div>
+</footer>
+
+<!-- Cookie banner -->
+<div id="cookie-banner" role="region" aria-label="Cookie notice">
+  <p>We use a session cookie to keep you signed in. No tracking, no ads. <a href="privacy.html">Learn more</a></p>
+  <div class="cookie-btns">
+    <button class="btn sm" onclick="acceptCookies()">Got it</button>
+  </div>
+</div>
+
+<script type="module">
+import API, { injectNavUser } from './api.js';
+const me = await injectNavUser(null);
+window.logout = async () => {
+  try { await API.auth.logout(); } catch {}
+  API.clearNavCache?.();
+  location.href = 'index.html';
+};
+</script>
+
+<script>
+function toggleDrawer() {
+  const d = document.getElementById('navDrawer');
+  const h = document.getElementById('navHamburger');
+  const open = d.classList.toggle('open');
+  h.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const d = document.getElementById('navDrawer');
+    if (d && d.classList.contains('open')) toggleDrawer();
+  }
+});
+
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner').classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => { document.getElementById('cookie-banner').classList.add('visible'); }, 900);
+  }
+})();
+</script>
+</body>
+</html>

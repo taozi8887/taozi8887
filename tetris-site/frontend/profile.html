@@ -186,11 +186,46 @@
       <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='game.html'">Settings</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
 
+<div class="nav-drawer" id="navDrawer">
+  <button class="nav-drawer-close" aria-label="Close" onclick="toggleDrawer()">✕</button>
+  <a href="index.html">Home</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+  <a href="friends.html">Friends</a>
+  <a href="profile.html" class="active">Profile</a>
+  <hr style="border-color:var(--border);margin:.5rem 0">
+  <button class="btn sm ghost" style="width:100%" onclick="doLogout()">Sign out</button>
+</div>
+
 <div class="container">
+
+  <!-- Back nav: slot is reserved in HTML; inline script fills it synchronously
+       so there is no layout shift when it appears later. -->
+  <div id="backNavSlot"></div>
+  <script>
+  try {
+    var _bnParams = new URLSearchParams(location.search);
+    var _bnFrom  = _bnParams.get('from');
+    var _bnRef   = _bnFrom ? null : (document.referrer ? new URL(document.referrer) : null);
+    var _bnPage  = _bnFrom || (_bnRef && _bnRef.origin === location.origin
+      ? _bnRef.pathname.split('/').pop().replace('.html', '') : null);
+    if (_bnPage && _bnPage !== 'profile') {
+      document.getElementById('backNavSlot').innerHTML =
+        '<a class="back-nav-link" href="' + (_bnFrom ? _bnFrom + '.html' : document.referrer) + '">\u2190 Back to '
+        + _bnPage.charAt(0).toUpperCase() + _bnPage.slice(1) + '</a>';
+    }
+  } catch(e) {}
+  </script>
 
   <!-- Profile header -->
   <div class="profile-header" id="profileHeader">
@@ -313,7 +348,9 @@
   <!-- Matches tab -->
   <div id="tabMatches" class="hidden">
     <div class="match-list" id="matchList">
-      <p class="no-matches">Loading matches…</p>
+      <div class="skeleton skeleton-row" style="height:56px;margin-bottom:.5rem"></div>
+      <div class="skeleton skeleton-row" style="height:56px;margin-bottom:.5rem"></div>
+      <div class="skeleton skeleton-row" style="height:56px"></div>
     </div>
   </div>
 
@@ -388,6 +425,12 @@
       <button class="btn sm primary" onclick="applySettings()">Save</button>
       <span id="settingsSaveStatus" class="small"></span>
     </div>
+
+    <div class="edit-section mt-m" style="border-color:rgba(255,74,110,.22)">
+      <h3 style="color:var(--accent2);font-family:var(--mono);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem">Danger Zone</h3>
+      <p class="small muted" style="margin-bottom:1rem">Permanently deletes your account, all stats, and match history. This cannot be undone.</p>
+      <button class="btn sm" style="border-color:rgba(255,74,110,.4);color:var(--accent2)" onclick="confirmDeleteAccount()">Delete My Account</button>
+    </div>
   </div>
 
 
@@ -401,9 +444,17 @@
 <!-- Footer -->
 <footer id="footer">
   <div class="container">
-    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+    <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love &middot; <a href="privacy.html">Privacy</a> &middot; <a href="tos.html">Terms</a></p>
   </div>
 </footer>
+
+<!-- Cookie banner -->
+<div id="cookie-banner" role="region" aria-label="Cookie notice">
+  <p>We use a session cookie to keep you signed in. No tracking, no ads. <a href="privacy.html">Learn more</a></p>
+  <div class="cookie-btns">
+    <button class="btn sm" onclick="acceptCookies()">Got it</button>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 
@@ -473,7 +524,16 @@
     }
     // Auto-switch to ?tab if requested
     const tabParam = params.get('tab');
-    if (tabParam && ['stats','alltime','matches','edit','settings','custom'].includes(tabParam)) switchTab(tabParam);
+    if (tabParam && ['stats','alltime','matches','edit','settings','custom'].includes(tabParam)) {
+      switchTab(tabParam);
+    } else {
+      // Restore last-visited tab from session storage
+      try {
+        const stored = sessionStorage.getItem('profileTab');
+        if (stored && ['stats','alltime','matches'].includes(stored)) switchTab(stored);
+      } catch {}
+    }
+    // Back navigation is handled by the synchronous inline script above the container.
   }
 
   function startPresencePoll(username) {
@@ -537,8 +597,9 @@
       <div class="profile-username-sub">@${escHtml(data.username)}</div>
       ${data.equippedTitle ? `<span class="profile-title-tag ${titleTagClass(data.equippedTitle.rarity, data.equippedTitle.slug)}">${data.equippedTitle.icon ? data.equippedTitle.icon + ' ' : ''}${escHtml(data.equippedTitle.name || data.equippedTitle.slug?.replace(/^title-/,'').replace(/-/g,' ') || '')}</span>` : ''}
       <div class="flex gap-s" style="align-items:center;margin-bottom:.4rem;margin-top:.4rem">
-        <span class="rank-badge ${rank.name}">${rank.name}</span>
+        <span class="rank-tooltip-wrap"><span class="rank-badge ${rank.name}">${rank.name}</span><span class="rank-tooltip">${rank.name} rank</span></span>
         <span class="elo-number">${fmtNum(data.elo)}</span>
+        <div class="elo-sparkline-wrap" id="eloSparklineWrap"></div>
       </div>
       <div class="xp-bar-section">
         <div class="xp-bar-label">Level ${lvlInfo.level} &nbsp;&bull;&nbsp; ${Math.round(lvlInfo.xpCurrent)} / ${lvlInfo.xpNeeded} XP to next</div>
@@ -665,6 +726,8 @@
 
     // Matches - backend returns recent_matches (snake_case)
     renderMatches(data.recent_matches || [], data.id, isOwn);
+    // ELO sparkline
+    drawEloSparkline(data.recent_matches || [], data.id);
 
     if (isOwn) {
       document.getElementById('editTabBtn').style.display = '';
@@ -702,9 +765,41 @@
     return html;
   }
 
+  function drawEloSparkline(matches, userId) {
+    const wrap = document.getElementById('eloSparklineWrap');
+    if (!wrap) return;
+    const pts = matches
+      .map(m => m.p1_id === userId ? m.p1_elo : m.p2_elo)
+      .filter(e => e != null)
+      .reverse();
+    if (pts.length < 2) return;
+    const W = 120, H = 30;
+    const mn = Math.min(...pts) - 15, mx = Math.max(...pts) + 15;
+    const xi = i => (i / (pts.length - 1)) * W;
+    const yi = v => H - ((v - mn) / (mx - mn)) * (H - 4) - 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    canvas.id = 'eloSparkline';
+    canvas.title = `ELO trend (last ${pts.length} matches)`;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(200,255,74,.22)');
+    grad.addColorStop(1, 'rgba(200,255,74,0)');
+    ctx.beginPath();
+    ctx.moveTo(xi(0), yi(pts[0]));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(xi(i), yi(pts[i]));
+    ctx.lineTo(xi(pts.length - 1), H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(xi(0), yi(pts[0]));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(xi(i), yi(pts[i]));
+    ctx.strokeStyle = '#c8ff4a'; ctx.lineWidth = 1.5; ctx.stroke();
+    wrap.appendChild(canvas);
+  }
+
   function renderMatches(matches, userId, isOwn) {
     const list = document.getElementById('matchList');
-    if (!matches.length) { list.innerHTML = '<p class="no-matches">No matches recorded yet.</p>'; return; }
+    if (!matches.length) { list.innerHTML = '<div class="empty-state-nice"><div class="es-icon">🎮</div><div class="es-title">No matches yet</div><div class="es-sub">Play your first game to see match history here.</div><a class="btn sm" href="game.html" style="margin-top:.75rem">Play Now</a></div>'; return; }
 
     const modeConfig = {
       'versus-ranked':  { cls: 'versus-ranked', label: 'Ranked Versus' },
@@ -892,6 +987,7 @@
 
   window.switchTab = (tab) => {
     activeTab = tab;
+    try { sessionStorage.setItem('profileTab', tab); } catch {}
     document.getElementById('tabStats').classList.toggle('hidden',    tab !== 'stats');
     document.getElementById('tabAlltime').classList.toggle('hidden',  tab !== 'alltime');
     document.getElementById('tabMatches').classList.toggle('hidden',  tab !== 'matches');
@@ -1029,6 +1125,23 @@
     API.clearNavCache?.();
     try { await API.auth.logout(); } catch {}
     location.href = 'index.html';
+  };
+
+  window.confirmDeleteAccount = async () => {
+    if (!me) return;
+    const ok = window.confirm('Are you absolutely sure?\n\nThis will permanently delete your account, all stats, and match history. This cannot be undone.');
+    if (!ok) return;
+    const input = window.prompt(`Type your username (${me.username}) to confirm:`);
+    if (!input || input.trim() !== me.username) {
+      toast('Username did not match. Deletion cancelled.', 'error'); return;
+    }
+    try {
+      await fetch(API.BASE + '/api/auth/account', { method: 'DELETE', credentials: 'include' });
+      toast('Account deleted. Goodbye!', 'success');
+      setTimeout(() => { location.href = 'index.html'; }, 1500);
+    } catch (e) {
+      toast('Failed to delete account. Please contact support.', 'error');
+    }
   };
 
   function setVal(id, v) {
@@ -1217,5 +1330,32 @@
     <div id="levelTierList"></div>
   </div>
 </div>
+<script>
+// Hamburger nav drawer
+function toggleDrawer() {
+  const d = document.getElementById('navDrawer');
+  const h = document.getElementById('navHamburger');
+  const open = d.classList.toggle('open');
+  h.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const d = document.getElementById('navDrawer');
+    if (d && d.classList.contains('open')) toggleDrawer();
+  }
+});
+
+// Cookie banner
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner').classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => { document.getElementById('cookie-banner').classList.add('visible'); }, 900);
+  }
+})();
+</script>
 </body>
 </html>

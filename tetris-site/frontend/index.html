@@ -237,9 +237,27 @@
       <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="logout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
+
+<!-- Mobile nav drawer -->
+<div class="nav-drawer" id="navDrawer">
+  <a href="index.html" class="active">Home</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+  <a href="friends.html" id="drawerFriendsLink" style="display:none">Friends</a>
+  <div class="nav-drawer-user">
+    <a id="drawerLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
+    <button id="drawerLogoutBtn" class="btn sm ghost hidden" onclick="logout()">Sign out</button>
+  </div>
+</div>
 
 <!-- Hero -->
 <section class="hero">
@@ -264,11 +282,11 @@
 <!-- Stats banner -->
 <div class="container">
   <div class="stats-banner" id="statsBanner">
-    <div class="banner-stat"><div class="val" id="sbOnline">-</div><div class="lbl">Online Now</div></div>
-    <div class="banner-stat"><div class="val" id="sbPlayers">-</div><div class="lbl">Players</div></div>
-    <div class="banner-stat"><div class="val" id="sbGames">-</div><div class="lbl">Games Played</div></div>
-    <div class="banner-stat"><div class="val" id="sbMinutes">-</div><div class="lbl">Minutes Played</div></div>
-    <div class="banner-stat"><div class="val" id="sbLines">-</div><div class="lbl">Lines Cleared</div></div>
+    <div class="banner-stat"><div class="val counter-val" id="sbOnline">-</div><div class="lbl">Online Now</div></div>
+    <div class="banner-stat"><div class="val counter-val" id="sbPlayers">-</div><div class="lbl">Players</div></div>
+    <div class="banner-stat"><div class="val counter-val" id="sbGames">-</div><div class="lbl">Games Played</div></div>
+    <div class="banner-stat"><div class="val counter-val" id="sbMinutes">-</div><div class="lbl">Minutes Played</div></div>
+    <div class="banner-stat"><div class="val counter-val" id="sbLines">-</div><div class="lbl">Lines Cleared</div></div>
   </div>
 </div>
 
@@ -279,7 +297,13 @@
     <a href="leaderboard.html" class="btn sm">See all →</a>
   </div>
   <div id="lbPreviewBody">
-    <div class="lb-row" style="border-top:none"><span class="dimmed small">Loading…</span></div>
+    <div class="lb-podium-card">
+      <div class="lb-podium" style="padding:1.5rem 1rem 0">
+        <div class="lb-podium-slot p2"><div class="lb-podium-player"><div style="width:58px;height:58px" class="skeleton skeleton-circle"></div><div style="width:80px;height:.7rem;margin-top:.5rem" class="skeleton skeleton-text"></div></div><div class="lb-podium-stand" style="height:68px"></div></div>
+        <div class="lb-podium-slot p1"><div class="lb-podium-player"><div style="width:72px;height:72px" class="skeleton skeleton-circle"></div><div style="width:90px;height:.7rem;margin-top:.5rem" class="skeleton skeleton-text"></div></div><div class="lb-podium-stand" style="height:96px"></div></div>
+        <div class="lb-podium-slot p3"><div class="lb-podium-player"><div style="width:50px;height:50px" class="skeleton skeleton-circle"></div><div style="width:70px;height:.7rem;margin-top:.5rem" class="skeleton skeleton-text"></div></div><div class="lb-podium-stand" style="height:48px"></div></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -342,8 +366,23 @@
 <footer id="footer">
   <div class="container">
     <p>tetris.taozi4887.dev &middot; <a href="https://taozi4887.dev" rel="noopener">taozi4887.dev</a> &middot; made with love</p>
+    <p style="margin-top:.5rem;font-size:.7rem">
+      <a href="privacy.html">Privacy Policy</a> &middot;
+      <a href="tos.html">Terms of Service</a>
+    </p>
   </div>
 </footer>
+
+<!-- Cookie notice -->
+<div id="cookie-banner">
+  <span>🍪 This site uses a session cookie for login and no third-party trackers.
+    <a href="privacy.html">Privacy Policy</a> &middot; <a href="tos.html">Terms</a>
+  </span>
+  <div class="cookie-btns">
+    <button class="btn sm primary" onclick="acceptCookies()">Got it</button>
+    <a href="privacy.html" class="btn sm ghost">Learn more</a>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 
@@ -367,19 +406,46 @@
   }
 
   async function loadBannerStats() {
+    // Animated counter helper
+    function animateCounter(el, target, duration = 1100) {
+      if (!el) return;
+      el.setAttribute('data-counting', '1');
+      const start = performance.now();
+      function step(now) {
+        const p    = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmtNum(Math.round(target * ease));
+        if (p < 1) requestAnimationFrame(step);
+        else { el.textContent = fmtNum(target); el.removeAttribute('data-counting'); }
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Trigger counters when banner scrolls into view
+    function observeAndCount(values) {
+      const banner = document.getElementById('statsBanner');
+      if (!banner) return;
+      const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          obs.disconnect();
+          Object.keys(values).forEach(id => animateCounter(document.getElementById(id), values[id]));
+        }
+      }, { threshold: 0.3 });
+      obs.observe(banner);
+    }
+
     try {
       const [globalData, lbData] = await Promise.all([
         API.stats.global(),
         API.leaderboard.get({ limit: 1 }),
       ]);
-      document.getElementById('sbPlayers').textContent = fmtNum(globalData.total_players || lbData.total);
-      document.getElementById('sbGames').textContent   = fmtNum(globalData.total_games);
-      const totalMins = Math.round((globalData.total_time_ms || 0) / 60000);
-      document.getElementById('sbMinutes').textContent = fmtNum(totalMins);
-      document.getElementById('sbLines').textContent   = fmtNum(globalData.total_lines);
+      observeAndCount({
+        sbPlayers: parseInt(globalData.total_players || lbData.total) || 0,
+        sbGames:   parseInt(globalData.total_games) || 0,
+        sbMinutes: Math.round((globalData.total_time_ms || 0) / 60000),
+        sbLines:   parseInt(globalData.total_lines) || 0,
+      });
     } catch {}
-    // Fetch online count separately after a short delay so the presence socket
-    // has time to connect and emit 'identify' before we read online.size
     refreshOnlineCount();
     setInterval(refreshOnlineCount, 30_000);
   }
@@ -482,6 +548,34 @@
   };
 
   init();
+</script>
+
+<script>
+// ── Mobile hamburger ──────────────────────────────────────────────
+function toggleDrawer() {
+  const btn    = document.getElementById('navHamburger');
+  const drawer = document.getElementById('navDrawer');
+  const open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const drawer = document.getElementById('navDrawer');
+    if (drawer?.classList.contains('open')) toggleDrawer();
+  }
+});
+
+// ── Cookie banner ─────────────────────────────────────────────────
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner')?.classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => document.getElementById('cookie-banner')?.classList.add('visible'), 900);
+  }
+})();
 </script>
 </body>
 </html>

@@ -92,9 +92,27 @@
       <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
+
+<!-- Mobile nav drawer -->
+<div class="nav-drawer" id="navDrawer">
+  <a href="index.html">Home</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="game.html">Play</a>
+  <a href="cosmetics.html">Cosmetics</a>
+  <a href="controls.html">Controls</a>
+  <a href="ranks.html">Ranks</a>
+  <a href="friends.html" class="active">Friends</a>
+  <div class="nav-drawer-user">
+    <a id="drawerLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
+    <button id="drawerLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
+  </div>
+</div>
 
 <div class="container" style="max-width:820px">
   <div class="page-header">
@@ -115,11 +133,16 @@
   <!-- Friends tab -->
   <div id="tabFriends">
     <div class="add-friend-row">
-      <input id="addInput" class="input" type="text" placeholder="Username to add…">
-      <button class="btn primary" onclick="sendRequest()">Add Friend</button>
+      <input id="addInput" class="input" type="text" placeholder="Username to add…" onkeydown="if(event.key==='Enter')sendRequest()">
+      <button class="btn primary" id="addFriendBtn" onclick="sendRequest()">
+        <span class="btn-spinner"></span>
+        <span class="btn-label">Add Friend</span>
+      </button>
     </div>
     <div id="friendsGrid" class="friend-grid">
-      <p class="dimmed small">Loading…</p>
+      <div class="skeleton skeleton-friend-card"></div>
+      <div class="skeleton skeleton-friend-card"></div>
+      <div class="skeleton skeleton-friend-card"></div>
     </div>
   </div>
 
@@ -127,7 +150,8 @@
   <div id="tabInbox" class="hidden">
     <p class="small muted mb-m">Pending challenge invites from friends.</p>
     <div id="inboxList" class="flex col gap-s">
-      <p class="dimmed small">Loading…</p>
+      <div class="skeleton skeleton-friend-card"></div>
+      <div class="skeleton skeleton-friend-card"></div>
     </div>
   </div>
 
@@ -135,7 +159,8 @@
   <div id="tabRequests" class="hidden">
     <p class="small muted mb-m">Incoming friend requests.</p>
     <div id="reqList" class="flex col gap-s">
-      <p class="dimmed small">Loading…</p>
+      <div class="skeleton skeleton-friend-card"></div>
+      <div class="skeleton skeleton-friend-card"></div>
     </div>
   </div>
 </div>
@@ -143,9 +168,26 @@
 <p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)" class="">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
 
 <footer id="footer">
-  <div class="container"><p>tetris.taozi4887.dev · <a href="index.html">Home</a></p></div>
+  <div class="container">
+    <p>tetris.taozi4887.dev · <a href="index.html">Home</a></p>
+    <p style="margin-top:.5rem;font-size:.7rem">
+      <a href="privacy.html">Privacy Policy</a> &middot;
+      <a href="tos.html">Terms of Service</a>
+    </p>
+  </div>
 </footer>
 <div id="toast-container"></div>
+
+<!-- Cookie notice -->
+<div id="cookie-banner">
+  <span>🍪 This site uses a session cookie for login and no third-party trackers.
+    <a href="privacy.html">Privacy Policy</a> &middot; <a href="tos.html">Terms</a>
+  </span>
+  <div class="cookie-btns">
+    <button class="btn sm primary" onclick="acceptCookies()">Got it</button>
+    <a href="privacy.html" class="btn sm ghost">Learn more</a>
+  </div>
+</div>
 
 <script type="module">
   import API, { getMe, injectNavUser, getRank, fmtNum, toast, forgetChallenge, getLevel, levelBadgeHTML, titleTagClass } from './api.js';
@@ -190,7 +232,11 @@
 
     // Accepted friends grid
     if (!accepted.length) {
-      grid.innerHTML = '<div class="empty-state">No friends yet.<br>Add someone by username above.</div>';
+      grid.innerHTML = `<div class="empty-state-nice">
+        <div class="es-icon">👥</div>
+        <div class="es-title">No friends yet</div>
+        <div class="es-sub">Search by username above to add someone, or challenge them in the <a href="leaderboard.html" style="color:var(--accent)">leaderboard</a>.</div>
+      </div>`;
     } else {
       // Each entry: { id: friendshipRowId, status, friend: { id, username, elo, display_name, avatarUrl } }
       grid.innerHTML = accepted.map(f => friendCard(f)).join('');
@@ -245,7 +291,11 @@
       });
     }
     if (!incoming.length && !outgoing.length) {
-      html = '<div class="empty-state">No pending requests.</div>';
+      html = `<div class="empty-state-nice">
+        <div class="es-icon">📬</div>
+        <div class="es-title">No pending requests</div>
+        <div class="es-sub">Friend requests you send or receive will appear here.</div>
+      </div>`;
     }
     reqList.innerHTML = html;
   }
@@ -329,7 +379,11 @@
       startInboxCountdowns();
     } else {
       inboxCount.classList.add('hidden');
-      inboxList.innerHTML = '<div class="empty-state">No pending challenges.</div>';
+      inboxList.innerHTML = `<div class="empty-state-nice">
+        <div class="es-icon">⚔</div>
+        <div class="es-title">No pending challenges</div>
+        <div class="es-sub">When a friend challenges you, it will show up here.</div>
+      </div>`;
     }
   }
 
@@ -373,12 +427,15 @@
   window.sendRequest = async () => {
     const username = document.getElementById('addInput').value.trim();
     if (!username) return;
+    const btn = document.getElementById('addFriendBtn');
+    btn.classList.add('loading');
     try {
       await API.friends.request({ username });
       toast(`Friend request sent to ${username}!`, 'success');
       document.getElementById('addInput').value = '';
       loadAll();
     } catch (e) { toast(e.message, 'error'); }
+    btn.classList.remove('loading');
   };
 
   window.respondFriend = async (friendshipId, action) => {
@@ -447,9 +504,14 @@
     document.getElementById(id)?.classList.add('hidden');
   };
 
-  // Close modal on backdrop click
+  // Close modal on backdrop click + Esc key
   document.querySelectorAll('.modal-backdrop').forEach(el => {
     el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(el => el.classList.add('hidden'));
+    }
   });
 
   window.respondChallenge = async (challengeId, action) => {
@@ -483,6 +545,7 @@
       <button class="mode-btn" data-mode="coop" onclick="challengeSelectMode(this)">Co-op<br><span style="font-size:.65rem;color:var(--text3)">Team</span></button>
     </div>
     <div class="modal-actions">
+      <span class="modal-kbd-hint"><kbd>Esc</kbd> cancel</span>
       <button class="btn ghost" onclick="closeModal('challengeModal')">Cancel</button>
       <button class="btn primary" onclick="submitChallenge()">Send Challenge</button>
     </div>
@@ -495,11 +558,30 @@
     <div class="modal-title">Remove Friend?</div>
     <div class="modal-sub" id="removeFriendModalSub">Are you sure you want to remove this friend?</div>
     <div class="modal-actions">
+      <span class="modal-kbd-hint"><kbd>Esc</kbd> cancel</span>
       <button class="btn ghost" onclick="closeModal('removeFriendModal')">Cancel</button>
       <button class="btn" style="background:var(--accent2);color:#fff" onclick="confirmRemoveFriend()">Remove</button>
     </div>
   </div>
 </div>
 
-</body>
-</html>
+<script>
+// ── Mobile hamburger ──────────────────────────────────────────────
+function toggleDrawer() {
+  const btn    = document.getElementById('navHamburger');
+  const drawer = document.getElementById('navDrawer');
+  const open   = drawer.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+// ── Cookie banner ─────────────────────────────────────────────────
+function acceptCookies() {
+  localStorage.setItem('cookieNotice', '1');
+  document.getElementById('cookie-banner')?.classList.remove('visible');
+}
+(function() {
+  if (!localStorage.getItem('cookieNotice')) {
+    setTimeout(() => document.getElementById('cookie-banner')?.classList.add('visible'), 900);
+  }
+})();
+</script>
