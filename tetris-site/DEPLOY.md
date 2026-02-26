@@ -5,6 +5,17 @@ git add . ; git commit -m "update" ; git push
 
 ---
 
+## Database Migrations
+
+SQL migration files live in `backend/migrations/`. Run them once in the Supabase SQL editor
+(**Dashboard → SQL Editor → New query**) before (or alongside) deploying backend changes.
+
+| File | What it does |
+|------|-----|
+| `001_stats_missing_columns.sql` | Adds per-mode stat columns (`versus_lines`, `versus_b2b_max`, casual/sprint/coop bests, sprint PB time) |
+
+---
+
 ## Emergency: Force Redeploy Without a Code Change
 
 **Frontend (Cloudflare Pages):**

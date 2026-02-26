@@ -616,18 +616,19 @@ export class GameRoom {
 
     if (mode === 'versus' && ranked) {
       inc.versus_played          = 1;
+      inc.versus_lines           = p.lines;
       inc.versus_tetrises        = p.tetrises;
       inc.versus_t_spins         = p.tSpins;
       inc.versus_time_played_ms  = duration;
       if (isWinner) inc.versus_won = 1;
     }
     if (mode === 'versus' && !ranked) {
-      inc.casual_vs_played             = 1;
-      inc.casual_vs_tetrises           = p.tetrises;
-      inc.casual_vs_t_spins            = p.tSpins;
-      inc.casual_vs_lines              = p.lines;
-      inc.casual_vs_time_played_ms     = duration;
-      if (isWinner) inc.casual_vs_won  = 1;
+      inc.casual_vs_played         = 1;
+      inc.casual_vs_tetrises       = p.tetrises;
+      inc.casual_vs_t_spins        = p.tSpins;
+      inc.casual_vs_lines          = p.lines;
+      inc.casual_vs_time_played_ms = duration;
+      if (isWinner) inc.casual_vs_won = 1;
     }
     if (mode === 'sprint') {
       inc.sprint_played          = 1;
@@ -653,15 +654,38 @@ export class GameRoom {
     for (const [col, delta] of Object.entries(inc)) {
       updates[col] = (cur?.[col] ?? 0) + delta;
     }
-    // Best score
-    if (p.score > (cur?.best_score ?? 0)) updates.best_score = p.score;
-    if (p.lines > (cur?.best_lines ?? 0)) updates.best_lines = p.lines;
-    if (p.maxCombo > (cur?.max_combo ?? 0)) updates.max_combo = p.maxCombo;
-    if ((p.b2bMax || 0) > (cur?.b2b_max ?? 0)) updates.b2b_max = p.b2bMax;
-    if (mode === 'versus' && ranked && p.score > (cur?.versus_best_score ?? 0)) updates.versus_best_score = p.score;
-    if (mode === 'versus' && ranked && p.maxCombo > (cur?.versus_max_combo ?? 0)) updates.versus_max_combo = p.maxCombo;
-    if (mode === 'sprint' && p.score > (cur?.sprint_best_score ?? 0)) updates.sprint_best_score = p.score;
-    if (mode === 'coop'   && p.score > (cur?.coop_best_score ?? 0))   updates.coop_best_score   = p.score;
+    // Global bests
+    if (p.score    > (cur?.best_score  ?? 0)) updates.best_score  = p.score;
+    if (p.lines    > (cur?.best_lines  ?? 0)) updates.best_lines  = p.lines;
+    if (p.maxCombo > (cur?.max_combo   ?? 0)) updates.max_combo   = p.maxCombo;
+    if ((p.b2bMax || 0) > (cur?.b2b_max ?? 0)) updates.b2b_max   = p.b2bMax;
+    // Ranked versus bests
+    if (mode === 'versus' && ranked) {
+      if (p.score    > (cur?.versus_best_score ?? 0)) updates.versus_best_score = p.score;
+      if (p.maxCombo > (cur?.versus_max_combo  ?? 0)) updates.versus_max_combo  = p.maxCombo;
+      if ((p.b2bMax || 0) > (cur?.versus_b2b_max ?? 0)) updates.versus_b2b_max = p.b2bMax;
+    }
+    // Casual versus bests
+    if (mode === 'versus' && !ranked) {
+      if (p.score    > (cur?.casual_vs_best_score ?? 0)) updates.casual_vs_best_score = p.score;
+      if (p.maxCombo > (cur?.casual_vs_max_combo  ?? 0)) updates.casual_vs_max_combo  = p.maxCombo;
+      if ((p.b2bMax || 0) > (cur?.casual_vs_b2b_max ?? 0)) updates.casual_vs_b2b_max = p.b2bMax;
+    }
+    // Sprint bests
+    if (mode === 'sprint') {
+      if (p.score    > (cur?.sprint_best_score ?? 0)) updates.sprint_best_score = p.score;
+      if (p.maxCombo > (cur?.sprint_max_combo  ?? 0)) updates.sprint_max_combo  = p.maxCombo;
+      if ((p.b2bMax || 0) > (cur?.sprint_b2b_max ?? 0)) updates.sprint_b2b_max = p.b2bMax;
+      // Sprint PB = fastest win time (lower is better)
+      if (isWinner && duration > 0 && (!cur?.best_sprint_ms || duration < cur.best_sprint_ms))
+        updates.best_sprint_ms = duration;
+    }
+    // Coop bests
+    if (mode === 'coop') {
+      if (p.score    > (cur?.coop_best_score ?? 0)) updates.coop_best_score = p.score;
+      if (p.maxCombo > (cur?.coop_max_combo  ?? 0)) updates.coop_max_combo  = p.maxCombo;
+      if ((p.b2bMax || 0) > (cur?.coop_b2b_max ?? 0)) updates.coop_b2b_max = p.b2bMax;
+    }
 
     await this.supabase.from('stats').upsert({ user_id: p.userId, ...updates });
   }

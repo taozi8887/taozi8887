@@ -558,13 +558,13 @@
     setVal('stVsGames',    fmtNum(s.versus_played));
     setVal('stVsWins',     fmtNum(s.versus_won));
     setVal('stVsWinRate',  vsWinRate);
-    setVal('stVsScore',    fmtNum(s.versus_best_score || s.best_score));
-    setVal('stVsLines',    fmtNum(s.total_lines));
-    setVal('stVsTetrises', fmtNum(s.versus_tetrises || s.tetrises));
-    setVal('stVsTSpins',   fmtNum(s.versus_t_spins   || s.t_spins));
-    setVal('stVsB2B',      fmtNum(s.versus_b2b_max   || s.b2b_max));
-    setVal('stVsCombo',    fmtNum(s.versus_max_combo  || s.max_combo));
-    setVal('stVsTime',     fmtTime((s.versus_time_played_ms || s.time_played_ms || 0) / 1000));
+    setVal('stVsScore',    fmtNum(s.versus_best_score));
+    setVal('stVsLines',    fmtNum(s.versus_lines));
+    setVal('stVsTetrises', fmtNum(s.versus_tetrises));
+    setVal('stVsTSpins',   fmtNum(s.versus_t_spins));
+    setVal('stVsB2B',      fmtNum(s.versus_b2b_max));
+    setVal('stVsCombo',    fmtNum(s.versus_max_combo));
+    setVal('stVsTime',     fmtTime((s.versus_time_played_ms || 0) / 1000));
 
     // -- Casual Versus --
     const casGames  = s.casual_vs_played || 0;
@@ -621,23 +621,22 @@
     setVal('stCoTime',     fmtTime((s.coop_time_played_ms || 0) / 1000));
 
     // -- All Time (aggregated) --
-    const atGames = (s.versus_played || 0) + (s.casual_vs_played || 0) +
-                    (s.marathon_played || 0) + (s.sprint_played || 0) + (s.coop_played || 0);
-    const atLines = (s.total_lines || 0) + (s.casual_vs_lines || 0) +
-                    (s.marathon_total_lines || 0) + (s.sprint_total_lines || 0) + (s.coop_total_lines || 0);
-    const atTetrises = (s.versus_tetrises || s.tetrises || 0) + (s.casual_vs_tetrises || 0) +
-                       (s.marathon_tetrises || 0) + (s.sprint_tetrises || 0) + (s.coop_tetrises || 0);
-    const atTSpins = (s.versus_t_spins || s.t_spins || 0) + (s.casual_vs_t_spins || 0) +
-                     (s.marathon_t_spins || 0) + (s.sprint_t_spins || 0) + (s.coop_t_spins || 0);
-    const atTimeMs = (s.versus_time_played_ms || s.time_played_ms || 0) +
-                     (s.casual_vs_time_played_ms || 0) + (s.marathon_time_played_ms || 0) +
-                     (s.sprint_time_played_ms || 0) + (s.coop_time_played_ms || 0);
+    // total_lines, tetrises, t_spins, time_played_ms are incremented for EVERY
+    // game mode by the backend — they are the true global totals. Do NOT add
+    // per-mode sub-columns on top or numbers will be double-counted.
+    const atGames = (s.games_played || 0);
+    const atLines = (s.total_lines  || 0);
+    const atTetrises = (s.tetrises  || 0);
+    const atTSpins   = (s.t_spins   || 0);
+    const atTimeMs   = (s.time_played_ms || 0);
     const atCombo = Math.max(
-      s.versus_max_combo || s.max_combo || 0, s.casual_vs_max_combo || 0,
-      s.marathon_max_combo || 0, s.sprint_max_combo || 0, s.coop_max_combo || 0);
+      s.versus_max_combo    || 0, s.casual_vs_max_combo || 0,
+      s.marathon_max_combo  || 0, s.sprint_max_combo    || 0,
+      s.coop_max_combo      || 0, s.max_combo           || 0);
     const atB2B = Math.max(
-      s.versus_b2b_max || s.b2b_max || 0, s.casual_vs_b2b_max || 0,
-      s.marathon_b2b_max || 0, s.sprint_b2b_max || 0, s.coop_b2b_max || 0);
+      s.versus_b2b_max     || 0, s.casual_vs_b2b_max || 0,
+      s.marathon_b2b_max   || 0, s.sprint_b2b_max    || 0,
+      s.coop_b2b_max       || 0, s.b2b_max           || 0);
     setVal('atGames',    fmtNum(atGames));
     setVal('atLines',    fmtNum(atLines));
     setVal('atTetrises', fmtNum(atTetrises));
