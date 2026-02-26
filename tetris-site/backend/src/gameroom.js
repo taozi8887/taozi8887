@@ -204,6 +204,7 @@ export class GameRoom {
       if (player.b2bChain > player.b2bMax)   player.b2bMax  = player.b2bChain;
 
       // Attack calculation (versus only)
+      let attackSent = 0;
       if (this.mode === 'versus') {
         let attack = 0;
         if (isRealTSpin) {
@@ -228,6 +229,7 @@ export class GameRoom {
             if (toSend > 0) {
               opp.pendingGarbage = Math.min(MAX_PENDING_GARBAGE, opp.pendingGarbage + toSend);
               player.garbageSent += toSend;
+              attackSent = toSend;
               // Generate hole column positions (same col per batch, shifts feel natural)
               const holeCol = Math.floor(Math.random() * 10);
               const garbageLines = Array.from({ length: toSend }, () => ({ holeCol }));
@@ -289,7 +291,7 @@ export class GameRoom {
       }
 
       // Confirm piece to sender
-      socket.emit('pieceConfirmed', { score: player.score, lines: player.lines });
+      socket.emit('pieceConfirmed', { score: player.score, lines: player.lines, atk: attackSent });
     }
 
     else if (eventType === 'gameOver') {
@@ -381,13 +383,28 @@ export class GameRoom {
     const player = this.players.get(socket.id);
     if (!player) return;
 
-    // Clear presence
-    if (player.userId) this.activegame.delete(player.userId);
-
     if (this.started && !this.finished) {
-      // Mid-game disconnect  void if ranked
-      this._endGame({ winnerId: null, reason: 'disconnect', disconnected: player });
+      if (player.userId) this.activegame.delete(player.userId);
+
+      if (this.mode === 'coop') {
+        // In co-op a DC is treated as a top-out — let survivors keep playing
+        player.over = true;
+        this.players.delete(socket.id);
+        const survivors = [...this.players.values()].filter(p => !p.over);
+        if (survivors.length > 0) {
+          for (const sv of survivors) {
+            sv.socket.emit('playerOver', { playerId: player.id, name: player.displayName || player.name });
+          }
+          // Survivor continues; game will end when they finish or top out
+        } else {
+          this._endGame({ winnerId: null, reason: 'disconnect' });
+        }
+      } else {
+        // Versus / sprint: DC voids the match
+        this._endGame({ winnerId: null, reason: 'disconnect', disconnected: player });
+      }
     } else {
+      if (player.userId) this.activegame.delete(player.userId);
       const opp = [...this.players.values()].find(p => p !== player);
       this.players.delete(socket.id);
       this._broadcastRoom('playerLeft', { playerId: player.id, players: this._mapPlayers() });

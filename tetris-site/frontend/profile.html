@@ -799,7 +799,12 @@
 
   function renderMatches(matches, userId, isOwn) {
     const list = document.getElementById('matchList');
-    if (!matches.length) { list.innerHTML = '<div class="empty-state-nice"><div class="es-icon">🎮</div><div class="es-title">No matches yet</div><div class="es-sub">Play your first game to see match history here.</div><a class="btn sm" href="game.html" style="margin-top:.75rem">Play Now</a></div>'; return; }
+    if (!matches.length) {
+      list.innerHTML = isOwn
+        ? '<div class="empty-state-nice"><div class="es-icon">🎮</div><div class="es-title">No matches yet</div><div class="es-sub">Play your first game to see match history here.</div><a class="btn sm" href="game.html" style="margin-top:.75rem">Play Now</a></div>'
+        : '<div class="empty-state-nice"><div class="es-icon">🎮</div><div class="es-title">No matches yet</div><div class="es-sub">This player hasn\'t played any matches yet.</div></div>';
+      return;
+    }
 
     const modeConfig = {
       'versus-ranked':  { cls: 'versus-ranked', label: 'Ranked Versus' },

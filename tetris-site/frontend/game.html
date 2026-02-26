@@ -1181,11 +1181,11 @@
     <!-- MP stats (score + lines for opponent, shown in separate column) -->
     <div class="mp-panel" id="mpStatsPanel">
       <div class="panel-box">
-        <span class="panel-label">Their score</span>
+        <span class="panel-label" id="theirScoreLabel">Their score</span>
         <span class="panel-stat" id="oppScore">0</span>
       </div>
       <div class="panel-box">
-        <span class="panel-label">Their lines</span>
+        <span class="panel-label" id="theirLinesLabel">Their lines</span>
         <span class="panel-stat" id="oppLines">0</span>
       </div>
       <div class="panel-box" id="oppGarbageSentPanel" style="display:none">
@@ -1247,7 +1247,7 @@
       <a href="index.html" class="btn sm ghost">&#8592; Home</a>
     </div>
     <div id="leaveConfirmPopup">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Leave the match?<br><span style="font-size:10px;">Your opponent will win by default.</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Leave the match?<br><span style="font-size:10px;" id="leaveConfirmSub">Your opponent will win by default.</span></div>
       <div style="display:flex;gap:8px;">
         <button class="btn sm" onclick="doLeaveGame()" style="background:var(--accent2);color:#000;border-color:var(--accent2);">Leave</button>
         <button class="btn sm" onclick="document.getElementById('leaveConfirmPopup').style.display='none'">Cancel</button>
@@ -1495,7 +1495,7 @@
 
     <!-- Input Timing -->
     <div class="settings-section">
-      <div class="settings-section-title">Input Timing (competitive: DAS 133ms, ARR 0ms)</div>
+      <div class="settings-section-title">Input Timing (competitive: DAS 133ms, ARR 0ms, SDF 1ms)</div>
       <div class="settings-row">
         <span class="settings-label">DAS - delayed auto-shift (ms)</span>
         <input class="settings-number" id="dasDelayInput" type="number" min="0" max="500" value="167">
@@ -1503,6 +1503,10 @@
       <div class="settings-row">
         <span class="settings-label">ARR - auto-repeat rate (ms)</span>
         <input class="settings-number" id="dasIntervalInput" type="number" min="0" max="200" value="33">
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">SDF - soft drop rate (ms, 0 = instant)</span>
+        <input class="settings-number" id="sdfIntervalInput" type="number" min="0" max="500" value="33">
       </div>
     </div>
 
@@ -1580,6 +1584,7 @@ function loadSettings() {
       if (s.keybinds) Object.assign(keybinds, s.keybinds);
       if (typeof s.dasDelay    === 'number') dasDelay    = s.dasDelay;
       if (typeof s.dasInterval === 'number') dasInterval = s.dasInterval;
+      if (typeof s.sdfInterval === 'number') sdfInterval = s.sdfInterval;
       if (s.soundEnabled === true) {
         soundEnabled = true;
         const btn = document.getElementById('soundBtn');
@@ -1592,7 +1597,7 @@ function loadSettings() {
 
 function saveSettingsToStorage() {
   try {
-    const s = { keybinds, dasDelay, dasInterval, soundEnabled };
+    const s = { keybinds, dasDelay, dasInterval, sdfInterval, soundEnabled };
     localStorage.setItem('tetrisSettings3', JSON.stringify(s));
     // Also persist to DB when the user is logged in (fire-and-forget)
     if (window._authUser) {
@@ -1605,6 +1610,7 @@ function saveSettingsToStorage() {
 function openSettingsModal() {
   document.getElementById('dasDelayInput').value    = dasDelay;
   document.getElementById('dasIntervalInput').value = dasInterval;
+  document.getElementById('sdfIntervalInput').value = sdfInterval;
   const sfxBtn = document.getElementById('sfxToggleBtn');
   if (sfxBtn) { sfxBtn.textContent = soundEnabled ? 'ON' : 'OFF'; sfxBtn.classList.toggle('on', soundEnabled); }
   buildKeybindRows();
@@ -1713,6 +1719,7 @@ function applyAndSaveSettings() {
   }
   dasDelay    = Math.max(0, parseInt(document.getElementById('dasDelayInput').value)    || 0);
   dasInterval = Math.max(0, parseInt(document.getElementById('dasIntervalInput').value) || 0);
+  sdfInterval = Math.max(0, parseInt(document.getElementById('sdfIntervalInput').value) || 0);
   _rebuildKeyMap();
   saveSettingsToStorage();
   closeModal('settings');
@@ -1720,9 +1727,10 @@ function applyAndSaveSettings() {
 
 function resetDefaultSettings() {
   keybinds = getDefaultKeybinds();
-  dasDelay = 167; dasInterval = 33;
+  dasDelay = 167; dasInterval = 33; sdfInterval = 33;
   document.getElementById('dasDelayInput').value    = dasDelay;
   document.getElementById('dasIntervalInput').value = dasInterval;
+  document.getElementById('sdfIntervalInput').value = sdfInterval;
   buildKeybindRows();
 }
 
@@ -1996,6 +2004,7 @@ let dasTimer = null;
 let dasDirection = null;
 let dasDelay = 167; // ms
 let dasInterval = 33; // ms (30Hz)
+let sdfInterval = 33; // ms soft drop repeat rate
 let dasActive = false;
 let keysDown = {};
 let comboCount = -1;
@@ -3196,7 +3205,7 @@ function startSoftDropRepeat() {
   softDropTimer = setInterval(() => {
     if (gameStatus !== 'playing') { clearSoftDropRepeat(); return; }
     softDrop(); sfx.softDrop(); render();
-  }, 33); // ~30Hz, always faster than any gravity level
+  }, sdfInterval || 1); // user-configurable SDF, min 1ms
 }
 
 function clearSoftDropRepeat() {
@@ -3997,12 +4006,19 @@ function handleMPMessage(msg) {
           showMPStatus('Opponent topped out!', 'win');
           clearDropTimer(); clearLockTimer(); clearDAS(); clearSoftDropRepeat(); clearForceLock();
           gameStatus = 'over';
+          mpIsActive = false; // prevents spurious "Disconnected" screen if socket drops before gameEnd arrives
         }
       } else if (mpMode === 'coop') {
         // We died in co-op — enter spectate mode: dismiss overlay, mirror teammate's board
         mpCoopSpectating = true;
         const overlay = document.getElementById('overlay');
         if (overlay) overlay.classList.remove('active');
+        // Clear the frozen board so the teammate's next snapshot paints cleanly on the big board
+        if (cells) {
+          for (let r = 0; r < ROWS; r++)
+            for (let c = 0; c < COLS; c++)
+              cells[r][c].className = 'cell';
+        }
         const oppName = mpOpponentData.displayName || mpOpponentData.name || 'teammate';
         showMPStatus('You topped out \u2014 spectating ' + oppName + '\u2026', 'error');
       }
@@ -4022,9 +4038,13 @@ function handleMPMessage(msg) {
       break;
 
     case 'reset':
-      // Game ended and server reset for potential rematch.
-      // Just go back to home - matchmaking handles finding new opponents.
-      mpFullReset();
+      // Server reset (5s after game ends). If the end screen is visible, just
+      // disconnect silently so the player can read their results uninterrupted.
+      if (document.getElementById('mpEndScreen')?.classList.contains('active')) {
+        mpDisconnect();
+      } else {
+        mpFullReset();
+      }
       break;
   }
 }
@@ -4101,6 +4121,10 @@ function enterQueue(mode) {
   const ml = document.getElementById('mqModeLabel');
   if (ml) ml.textContent = modeLabel;
 
+  // Update searching text — use 'teammate' for co-op
+  const searchingEl = document.querySelector('.mq-searching-text');
+  if (searchingEl) searchingEl.textContent = mode === 'coop' ? 'Searching for teammate\u2026' : 'Searching for opponent\u2026';
+
   showQueueState('searching');
 
   // Reset wait time display immediately
@@ -4161,7 +4185,7 @@ function enterQueue(mode) {
     clearInterval(window._mqStageCycle); window._mqStageCycle = null;
       const { roomCode, isRanked, gameMode } = data;
       // Server sends flat opponentName/opponentElo/opponentDisplayName (not nested object)
-      const oppName = data.opponentDisplayName || data.opponentName || data.opponent?.displayName || data.opponent?.username || 'Opponent';
+      const oppName = data.opponentDisplayName || data.opponentName || data.opponent?.displayName || data.opponent?.username || (resolvedMode === 'coop' ? 'Teammate' : 'Opponent');
       const oppElo  = data.opponentElo ?? data.opponent?.elo ?? null;
       // Trust the local mode first — server may omit isRanked
       mpIsRanked  = isRanked != null ? !!isRanked : (mqMode === 'ranked-versus');
@@ -4183,6 +4207,9 @@ function enterQueue(mode) {
       document.getElementById('mqOppName').innerHTML     = (window._levelBadgeHTML?.(window._getLevel?.(oppXp) || 1) || '') + ' ' + oppName;
       document.getElementById('mqOppFoundElo').textContent = oppElo !== null ? oppElo + ' ELO' : '\u2014 ELO';
       document.getElementById('mqFoundType').textContent  = foundTypeLabel;
+      // Use '+' divider for co-op, 'VS' for competitive modes
+      const _vsDivEl = document.querySelector('.mq-found-vs-divider');
+      if (_vsDivEl) _vsDivEl.textContent = resolvedMode === 'coop' ? '+' : 'VS';
       showQueueState('found');
 
       // Restore countdown HTML (may have been replaced by 'Connecting...' from a previous match)
@@ -4395,7 +4422,7 @@ function startMPGame() {
       if (i === mpPlayerId) continue;
       const slot = document.getElementById('lobbySlot' + i);
       const nameEl = slot?.querySelector('.slot-dispname') || slot?.querySelector('span:nth-child(2)');
-      mpOpponentData.name = nameEl?.textContent || 'Opponent';
+      mpOpponentData.name = nameEl?.textContent || (mpMode === 'coop' ? 'Teammate' : 'Opponent');
     }
   }
 
@@ -4404,11 +4431,17 @@ function startMPGame() {
   const _scVal  = document.getElementById('specCountVal');
   if (_scChip && _scVal) { _scChip.style.display = ''; _scVal.textContent = '0'; }
 
-  const oppDisplayed = mpOpponentData.displayName || mpOpponentData.name || 'Opponent';
+  const oppDisplayed = mpOpponentData.displayName || mpOpponentData.name || (mpMode === 'coop' ? 'Teammate' : 'Opponent');
   const oppNameEl = document.getElementById('oppName');
   if (oppNameEl) oppNameEl.textContent = oppDisplayed;
   const oppNameInGame = document.getElementById('oppNameInGame');
   if (oppNameInGame) oppNameInGame.textContent = oppDisplayed;
+
+  // Update mode-sensitive panel labels
+  const theirScoreLabel = document.getElementById('theirScoreLabel');
+  const theirLinesLabel = document.getElementById('theirLinesLabel');
+  if (theirScoreLabel) theirScoreLabel.textContent = mpMode === 'coop' ? "Teammate's score" : 'Their score';
+  if (theirLinesLabel) theirLinesLabel.textContent = mpMode === 'coop' ? "Teammate's lines" : 'Their lines';
 
   // Populate opponent profile card (ranked/versus only)
   const oppCard = document.getElementById('oppCard');
@@ -4724,6 +4757,12 @@ function mpSendChat() {
 // ─────────────────────────────────────────────────────────────────
 function confirmLeaveGame() {
   const p = document.getElementById('leaveConfirmPopup');
+  const subEl = document.getElementById('leaveConfirmSub');
+  if (subEl) {
+    subEl.textContent = mpMode === 'coop'   ? 'Your teammate will be left on their own.'
+                      : mpMode === 'sprint' ? 'Your opponent will win the race.'
+                      :                      'Your opponent will win by default.';
+  }
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 

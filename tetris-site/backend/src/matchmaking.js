@@ -72,6 +72,11 @@ export class MatchmakingQueue {
 
   _scanMode(mode) {
     const q = this.queues[mode];
+    if (q.length === 0) return;
+
+    // Always push range updates so the ELO display ticks while waiting
+    this._sendStatusUpdates(mode);
+
     if (q.length < 2) return;
 
     // Sort by joinedAt (longest waiting first)
