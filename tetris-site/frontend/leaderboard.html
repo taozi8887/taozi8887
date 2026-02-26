@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leaderboard - Taotris</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="borders.css">
   <script src="cursor.js" defer></script>
   <style>
     .lb-search {
@@ -63,6 +64,7 @@
       <a href="index.html">Home</a>
       <a href="leaderboard.html" class="active">Leaderboard</a>
       <a href="game.html">Play</a>
+      <a href="cosmetics.html">Cosmetics</a>
       <a href="controls.html">Controls</a>
       <a href="ranks.html">Ranks</a>
       <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
@@ -72,7 +74,7 @@
       <a id="navAvatarLink" href="profile.html">
         <div id="navAvatar" class="nav-avatar" style="display:none"></div>
       </a>
-      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
     </div>
@@ -188,7 +190,20 @@
 </div>
 
 <script type="module">
-  import API, { injectNavUser, getRank, fmtNum, getLevel, levelBadgeHTML } from './api.js';
+  import API, { injectNavUser, getRank, fmtNum, getLevel, levelBadgeHTML, titleTagClass } from './api.js';
+
+  // Rarity → colour for border glow / title tags
+  const RARITY_COLOR = { common:'#9898a8', uncommon:'#4aff6e', rare:'#7aadff', epic:'#c87dff', legendary:'#ffd700', mythic:'#c87dff' };
+  function titleTagHTML(info) {
+    if (!info) return '';
+    return `<span class="profile-title-tag ${titleTagClass(info.rarity, info.slug)}" style="font-size:.58rem;padding:2px 8px;margin-bottom:0;vertical-align:middle">${info.icon ? info.icon+' ':''}${escHtml(info.name)}</span>`;
+  }
+  function borderAvatarHTML(avContent, initials, borderInfo) {
+    if (!borderInfo) return `<div class="page-av">${avContent}</div>`;
+    // Render border at full 96px then zoom to 36px so all inset/ring proportions are correct
+    const inner = avContent || `<span style="font-size:1.6rem;color:var(--text3)">${(initials||'?').slice(0,2).toUpperCase()}</span>`;
+    return `<div style="display:inline-flex;flex-shrink:0;overflow:visible;zoom:0.375"><div class="${borderInfo.slug}"><div class="border-frame"><div class="avatar" style="width:96px;height:96px;font-size:1.6rem;overflow:hidden">${inner}</div></div></div></div>`;
+  }
 
   let page    = 1;
   const LIMIT = 25;
@@ -256,24 +271,27 @@
         : '';
       const initials = (p.username||'?').slice(0,2).toUpperCase();
       const avContent = avSrc
-        ? `<img src="${avSrc}" alt="" onerror="this.parentElement.textContent='${initials}';">`
+        ? `<img src="${avSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`
         : initials;
       const posCell = pos <= 3
         ? `<td class="rank-col"><span class="medal">${medals[pos-1]}</span></td>`
         : `<td class="rank-col rank-num">${pos}</td>`;
       const games = p.versus_played || 0;
       const wins  = p.versus_won    || 0;
+      const titleTag = titleTagHTML(p.equipped_title_info);
+      const avEl     = borderAvatarHTML(avContent, initials, p.equipped_border_info);
       return `
         <tr>
           ${posCell}
           <td>
             <div class="flex gap-s" style="align-items:center; gap: 0.75rem;">
-              <div class="page-av">${avContent}</div>
+              ${avEl}
               <div>
                 <div class="flex gap-s" style="align-items:center;flex-wrap:wrap">
                   <a href="profile.html?u=${encodeURIComponent(p.username)}" style="margin-left:.5rem">${levelBadgeHTML(getLevel(p.xp||0))} ${escHtml(p.display_name || p.username)}</a>
                   ${p.display_name && p.display_name !== p.username ? `<span class="small muted">@${escHtml(p.username)}</span>` : ''}
                   <span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span>
+                  ${titleTag}
                 </div>
               </div>
             </div>

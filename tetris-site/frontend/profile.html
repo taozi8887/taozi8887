@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile - Taotris</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="borders.css">
   <script src="cursor.js" defer></script>
   <style>
     .profile-header {
@@ -172,6 +173,7 @@
       <a href="index.html">Home</a>
       <a href="leaderboard.html">Leaderboard</a>
       <a href="game.html">Play</a>
+      <a href="cosmetics.html">Cosmetics</a>
       <a href="controls.html">Controls</a>
       <a href="ranks.html">Ranks</a>
       <a href="friends.html" id="navFriendsLink" style="display:none">Friends <span id="navFriendsBadge" class="badge-count hidden">0</span></a>
@@ -181,7 +183,7 @@
       <a id="navAvatarLink" href="profile.html">
         <div id="navAvatar" class="nav-avatar" style="display:none"></div>
       </a>
-      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='game.html'">Settings</button>
     </div>
@@ -391,6 +393,9 @@
 
 </div>
 
+
+</div>
+
 <p style="font-size:.62rem;color:var(--text3);text-align:center;margin-top:2rem">Found a bug? Email <a href="mailto:mail@taozi4887.dev" style="color:var(--accent)" class="">mail@taozi4887.dev</a> or Discord <strong style="color:var(--text2)">@taozi4887</strong></p>
 
 <!-- Footer -->
@@ -403,7 +408,7 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum, fmtTime, toast, getLevel, getLevelInfo, levelBadgeHTML } from './api.js';
+  import API, { getMe, injectNavUser, getRank, rankBadgeEl, fmtNum, fmtTime, toast, getLevel, getLevelInfo, levelBadgeHTML, titleTagClass } from './api.js';
 
   let me            = null;
   let profileUser   = null;
@@ -468,7 +473,7 @@
     }
     // Auto-switch to ?tab if requested
     const tabParam = params.get('tab');
-    if (tabParam && ['stats','alltime','matches','edit','settings'].includes(tabParam)) switchTab(tabParam);
+    if (tabParam && ['stats','alltime','matches','edit','settings','custom'].includes(tabParam)) switchTab(tabParam);
   }
 
   function startPresencePoll(username) {
@@ -511,14 +516,27 @@
 
     const headerEl = document.getElementById('profileHeader');
     headerEl.innerHTML = '';
-    headerEl.appendChild(avSrc ? avatarEl : initials);
+
+    const avatarActual = avSrc ? avatarEl : initials;
+    if (data.equippedBorder?.slug) {
+      const borderWrap  = document.createElement('div');
+      borderWrap.className = data.equippedBorder.slug;
+      const borderFrame = document.createElement('div');
+      borderFrame.className = 'border-frame';
+      borderFrame.appendChild(avatarActual);
+      borderWrap.appendChild(borderFrame);
+      headerEl.appendChild(borderWrap);
+    } else {
+      headerEl.appendChild(avatarActual);
+    }
 
     const info = document.createElement('div');
     info.className = 'profile-info';
     info.innerHTML = `
       <div class="profile-name">${levelBadgeHTML(lvlInfo.level)} ${escHtml(data.display_name || data.username)} <button class="level-info-btn" onclick="showLevelModal()" title="Level tiers">?</button></div>
       <div class="profile-username-sub">@${escHtml(data.username)}</div>
-      <div class="flex gap-s" style="align-items:center;margin-bottom:.4rem;">
+      ${data.equippedTitle ? `<span class="profile-title-tag ${titleTagClass(data.equippedTitle.rarity, data.equippedTitle.slug)}">${data.equippedTitle.icon ? data.equippedTitle.icon + ' ' : ''}${escHtml(data.equippedTitle.name || data.equippedTitle.slug?.replace(/^title-/,'').replace(/-/g,' ') || '')}</span>` : ''}
+      <div class="flex gap-s" style="align-items:center;margin-bottom:.4rem;margin-top:.4rem">
         <span class="rank-badge ${rank.name}">${rank.name}</span>
         <span class="elo-number">${fmtNum(data.elo)}</span>
       </div>
@@ -696,10 +714,11 @@
     };
 
     list.innerHTML = matches.map((m, i) => {
+      const isVoidDisconnect = m.void_reason === 'disconnect';
       const won   = m.winner_id === userId;
       const draw  = !m.winner_id;
-      const res   = draw ? 'draw' : (won ? 'win' : 'loss');
-      const label = draw ? 'Draw' : (won ? 'Won' : 'Lost');
+      const res   = isVoidDisconnect ? 'draw' : (draw ? 'draw' : (won ? 'win' : 'loss'));
+      const label = isVoidDisconnect ? 'Void' : (draw ? 'Draw' : (won ? 'Won' : 'Lost'));
       const isMe1    = m.p1_id === userId;
       const myName   = isMe1 ? (m.p1_display || m.p1_name || (isOwn ? 'You' : 'Player 1')) : (m.p2_display || m.p2_name || (isOwn ? 'You' : 'Player 2'));
       const oppName  = isMe1 ? (m.p2_name || '?') : (m.p1_name || '?');
@@ -729,7 +748,6 @@
 
       let modeKey = m.mode === 'versus' ? (m.is_ranked ? 'versus-ranked' : 'versus-casual') : m.mode;
       const mc = modeConfig[modeKey] || { cls: 'versus-casual', label: m.mode };
-      const isVoidDisconnect = m.void_reason === 'disconnect';
       const voidBadge = isVoidDisconnect
         ? `<span class="void-badge" title="This ranked match ended due to a disconnect — no ELO was changed">🔌 Disconnected · No ELO</span>`
         : '';
@@ -787,18 +805,51 @@
         </div>`;
 
       // Final board states
-      const myBoard  = isMe1 ? m.p1_final_board : m.p2_final_board;
-      const oppBoard = isMe1 ? m.p2_final_board : m.p1_final_board;
-      const boardsSection = (myBoard || oppBoard) ? `
-        <div style="width:100%;margin-top:.75rem;display:flex;gap:2rem;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);padding-top:.75rem">
-          <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+      const myBoard      = isMe1 ? m.p1_final_board : m.p2_final_board;
+      const oppBoard     = isMe1 ? m.p2_final_board : m.p1_final_board;
+      const oppAvatar    = isMe1 ? m.p2_avatar : m.p1_avatar;
+      const oppTitleInfo = isMe1 ? m.p2_title  : m.p1_title;
+      const isVersus     = m.mode === 'versus';
+
+      // Opponent info block that fills the empty space next to board states
+      let oppInfoBlock = '';
+      if (isVersus) {
+        const initials = (oppDisplay || oppName || '?').slice(0, 2).toUpperCase();
+        const avSrc   = oppAvatar ? (oppAvatar.startsWith('http') ? oppAvatar : API.BASE + oppAvatar) : null;
+        const avInner = avSrc
+          ? `<img src="${avSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`
+          : `<span style="font-size:.9rem;color:var(--text3)">${escHtml(initials)}</span>`;
+        const titleHtml = oppTitleInfo
+          ? `<span class="profile-title-tag ${titleTagClass(oppTitleInfo.rarity, oppTitleInfo.slug)}">${oppTitleInfo.icon ? escHtml(oppTitleInfo.icon) + ' ' : ''}${escHtml(oppTitleInfo.name)}</span>`
+          : '';
+        const rankBit = oppRank ? `<span class="rank-badge ${oppRank.name}" style="font-size:.68rem;padding:.12rem .5rem">${oppRank.name}</span>` : '';
+        const eloBit  = oppElo != null ? `<span style="font-size:.85rem;color:var(--accent);font-variant-numeric:tabular-nums">${fmtNum(oppElo)} ELO</span>` : '';
+        oppInfoBlock = `
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding-left:.75rem;min-width:140px">
+            <div style="display:flex;align-items:center;gap:.65rem">
+              <div style="width:56px;height:56px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0">${avInner}</div>
+              <div style="min-width:0">
+                <div style="font-size:1rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="profile.html?u=${encodeURIComponent(oppName)}" onclick="event.stopPropagation()">${escHtml(oppDisplay)}</a></div>
+                ${oppDisplay !== oppName ? `<div style="font-size:.75rem;color:var(--text3)">@${escHtml(oppName)}</div>` : ''}
+              </div>
+            </div>
+            ${titleHtml ? `<div>${titleHtml}</div>` : ''}
+            <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">${rankBit}${eloBit}</div>
+            <div>${oppLevelBadge}</div>
+          </div>`;
+      }
+
+      const boardsSection = (myBoard || oppBoard || isVersus) ? `
+        <div style="width:100%;margin-top:.75rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.06);padding-top:.75rem">
+          ${myBoard ? `<div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
             <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${subjectName} board</div>
             ${miniBoard(myBoard)}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+          </div>` : ''}
+          ${oppBoard ? `<div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
             <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${escHtml(oppDisplay)}&rsquo;s board</div>
             ${miniBoard(oppBoard)}
-          </div>
+          </div>` : ''}
+          ${isVersus ? oppInfoBlock : ''}
         </div>` : '';
 
       return `

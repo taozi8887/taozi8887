@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Friends & Inbox - Taotris</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="borders.css">
   <script src="cursor.js" defer></script>
   <style>
     .section-header {
@@ -78,6 +79,7 @@
       <a href="index.html">Home</a>
       <a href="leaderboard.html">Leaderboard</a>
       <a href="game.html">Play</a>
+      <a href="cosmetics.html">Cosmetics</a>
       <a href="controls.html">Controls</a>
       <a href="ranks.html">Ranks</a>
       <a href="friends.html" class="active">Friends</a>
@@ -87,7 +89,7 @@
       <a id="navAvatarLink" href="profile.html">
         <div id="navAvatar" class="nav-avatar" style="display:none"></div>
       </a>
-      <a id="navLoginBtn" class="btn sm" href="login.html">Sign in</a>
+      <a id="navLoginBtn" class="btn sm hidden" href="login.html">Sign in</a>
       <button id="navLogoutBtn" class="btn sm ghost hidden" onclick="doLogout()">Sign out</button>
       <button id="navSettingsBtn" class="btn sm ghost hidden" onclick="location.href='profile.html?tab=settings'">Settings</button>
     </div>
@@ -146,7 +148,7 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import API, { getMe, injectNavUser, getRank, fmtNum, toast, forgetChallenge, getLevel, levelBadgeHTML } from './api.js';
+  import API, { getMe, injectNavUser, getRank, fmtNum, toast, forgetChallenge, getLevel, levelBadgeHTML, titleTagClass } from './api.js';
 
   let me = null;
 
@@ -248,14 +250,28 @@
     reqList.innerHTML = html;
   }
 
+  const RARITY_COLOR = { common:'#9898a8', uncommon:'#4aff6e', rare:'#7aadff', epic:'#c87dff', legendary:'#ffd700', mythic:'#c87dff' };
+  function titleTagHTML(info) {
+    if (!info) return '';
+    return `<span class="profile-title-tag ${titleTagClass(info.rarity, info.slug)}" style="font-size:.58rem;padding:2px 8px;margin-bottom:0;vertical-align:middle">${info.icon ? info.icon+' ':''}${escHtml(info.name)}</span>`;
+  }
+  function borderAvatarHTML(avContent, borderInfo, extraStyle = '') {
+    if (!borderInfo) return avContent;
+    // Render at full 96px then zoom down to 40px so ring proportions stay correct
+    return `<div style="display:inline-flex;flex-shrink:0;overflow:visible;zoom:0.4167"><div class="${borderInfo.slug}"><div class="border-frame"><div class="avatar" style="width:96px;height:96px;font-size:1.6rem;overflow:hidden">${avContent}</div></div></div></div>`;
+
+  }
   // f = { id: friendshipRowId, friend: { id, username, elo, display_name, avatarUrl, online, inGame, roomCode } }
   function friendCard(f) {
     const u    = f.friend;
     const rank = getRank(u.elo || 1000);
     const avSrc = u.avatar_url ? (u.avatar_url.startsWith('http') ? u.avatar_url : API.BASE + u.avatar_url) : '';
     const avContent = avSrc
-      ? `<img class="avatar sm" src="${avSrc}" alt="" onerror="this.style.display='none'">`
-      : `<div class="avatar sm flex-center" style="font-size:.75rem;color:var(--text3)">${(u.username||'?').slice(0,2).toUpperCase()}</div>`;
+      ? `<img src="${avSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`
+      : `<span style="font-size:.75rem;color:var(--text3)">${(u.username||'?').slice(0,2).toUpperCase()}</span>`;
+    const avEl = u.equipped_border_info
+      ? borderAvatarHTML(avContent, u.equipped_border_info)
+      : (avSrc ? `<img class="avatar sm" src="${avSrc}" alt="" onerror="this.style.display='none'">` : `<div class="avatar sm flex-center" style="font-size:.75rem;color:var(--text3)">${(u.username||'?').slice(0,2).toUpperCase()}</div>`);
     const statusClass = u.inGame ? 'ingame' : (u.online ? 'online' : '');
     const statusTitle = u.inGame ? 'In a game' : (u.online ? 'Online' : 'Offline');
     const watchBtn = u.inGame && u.roomCode
@@ -264,9 +280,9 @@
     return `
       <div class="friend-card">
         <div class="friend-status ${statusClass}" title="${statusTitle}"></div>
-        ${avContent}
+        ${avEl}
         <div class="info">
-          <div class="name">${levelBadgeHTML(getLevel(u.xp||0))} <a href="profile.html?u=${encodeURIComponent(u.username)}">${escHtml(u.display_name || u.username)}</a></div>
+          <div class="name">${levelBadgeHTML(getLevel(u.xp||0))} <a href="profile.html?u=${encodeURIComponent(u.username)}">${escHtml(u.display_name || u.username)}</a> ${titleTagHTML(u.equipped_title_info)}</div>
           <div class="elo-small"><span class="rank-badge ${rank.name}" style="font-size:.6rem">${rank.name}</span> ${fmtNum(u.elo)} ELO</div>
         </div>
         <div class="actions">

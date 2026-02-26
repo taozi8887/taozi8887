@@ -1,0 +1,2255 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmetics Preview — tetris.taozi4887.dev</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ── Design System ─────────────────────────────────────────────── */
+:root {
+  --bg:       #0a0a0b;
+  --bg2:      #111114;
+  --bg3:      #1a1a1f;
+  --bg4:      #222228;
+  --border:   rgba(255,255,255,.07);
+  --text:     #e8e8ea;
+  --text2:    #888890;
+  --text3:    #55555c;
+  --accent:   #c8ff4a;
+  --accent2:  #ff4a6e;
+  --accent3:  #4affda;
+  --accent4:  #c87dff;
+  --mono:     'DM Mono', monospace;
+  --serif:    'Instrument Serif', Georgia, serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 48px 32px;
+}
+
+h1 { font-family: var(--serif); font-size: 2.2rem; font-weight: 400; margin-bottom: 6px; }
+.subtitle { color: var(--text2); margin-bottom: 64px; }
+
+h2 {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text2);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+section { margin-bottom: 80px; }
+
+/* ── Grid layouts ─────────────────────────────────────────────── */
+.border-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 40px 32px;
+}
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+.achievement-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Border item wrapper ──────────────────────────────────────── */
+.border-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 20px 8px;
+}
+.border-label {
+  font-size: .72rem;
+  color: var(--text2);
+  text-align: center;
+  letter-spacing: .04em;
+}
+.border-label span {
+  display: block;
+  font-size: .65rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+
+/* ── Base avatar ──────────────────────────────────────────────── */
+.avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+/* ── Border frame wrapper ─────────────────────────────────────── */
+/* Pseudo-elements on .border-frame extend OUTSIDE the avatar circle
+   for multi-layer outer rings, halos, orbiting effects, etc.      */
+.border-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.border-frame::before,
+.border-frame::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BORDER STYLES — each uses .avatar for the main ring +
+   .border-frame::before / ::after for outer layers & effects
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Default ─────────────────────────────────────────────────── */
+.border-default .avatar {
+  box-shadow: 0 0 0 2px rgba(255,255,255,.14);
+}
+.border-default .border-frame::before {
+  inset: -7px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+/* 2. Bronze Veteran ──────────────────────────────────────────── */
+.border-bronze .avatar {
+  background: var(--bg3) padding-box,
+    linear-gradient(135deg, #8b5e1a, #cd7f32, #f0b060, #cd7f32, #8b5e1a) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 14px rgba(205,127,50,.35);
+}
+.border-bronze .border-frame::before {
+  inset: -10px;
+  border: 1px dashed rgba(205,127,50,.3);
+  animation: bronze-rotate 12s linear infinite;
+}
+@keyframes bronze-rotate { to { transform: rotate(360deg); } }
+
+/* 3. Silver ──────────────────────────────────────────────────── */
+.border-silver .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#888, #fff, #ccc, #fff, #888, #ccc, #fff, #888) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 16px rgba(200,200,200,.3);
+  animation: silver-spin 6s linear infinite;
+}
+@keyframes silver-spin { to { filter: brightness(1.12) hue-rotate(1deg); } }
+.border-silver .border-frame::before {
+  inset: -10px;
+  background: conic-gradient(
+    transparent 0% 10%, rgba(255,255,255,.5) 12%, rgba(255,255,255,.1) 15%,
+    transparent 15% 40%, rgba(255,255,255,.4) 42%, rgba(255,255,255,.1) 45%,
+    transparent 45% 74%, rgba(255,255,255,.3) 76%, rgba(255,255,255,.05) 79%,
+    transparent 79%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  animation: silver-gleam 3s linear infinite;
+}
+@keyframes silver-gleam { to { transform: rotate(360deg); } }
+
+/* 4. Gold ────────────────────────────────────────────────────── */
+.border-gold .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#b8860b, #ffd700, #ffe680, #ffd700, #b8860b, #ffd700, #ffec80, #ffd700, #b8860b) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 18px rgba(255,215,0,.45), 0 0 36px rgba(255,180,0,.15);
+  animation: gold-shimmer 4s linear infinite;
+}
+@keyframes gold-shimmer { to { filter: brightness(1.1); } }
+/* 3 orbiting gold orbs on the outer ring */
+.border-gold .border-frame::before {
+  inset: -13px;
+  background: conic-gradient(
+    transparent 0% 29%, #ffd700 30%, #fffacd 32%, #ffd700 34%, transparent 34% 62%,
+    #ffd700 63%, #fffacd 65%, #ffd700 67%, transparent 67% 95%,
+    #ffd700 96%, #fffacd 98%, #ffd700 100%
+  );
+  mask: radial-gradient(farthest-side, transparent 86%, black 88%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 86%, black 88%, black 100%);
+  animation: gold-orbs 3s linear infinite;
+  filter: blur(.5px);
+}
+@keyframes gold-orbs { to { transform: rotate(360deg); } }
+
+/* 5. Diamond ────────────────────────────────────────────────── */
+.border-diamond .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#60efff, #c8f8ff, #ffffff, #60efff, #a8e6ff, #ffffff, #60efff) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 20px rgba(96,239,255,.5), 0 0 48px rgba(96,239,255,.12);
+  animation: diamond-pulse 2.5s ease-in-out infinite;
+}
+@keyframes diamond-pulse {
+  0%, 100% { filter: brightness(1) saturate(1); box-shadow: 0 0 20px rgba(96,239,255,.5), 0 0 48px rgba(96,239,255,.12); }
+  50%       { filter: brightness(1.3) saturate(1.5); box-shadow: 0 0 32px rgba(96,239,255,.9), 0 0 64px rgba(96,239,255,.3); }
+}
+/* outer spinning dashed ring */
+.border-diamond .border-frame::before {
+  inset: -10px;
+  border: 2px dashed rgba(96,239,255,.45);
+  animation: diamond-ring-spin 4s linear infinite;
+}
+@keyframes diamond-ring-spin { to { transform: rotate(360deg); } }
+/* sweeping light flare */
+.border-diamond .border-frame::after {
+  inset: -2px;
+  background: conic-gradient(
+    transparent 0% 60%, rgba(255,255,255,.5) 65%, rgba(255,255,255,.85) 68%, rgba(255,255,255,.5) 71%,
+    transparent 72%
+  );
+  mask: radial-gradient(farthest-side, transparent 72%, black 74%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 72%, black 74%, black 100%);
+  animation: diamond-flare 3.5s linear infinite;
+  filter: blur(1px);
+}
+@keyframes diamond-flare { to { transform: rotate(360deg); } }
+
+/* 6. Challenger ─────────────────────────────────────────────── */
+.border-challenger .avatar {
+  background: var(--bg3) padding-box,
+    linear-gradient(135deg, #ffd700, #ff8c00, #ffe066, #ff6600, #ffd700) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 20px rgba(255,180,0,.5), 0 0 48px rgba(255,100,0,.25);
+  animation: challenger-pulse 2s ease-in-out infinite;
+}
+@keyframes challenger-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,180,0,.5), 0 0 48px rgba(255,100,0,.25); }
+  50%       { box-shadow: 0 0 36px rgba(255,200,0,.8), 0 0 72px rgba(255,120,0,.45); }
+}
+/* fast-spinning outer conic ring */
+.border-challenger .border-frame::before {
+  inset: -10px;
+  background: conic-gradient(#ff4500, #ff8c00, #ffd700, #ffee00, #ffd700, #ff8c00, #ff4500, #ff8c00, #ffd700, #ff4500);
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  animation: challenger-spin 2.5s linear infinite;
+  filter: blur(.5px);
+}
+@keyframes challenger-spin { to { transform: rotate(360deg); } }
+/* outer halo pulse */
+.border-challenger .border-frame::after {
+  inset: -20px;
+  background: radial-gradient(circle, rgba(255,180,0,.18) 60%, transparent 100%);
+  animation: challenger-halo 2s ease-in-out infinite alternate;
+}
+@keyframes challenger-halo {
+  0%   { opacity: .6; transform: scale(.95); }
+  100% { opacity: 1;  transform: scale(1.05); }
+}
+
+/* 7. Neon Green ─────────────────────────────────────────────── */
+.border-neon-green .avatar {
+  box-shadow: 0 0 0 3px #c8ff4a, 0 0 14px rgba(200,255,74,.7), 0 0 28px rgba(200,255,74,.35);
+  animation: neon-green-flicker 5s ease-in-out infinite;
+}
+@keyframes neon-green-flicker {
+  0%, 93%, 100% { opacity: 1; }
+  94% { opacity: .7; box-shadow: 0 0 0 3px #c8ff4a, 0 0 8px rgba(200,255,74,.4); }
+  95% { opacity: 1; }
+  97% { opacity: .85; }
+  98% { opacity: 1; }
+}
+/* ripple ring expands outward and fades */
+.border-neon-green .border-frame::before {
+  inset: -4px;
+  border: 2px solid rgba(200,255,74,.6);
+  animation: ng-ripple 2.2s ease-out infinite;
+}
+@keyframes ng-ripple {
+  0%   { inset: -4px; opacity: .8; }
+  100% { inset: -18px; opacity: 0; }
+}
+
+/* 8. Neon Cyan ──────────────────────────────────────────────── */
+.border-neon-cyan .avatar {
+  box-shadow: 0 0 0 3px #4affda, 0 0 14px rgba(74,255,218,.7), 0 0 28px rgba(74,255,218,.3);
+}
+/* breathing outer ring */
+.border-neon-cyan .border-frame::before {
+  inset: -8px;
+  border: 1.5px solid rgba(74,255,218,.4);
+  animation: nc-breathe 2.5s ease-in-out infinite;
+}
+@keyframes nc-breathe {
+  0%, 100% { inset: -8px; opacity: .6; }
+  50%       { inset: -14px; opacity: .15; }
+}
+/* second ripple offset */
+.border-neon-cyan .border-frame::after {
+  inset: -8px;
+  border: 1px solid rgba(74,255,218,.2);
+  animation: nc-breathe 2.5s ease-in-out infinite .9s;
+}
+
+/* 9. Neon Pink ──────────────────────────────────────────────── */
+.border-neon-pink .avatar {
+  box-shadow: 0 0 0 3px #ff4a6e, 0 0 14px rgba(255,74,110,.7), 0 0 30px rgba(255,74,110,.3);
+  animation: np-flicker 3s ease-in-out infinite;
+}
+@keyframes np-flicker {
+  0%, 96%, 100% { opacity: 1; }
+  97% { opacity: .6; } 98% { opacity: 1; }
+}
+/* double ring that flutter brightness */
+.border-neon-pink .border-frame::before {
+  inset: -8px;
+  border: 1.5px solid rgba(255,74,110,.5);
+  box-shadow: 0 0 8px rgba(255,74,110,.4);
+  animation: np-ring 1.8s ease-in-out infinite alternate;
+}
+@keyframes np-ring {
+  0%   { opacity: .4; inset: -8px; }
+  100% { opacity: .9; inset: -6px; }
+}
+.border-neon-pink .border-frame::after {
+  inset: -15px;
+  border: 1px solid rgba(255,74,110,.2);
+  animation: np-ring 1.8s ease-in-out infinite alternate-reverse;
+}
+
+/* 10. Neon Purple ───────────────────────────────────────────── */
+.border-neon-purple .avatar {
+  box-shadow: 0 0 0 3px #c87dff, 0 0 14px rgba(200,125,255,.7), 0 0 30px rgba(200,125,255,.3);
+  animation: npur-breathe 2.8s ease-in-out infinite;
+}
+@keyframes npur-breathe {
+  0%, 100% { box-shadow: 0 0 0 3px #c87dff, 0 0 14px rgba(200,125,255,.7), 0 0 30px rgba(200,125,255,.3); }
+  50%       { box-shadow: 0 0 0 4px #d99aff, 0 0 22px rgba(200,125,255,.9), 0 0 46px rgba(200,125,255,.45); }
+}
+.border-neon-purple .border-frame::before {
+  inset: -12px;
+  border: 1px solid rgba(200,125,255,.25);
+  animation: npur-outer 2.8s ease-in-out infinite;
+}
+@keyframes npur-outer {
+  0%, 100% { opacity: .3; transform: scale(1); }
+  50%       { opacity: .8; transform: scale(1.04); }
+}
+
+/* 11. Rainbow ───────────────────────────────────────────────── */
+.border-rainbow .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#ff4a6e,#ff9b4a,#f0f000,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e) border-box;
+  border: 4px solid transparent;
+  animation: rainbow-spin 3s linear infinite;
+}
+@keyframes rainbow-spin { to { filter: hue-rotate(360deg); } }
+/* outer counter-spinning ring */
+.border-rainbow .border-frame::before {
+  inset: -10px;
+  background: conic-gradient(#ff4a6e,#ff9b4a,#f0f000,#4aff6e,#4affda,#4a6eff,#c87dff,#ff4a6e);
+  mask: radial-gradient(farthest-side, transparent 85%, black 87%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 85%, black 87%, black 100%);
+  animation: rainbow-contra 5s linear infinite;
+  opacity: .6;
+}
+@keyframes rainbow-contra { to { transform: rotate(-360deg); filter: hue-rotate(360deg); } }
+/* wide outer glow halo */
+.border-rainbow .border-frame::after {
+  inset: -20px;
+  background: conic-gradient(rgba(255,74,110,.12),rgba(74,255,218,.08),rgba(200,125,255,.12),rgba(255,74,110,.12));
+  filter: blur(6px);
+  animation: rainbow-halo 3s linear infinite;
+}
+@keyframes rainbow-halo { to { transform: rotate(360deg); } }
+
+/* 12. Fire ──────────────────────────────────────────────────── */
+.border-fire .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(from 180deg, #cc1100, #ff3300, #ff6600, #ffaa00, #ffcc00, #ff6600, #ff3300, #cc1100) border-box;
+  border: 4px solid transparent;
+  box-shadow: 0 6px 24px rgba(255,80,0,.6), 0 0 12px rgba(255,200,0,.3);
+  animation: fire-waver 1.2s ease-in-out infinite alternate;
+}
+@keyframes fire-waver {
+  0%   { box-shadow: 0 6px 24px rgba(255,80,0,.6), 0 0 12px rgba(255,200,0,.3); }
+  100% { box-shadow: 0 10px 36px rgba(255,100,0,.85), 0 0 18px rgba(255,210,0,.5); }
+}
+/* elongated upward glow burst */
+.border-fire .border-frame::before {
+  inset: -12px;
+  background: radial-gradient(ellipse 80% 120% at 50% 80%, rgba(255,120,0,.45) 0%, rgba(255,60,0,.2) 50%, transparent 75%);
+  filter: blur(4px);
+  animation: fire-burst 1.4s ease-in-out infinite alternate;
+}
+@keyframes fire-burst {
+  0%   { transform: scaleY(.9); opacity: .7; }
+  100% { transform: scaleY(1.1); opacity: 1; }
+}
+
+/* 13. Ice ───────────────────────────────────────────────────── */
+.border-ice .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#60efff, #a8e6ff, #ffffff, #c8f0ff, #60efff, #d4f8ff, #60efff) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 18px rgba(96,239,255,.4), 0 0 40px rgba(168,230,255,.15);
+  animation: ice-gleam 3s ease-in-out infinite;
+}
+@keyframes ice-gleam {
+  0%, 100% { filter: brightness(1) saturate(1) hue-rotate(0deg); }
+  50%       { filter: brightness(1.2) saturate(1.3) hue-rotate(-5deg); }
+}
+/* frost crescent arc sweeping around */
+.border-ice .border-frame::before {
+  inset: -8px;
+  background: conic-gradient(
+    transparent 0% 55%, rgba(180,240,255,.6) 60%, rgba(255,255,255,.9) 65%,
+    rgba(180,240,255,.6) 70%, transparent 72%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  animation: ice-arc 4s linear infinite;
+  filter: blur(.8px);
+}
+@keyframes ice-arc { to { transform: rotate(360deg); } }
+/* crystal tips at corners */
+.border-ice .border-frame::after {
+  inset: -4px;
+  border: 1px solid rgba(180,240,255,.25);
+  animation: ice-shimmer2 2s ease-in-out infinite alternate;
+}
+@keyframes ice-shimmer2 {
+  0%   { opacity: .3; }
+  100% { opacity: .7; box-shadow: 0 0 8px rgba(96,239,255,.3); }
+}
+
+/* 14. Storm ─────────────────────────────────────────────────── */
+.border-storm .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#0033ff, #4a6eff, #60efff, #c8ff4a, #4a6eff, #0033ff, #7799ff, #60efff, #0033ff) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 20px rgba(74,110,255,.5), 0 0 40px rgba(96,239,255,.15);
+  animation: storm-spin 1.8s linear infinite;
+}
+@keyframes storm-spin { to { filter: hue-rotate(30deg) brightness(1.1); } }
+/* fast outer electric ring */
+.border-storm .border-frame::before {
+  inset: -10px;
+  background: conic-gradient(
+    transparent 0% 8%, #60efff 10%, #c8ff4a 11%, transparent 12%,
+    transparent 22%, #4a6eff 24%, transparent 26%,
+    transparent 36%, #c8ff4a 38%, #60efff 39%, transparent 40%,
+    transparent 52%, #4a6eff 54%, transparent 56%,
+    transparent 68%, #60efff 70%, transparent 72%,
+    transparent 82%, #c8ff4a 84%, #4a6eff 85%, transparent 86%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  animation: storm-fast 1.2s linear infinite;
+  filter: blur(.4px);
+}
+@keyframes storm-fast { to { transform: rotate(-360deg); } }
+/* lightning flash */
+.border-storm .border-frame::after {
+  inset: -18px;
+  background: radial-gradient(circle, rgba(74,110,255,.12) 40%, transparent 70%);
+  animation: storm-flash 2.4s ease-in-out infinite;
+}
+@keyframes storm-flash {
+  0%, 90%, 100% { opacity: .4; }
+  92% { opacity: 1; filter: brightness(2); }
+  94% { opacity: .3; }
+  96% { opacity: .9; }
+}
+
+/* 15. Galaxy ────────────────────────────────────────────────── */
+.border-galaxy .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#c87dff, #4a6eff, #4affda, #c87dff, #ff4a6e, #4a6eff, #c87dff) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 10px rgba(200,125,255,.55);
+  animation: galaxy-drift 8s linear infinite;
+}
+@keyframes galaxy-drift {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+/* spinning segmented nebula arc ring */
+.border-galaxy .border-frame::before {
+  inset: -7px;
+  background: conic-gradient(
+    rgba(200,125,255,.95) 0% 5%,   transparent 6% 11%,
+    rgba(74,110,255,.9)   12% 17%, transparent 18% 23%,
+    rgba(74,255,218,.9)   24% 29%, transparent 30% 35%,
+    rgba(200,125,255,.8)  36% 41%, transparent 42% 47%,
+    rgba(255,74,110,.9)   48% 53%, transparent 54% 59%,
+    rgba(74,110,255,.85)  60% 65%, transparent 66% 71%,
+    rgba(74,255,218,.85)  72% 77%, transparent 78% 83%,
+    rgba(200,125,255,.9)  84% 89%, transparent 90% 100%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  filter: blur(.4px);
+  animation: galaxy-stars 6s linear infinite;
+}
+@keyframes galaxy-stars { to { transform: rotate(360deg); } }
+/* counter-spinning ghost trace ring */
+.border-galaxy .border-frame::after {
+  inset: -9px;
+  background: conic-gradient(
+    transparent 0% 6%,  rgba(200,125,255,.3) 7% 10%, transparent 11% 19%,
+    rgba(74,110,255,.28) 20% 23%, transparent 24% 32%,
+    rgba(74,255,218,.28) 33% 36%, transparent 37% 100%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  filter: blur(1.5px);
+  animation: galaxy-stars 10s linear infinite reverse;
+}
+
+/* 16. Toxic ─────────────────────────────────────────────────── */
+.border-toxic .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#1a8800, #39ff14, #7fff00, #39ff14, #00cc44, #39ff14, #1a8800) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 16px rgba(57,255,20,.5), 0 0 36px rgba(57,255,20,.2);
+  animation: toxic-pulse 1.8s ease-in-out infinite alternate;
+}
+@keyframes toxic-pulse {
+  0%   { box-shadow: 0 0 16px rgba(57,255,20,.5), 0 2px 36px rgba(57,255,20,.2); }
+  100% { box-shadow: 0 0 26px rgba(57,255,20,.8), 0 4px 52px rgba(57,255,20,.35); }
+}
+/* bubble-like dots rising from bottom */
+.border-toxic .border-frame::before {
+  inset: -10px;
+  background: conic-gradient(
+    transparent 0% 14%, rgba(180,255,100,.6) 16%, transparent 18%,
+    transparent 33%, rgba(57,255,20,.5) 35%, transparent 37%,
+    transparent 55%, rgba(100,255,80,.4) 57%, transparent 59%,
+    transparent 78%, rgba(57,255,20,.5) 80%, transparent 82%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  filter: blur(.6px);
+  animation: toxic-bubble 2s ease-in-out infinite;
+}
+@keyframes toxic-bubble {
+  0%   { transform: rotate(0deg) scaleY(1); }
+  50%  { transform: rotate(180deg) scaleY(1.05); }
+  100% { transform: rotate(360deg) scaleY(1); }
+}
+
+/* 17. Void ──────────────────────────────────────────────────── */
+.border-void .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#150030, #6600cc, #9933ff, #3d0080, #6600cc, #150030) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 10px rgba(102,0,204,.6), inset 0 0 16px rgba(0,0,0,.9);
+  animation: void-breathe 4s ease-in-out infinite;
+}
+@keyframes void-breathe {
+  0%, 100% { box-shadow: 0 0 10px rgba(102,0,204,.6), inset 0 0 16px rgba(0,0,0,.9); filter: brightness(1); }
+  50%       { box-shadow: 0 0 16px rgba(130,0,255,.9), inset 0 0 24px rgba(0,0,0,1); filter: brightness(1.15); }
+}
+/* dark void wisp arc segments */
+.border-void .border-frame::before {
+  inset: -7px;
+  background: conic-gradient(
+    rgba(100,0,200,.95) 0% 7%,  transparent 9% 17%,
+    rgba(65,0,140,.9)   19% 26%, transparent 28% 36%,
+    rgba(120,0,240,.95) 38% 45%, transparent 47% 55%,
+    rgba(80,0,170,.9)   57% 64%, transparent 66% 74%,
+    rgba(105,0,210,.95) 76% 83%, transparent 85% 100%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  filter: blur(.6px);
+  animation: void-spin 5s linear infinite;
+}
+@keyframes void-spin { to { transform: rotate(360deg); } }
+/* faint pulsing outer trace ring */
+.border-void .border-frame::after {
+  inset: -9px;
+  border: 1px solid rgba(102,0,204,.22);
+  animation: void-breathe 4s ease-in-out infinite;
+  filter: blur(1px);
+}
+
+/* 18. Molten ────────────────────────────────────────────────── */
+.border-molten .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#cc2200, #ff4a00, #ff8800, #ffcc00, #ff8800, #ff4a00, #cc2200, #ff6600, #ffaa00, #cc2200) border-box;
+  border: 4px solid transparent;
+  box-shadow: 0 0 24px rgba(255,100,0,.6), 0 6px 36px rgba(255,80,0,.35);
+  animation: molten-flow 1.2s linear infinite;
+}
+@keyframes molten-flow { to { filter: hue-rotate(12deg) saturate(1.4) brightness(1.05); } }
+/* fast-spinning ember sparks on outer ring */
+.border-molten .border-frame::before {
+  inset: -12px;
+  background: conic-gradient(
+    transparent 0% 7%, #ffdd00 8%, #ff8800 9%, transparent 10%,
+    transparent 22%, #ff4a00 23%, #ffcc00 24%, transparent 25%,
+    transparent 40%, #ff8800 41%, transparent 42%,
+    transparent 55%, #ffcc00 56%, #ff4a00 57%, transparent 58%,
+    transparent 72%, #ff8800 73%, transparent 74%,
+    transparent 88%, #ffdd00 89%, #ff8800 90%, transparent 91%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  animation: molten-sparks 1s linear infinite;
+  filter: blur(.3px);
+}
+@keyframes molten-sparks { to { transform: rotate(360deg); } }
+/* lava glow below */
+.border-molten .border-frame::after {
+  inset: -16px;
+  background: radial-gradient(ellipse 90% 60% at 50% 85%, rgba(255,80,0,.4) 0%, transparent 70%);
+  filter: blur(5px);
+  animation: molten-lava 1.4s ease-in-out infinite alternate;
+}
+@keyframes molten-lava {
+  0%   { transform: scaleY(.9); opacity: .6; }
+  100% { transform: scaleY(1.15); opacity: 1; }
+}
+
+/* 19. Ghost ─────────────────────────────────────────────────── */
+.border-ghost .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(rgba(200,200,255,.5), rgba(255,255,255,.8), rgba(200,200,255,.5),
+      rgba(255,255,255,.6), rgba(200,200,255,.4), rgba(255,255,255,.8), rgba(200,200,255,.5)) border-box;
+  border: 2px solid transparent;
+  animation: ghost-fade 2.8s ease-in-out infinite;
+}
+@keyframes ghost-fade {
+  0%, 100% { opacity: 1; box-shadow: 0 0 16px rgba(200,200,255,.25); }
+  50%       { opacity: .4; box-shadow: 0 0 30px rgba(220,220,255,.5); }
+}
+/* ghostly double ring that also fades */
+.border-ghost .border-frame::before {
+  inset: -9px;
+  border: 1px solid rgba(220,220,255,.3);
+  animation: ghost-ring 2.8s ease-in-out infinite;
+}
+@keyframes ghost-ring {
+  0%, 100% { opacity: .5; inset: -9px; }
+  50%       { opacity: 0; inset: -18px; }
+}
+.border-ghost .border-frame::after {
+  inset: 0;
+  background: radial-gradient(circle, rgba(200,200,255,.08) 50%, transparent 75%);
+  animation: ghost-fade 2.8s ease-in-out infinite;
+}
+
+/* 20. Pixel / 8-bit ─────────────────────────────────────────── */
+.border-pixel .avatar {
+  border-radius: 4px;
+  border: 3px solid #c8ff4a;
+  outline: 2px solid rgba(200,255,74,.3);
+  outline-offset: 3px;
+  box-shadow: 0 0 8px rgba(200,255,74,.5), inset 0 0 8px rgba(200,255,74,.06);
+  animation: pixel-blink 4s step-end infinite;
+}
+@keyframes pixel-blink {
+  0%, 94%, 100% { filter: none; }
+  95% { filter: brightness(2) saturate(.5); }
+  96% { filter: none; }
+  98% { filter: brightness(1.5); }
+}
+/* CRT scan line overlay */
+.border-pixel .border-frame::before {
+  inset: 0;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px, rgba(0,255,0,.04) 4px
+  );
+  animation: pixel-scan 2s linear infinite;
+  pointer-events: none;
+}
+@keyframes pixel-scan {
+  from { background-position: 0 0; }
+  to   { background-position: 0 96px; }
+}
+/* corner bracket nubs */
+.border-pixel .border-frame::after {
+  inset: -6px;
+  border-radius: 2px;
+  border: 2px solid transparent;
+  border-image: none;
+  background:
+    linear-gradient(#c8ff4a,#c8ff4a) top left    / 8px 2px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) top left    / 2px 8px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) top right   / 8px 2px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) top right   / 2px 8px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) bottom left / 8px 2px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) bottom left / 2px 8px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) bottom right/ 8px 2px no-repeat,
+    linear-gradient(#c8ff4a,#c8ff4a) bottom right/ 2px 8px no-repeat;
+}
+
+/* 21. Glitch ────────────────────────────────────────────────── */
+.border-glitch .avatar {
+  box-shadow: 0 0 0 3px #ff4a6e;
+  animation: glitch-main 2.5s infinite;
+}
+@keyframes glitch-main {
+  0%, 88%, 100% { transform: translate(0); box-shadow: 0 0 0 3px #ff4a6e, 0 0 12px rgba(255,74,110,.4); }
+  89%  { transform: translate(-3px, 1px); box-shadow: 3px 0 0 3px #4affda, -3px 0 0 2px #ff4a6e; }
+  90%  { transform: translate(3px, -2px); box-shadow: -2px 0 0 3px #c8ff4a, 3px 0 0 2px #c87dff; }
+  91%  { transform: translate(-2px, 3px); box-shadow: 2px 0 0 2px #4affda, -2px 0 0 3px #ff4a6e; }
+  92%  { transform: translate(0); }
+  94%  { transform: translate(-1px, -1px); filter: hue-rotate(90deg); }
+  95%  { transform: translate(0); filter: none; }
+}
+/* RGB channel-split shadow */
+.border-glitch .border-frame::before {
+  inset: -3px;
+  border: 2px solid rgba(74,255,218,.5);
+  transform: translate(-3px, 2px);
+  animation: glitch-r 2.5s infinite;
+}
+@keyframes glitch-r {
+  0%, 88%, 100% { transform: translate(-3px, 2px); opacity: .5; }
+  89% { transform: translate(2px, -2px); opacity: .8; }
+  90% { transform: translate(-4px, 3px); }
+  91% { transform: translate(0, 0); opacity: 0; }
+  92% { transform: translate(-3px, 2px); opacity: .5; }
+}
+.border-glitch .border-frame::after {
+  inset: -3px;
+  border: 2px solid rgba(200,125,255,.4);
+  transform: translate(3px, -2px);
+  animation: glitch-b 2.5s infinite;
+}
+@keyframes glitch-b {
+  0%, 88%, 100% { transform: translate(3px, -2px); opacity: .5; }
+  89% { transform: translate(-2px, 3px); opacity: .8; }
+  90% { transform: translate(4px, -1px); }
+  91% { transform: translate(0, 0); opacity: 0; }
+  92% { transform: translate(3px, -2px); opacity: .5; }
+}
+
+/* 22. Solar ─────────────────────────────────────────────────── */
+.border-solar .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#fff176, #ffcc02, #ffaa00, #ff9800, #ffcc02, #ffe000, #fff176) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 12px rgba(255,210,0,.6);
+  animation: solar-pulse 2.5s ease-in-out infinite;
+}
+@keyframes solar-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255,210,0,.6); filter: brightness(1); }
+  50%       { box-shadow: 0 0 20px rgba(255,220,0,.9); filter: brightness(1.12); }
+}
+/* sharp ray segments within a tight outer ring */
+.border-solar .border-frame::before {
+  inset: -8px;
+  background: conic-gradient(
+    rgba(255,215,0,.95) 0%4%,   rgba(255,240,120,.4) 4%6%,   transparent 7%11%,
+    rgba(255,205,0,.9)  12%16%, rgba(255,235,100,.35) 16%18%, transparent 19%23%,
+    rgba(255,215,0,.95) 24%28%, rgba(255,240,120,.4)  28%30%, transparent 31%35%,
+    rgba(255,205,0,.9)  36%40%, rgba(255,235,100,.35) 40%42%, transparent 43%47%,
+    rgba(255,215,0,.95) 48%52%, rgba(255,240,120,.4)  52%54%, transparent 55%59%,
+    rgba(255,205,0,.9)  60%64%, rgba(255,235,100,.35) 64%66%, transparent 67%71%,
+    rgba(255,215,0,.95) 72%76%, rgba(255,240,120,.4)  76%78%, transparent 79%83%,
+    rgba(255,205,0,.9)  84%88%, rgba(255,235,100,.35) 88%90%, transparent 91%100%
+  );
+  mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 84%, black 86%, black 100%);
+  filter: blur(.4px);
+  animation: solar-rays 8s linear infinite;
+}
+@keyframes solar-rays { to { transform: rotate(360deg); } }
+/* warm inner vignette — stays inside avatar */
+.border-solar .border-frame::after {
+  inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 55%, rgba(255,170,0,.18) 80%, rgba(255,130,0,.1) 100%);
+  animation: solar-pulse 2.5s ease-in-out infinite;
+}
+
+/* 23. Blood Moon ────────────────────────────────────────────── */
+.border-bloodmoon .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#600000, #aa0000, #dd0000, #ff3333, #cc0000, #880000, #600000, #aa0000, #600000) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 10px rgba(200,0,0,.55);
+  animation: bloodmoon-pulse 3s ease-in-out infinite;
+}
+@keyframes bloodmoon-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(200,0,0,.55); }
+  50%       { box-shadow: 0 0 18px rgba(230,0,0,.8); }
+}
+/* shadow arc sliding across like a moon phase */
+.border-bloodmoon .border-frame::before {
+  inset: -4px;
+  background: radial-gradient(circle at 35% 50%, rgba(0,0,0,.85) 28%, rgba(0,0,0,.3) 50%, transparent 65%);
+  animation: bloodmoon-shadow 8s ease-in-out infinite alternate;
+  border-radius: 50%;
+}
+@keyframes bloodmoon-shadow {
+  0%   { transform: translateX(-8px); opacity: .8; }
+  50%  { transform: translateX(8px);  opacity: .6; }
+  100% { transform: translateX(-8px); opacity: .8; }
+}
+/* blood vein arc segments ring */
+.border-bloodmoon .border-frame::after {
+  inset: -7px;
+  background: conic-gradient(
+    rgba(170,0,0,.9)  0%6%,   rgba(210,0,0,.45) 7%9%,   transparent 10%18%,
+    rgba(150,0,0,.85) 19%25%, rgba(190,0,0,.4)  26%28%, transparent 29%37%,
+    rgba(170,0,0,.9)  38%44%, rgba(210,0,0,.45) 45%47%, transparent 48%56%,
+    rgba(150,0,0,.85) 57%63%, rgba(190,0,0,.4)  64%66%, transparent 67%75%,
+    rgba(170,0,0,.9)  76%82%, rgba(210,0,0,.45) 83%85%, transparent 86%100%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  filter: blur(.4px);
+  animation: bloodmoon-pulse 3s ease-in-out infinite;
+}
+
+/* 24. Tetromino ─────────────────────────────────────────────── */
+.border-tetromino .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(
+      #00f0f0 0deg 60deg, #f0a000 60deg 120deg, #f0f000 120deg 180deg,
+      #00f000 180deg 240deg, #a000f0 240deg 300deg, #f00000 300deg 360deg
+    ) border-box;
+  border: 4px solid transparent;
+  animation: tetromino-spin 3s linear infinite;
+}
+@keyframes tetromino-spin { to { transform: rotate(360deg); } }
+/* keep emoji upright */
+.border-tetromino .avatar .av-inner {
+  animation: tetromino-counter 3s linear infinite;
+  display: flex; align-items: center; justify-content: center;
+}
+@keyframes tetromino-counter { to { transform: rotate(-360deg); } }
+/* segmented outer counter ring */
+.border-tetromino .border-frame::before {
+  inset: -12px;
+  background: conic-gradient(
+    rgba(0,240,240,.5) 0deg 55deg, transparent 58deg 62deg,
+    rgba(240,160,0,.5) 62deg 117deg, transparent 120deg 122deg,
+    rgba(240,240,0,.5) 122deg 177deg, transparent 180deg 182deg,
+    rgba(0,240,0,.5) 182deg 237deg, transparent 240deg 242deg,
+    rgba(160,0,240,.5) 242deg 297deg, transparent 300deg 302deg,
+    rgba(240,0,0,.5) 302deg 357deg, transparent 357deg 360deg
+  );
+  mask: radial-gradient(farthest-side, transparent 86%, black 88%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 86%, black 88%, black 100%);
+  animation: tetromino-contra 4s linear infinite;
+}
+@keyframes tetromino-contra { to { transform: rotate(-360deg); } }
+
+/* 25. Obsidian ───────────────────────────────────────────────── */
+.border-obsidian .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#111111, #2a2a2e, #555560, #333338, #555560, #2a2a2e, #111111) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 10px rgba(100,100,120,.5), inset 0 0 12px rgba(0,0,0,.9);
+  animation: obsidian-pulse 4s ease-in-out infinite;
+}
+@keyframes obsidian-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(100,100,120,.5), inset 0 0 12px rgba(0,0,0,.9); }
+  50%       { box-shadow: 0 0 18px rgba(150,150,170,.7), inset 0 0 18px rgba(0,0,0,1); }
+}
+.border-obsidian .border-frame::before {
+  inset: -7px;
+  background: conic-gradient(
+    rgba(180,180,200,.9) 0%4%,   rgba(240,240,255,.4) 5%7%,   transparent 8%14%,
+    rgba(160,160,180,.8) 15%18%, rgba(210,210,230,.35) 19%21%, transparent 22%28%,
+    rgba(180,180,200,.9) 29%33%, rgba(240,240,255,.4)  34%36%, transparent 37%43%,
+    rgba(160,160,180,.8) 44%47%, rgba(210,210,230,.35) 48%50%, transparent 51%57%,
+    rgba(180,180,200,.9) 58%62%, rgba(240,240,255,.4)  63%65%, transparent 66%72%,
+    rgba(160,160,180,.8) 73%76%, rgba(210,210,230,.35) 77%79%, transparent 80%86%,
+    rgba(180,180,200,.9) 87%91%, rgba(240,240,255,.4)  92%94%, transparent 95%100%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  filter: blur(.3px);
+  animation: obsidian-rotate 14s linear infinite;
+}
+@keyframes obsidian-rotate { to { transform: rotate(360deg); } }
+.border-obsidian .border-frame::after {
+  inset: -9px;
+  border: 1px solid rgba(130,130,150,.15);
+  animation: obsidian-pulse 4s ease-in-out infinite;
+  filter: blur(.5px);
+}
+
+/* 26. Astral ─────────────────────────────────────────────────── */
+.border-astral .avatar {
+  background: var(--bg3) padding-box,
+    conic-gradient(#fffacd, #ffd700, #ffffff, #ffe080, #ffd700, #fffef0, #ffd700, #fffacd) border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 0 14px rgba(255,215,0,.55), inset 0 0 8px rgba(255,240,180,.12);
+  animation: astral-pulse 2.5s ease-in-out infinite;
+}
+@keyframes astral-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255,215,0,.55), inset 0 0 8px rgba(255,240,180,.12); filter: brightness(1); }
+  50%       { box-shadow: 0 0 22px rgba(255,225,80,.85), inset 0 0 14px rgba(255,250,200,.2); filter: brightness(1.1); }
+}
+.border-astral .border-frame::before {
+  inset: -8px;
+  background: conic-gradient(
+    rgba(255,240,120,.95) 0%5%,   rgba(255,255,200,.5) 6%8%,   transparent 9%13%,
+    rgba(255,230,80,.9)   14%19%, rgba(255,250,180,.45) 20%22%, transparent 23%27%,
+    rgba(255,240,120,.95) 28%33%, rgba(255,255,200,.5)  34%36%, transparent 37%41%,
+    rgba(255,230,80,.9)   42%47%, rgba(255,250,180,.45) 48%50%, transparent 51%55%,
+    rgba(255,240,120,.95) 56%61%, rgba(255,255,200,.5)  62%64%, transparent 65%69%,
+    rgba(255,230,80,.9)   70%75%, rgba(255,250,180,.45) 76%78%, transparent 79%83%,
+    rgba(255,240,120,.95) 84%89%, rgba(255,255,200,.5)  90%92%, transparent 93%100%
+  );
+  mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 83%, black 85%, black 100%);
+  filter: blur(.3px);
+  animation: astral-rotate 8s linear infinite;
+}
+@keyframes astral-rotate { to { transform: rotate(360deg); } }
+.border-astral .border-frame::after {
+  inset: -9px;
+  border: 1px solid rgba(255,215,0,.22);
+  animation: astral-pulse 2.5s ease-in-out infinite;
+  filter: blur(.5px);
+}
+
+/* ── TAG STYLES ───────────────────────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: .72rem;
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  position: relative;
+  cursor: default;
+}
+.tag-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.tag-desc {
+  font-size: .65rem;
+  color: var(--text3);
+  max-width: 160px;
+}
+
+/* Tier label */
+.tag-tier {
+  font-size: .6rem;
+  letter-spacing: .08em;
+  opacity: .7;
+  font-style: italic;
+  text-transform: none;
+}
+
+/* == Common (gray) */
+.tag-common {
+  background: rgba(136,136,144,.15);
+  color: #9898a8;
+  border: 1px solid rgba(136,136,144,.25);
+}
+
+/* == Uncommon (green) */
+.tag-uncommon {
+  background: rgba(74,255,110,.1);
+  color: #4aff6e;
+  border: 1px solid rgba(74,255,110,.25);
+}
+
+/* == Rare (blue) */
+.tag-rare {
+  background: rgba(74,130,255,.12);
+  color: #7aadff;
+  border: 1px solid rgba(74,130,255,.35);
+  box-shadow: 0 0 8px rgba(74,130,255,.15);
+}
+
+/* == Epic (purple) */
+.tag-epic {
+  background: rgba(200,125,255,.12);
+  color: #c87dff;
+  border: 1px solid rgba(200,125,255,.3);
+  box-shadow: 0 0 10px rgba(200,125,255,.2);
+}
+
+/* == Legendary (gold animated) */
+.tag-legendary {
+  background: rgba(255,200,0,.1);
+  color: #ffd700;
+  border: 1px solid rgba(255,200,0,.3);
+  box-shadow: 0 0 12px rgba(255,200,0,.25);
+  animation: legendary-shimmer 3s ease-in-out infinite;
+}
+@keyframes legendary-shimmer {
+  0%, 100% { box-shadow: 0 0 12px rgba(255,200,0,.25); }
+  50%       { box-shadow: 0 0 20px rgba(255,200,0,.5); }
+}
+
+/* == Mythic (rainbow text) */
+.tag-mythic {
+  background: rgba(255,255,255,.05);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  animation: mythic-text 4s linear infinite;
+}
+.tag-mythic::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 5px;
+  background: conic-gradient(#ff4a6e, #ff9b4a, #ffee00, #4aff6e, #4affda, #4a6eff, #c87dff, #ff4a6e);
+  z-index: -1;
+  animation: mythic-border 4s linear infinite;
+}
+@keyframes mythic-border {
+  to { filter: hue-rotate(360deg); }
+}
+@keyframes mythic-text {
+  0%   { color: #ff6b6b; }
+  16%  { color: #ffaa40; }
+  32%  { color: #c8ff4a; }
+  48%  { color: #4affda; }
+  64%  { color: #4a8fff; }
+  80%  { color: #c87dff; }
+  100% { color: #ff6b6b; }
+}
+
+/* == Specific tag flavors */
+.tag-founder {
+  background: linear-gradient(135deg, rgba(255,200,0,.15), rgba(255,140,0,.1));
+  color: #ffcc44;
+  border: 1px solid rgba(255,180,0,.35);
+  box-shadow: 0 0 14px rgba(255,180,0,.25);
+}
+
+.tag-dev {
+  background: rgba(200,255,74,.1);
+  color: var(--accent);
+  border: 1px solid rgba(200,255,74,.3);
+  font-style: italic;
+}
+
+.tag-mod {
+  background: rgba(74,255,218,.1);
+  color: #4affda;
+  border: 1px solid rgba(74,255,218,.3);
+}
+
+.tag-speedrunner {
+  background: rgba(255,74,110,.1);
+  color: #ff7090;
+  border: 1px solid rgba(255,74,110,.3);
+  box-shadow: 0 0 10px rgba(255,74,110,.15);
+  animation: speed-pulse 1.5s ease-in-out infinite;
+}
+@keyframes speed-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,74,110,.15); }
+  50%       { box-shadow: 0 0 18px rgba(255,74,110,.35); }
+}
+
+.tag-tetris-king {
+  background: linear-gradient(90deg, rgba(0,240,240,.1), rgba(200,125,255,.1));
+  color: #90e8ff;
+  border: 1px solid rgba(96,239,255,.35);
+}
+
+.tag-line-god {
+  background: rgba(0,240,240,.1);
+  color: #00f0f0;
+  border: 1px solid rgba(0,240,240,.3);
+}
+
+.tag-no-life {
+  background: rgba(85,85,92,.2);
+  color: var(--text2);
+  border: 1px solid rgba(85,85,92,.4);
+}
+
+.tag-comeback {
+  background: linear-gradient(90deg, rgba(255,80,0,.1), rgba(255,200,0,.1));
+  color: #ffaa44;
+  border: 1px solid rgba(255,140,0,.3);
+}
+
+.tag-untouchable {
+  background: rgba(74,255,218,.08);
+  border: 1px solid rgba(74,255,218,.2);
+  color: #4affda;
+  animation: untouchable-glow 2.5s ease-in-out infinite;
+}
+@keyframes untouchable-glow {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 16px rgba(74,255,218,.3); }
+}
+
+.tag-void-walker {
+  background: rgba(102,0,204,.15);
+  color: #c87dff;
+  border: 1px solid rgba(102,0,204,.4);
+  box-shadow: 0 0 12px rgba(102,0,204,.25);
+}
+
+.tag-grinder {
+  background: rgba(205,127,50,.12);
+  color: #e8a870;
+  border: 1px solid rgba(205,127,50,.3);
+}
+
+/* ── ACHIEVEMENT CARD ─────────────────────────────────────────── */
+.achievement-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.achievement-card:hover {
+  border-color: rgba(255,255,255,.14);
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+
+/* locked state */
+.achievement-card.locked {
+  opacity: .45;
+  filter: grayscale(.7);
+}
+.achievement-card.locked::after {
+  content: '🔒';
+  position: absolute;
+  bottom: 10px;
+  /* sit at the bottom of the body column, not in the rewards zone */
+  left: 82px; /* card-padding(18) + icon(48) + gap(16) */
+  right: auto;
+  top: auto;
+  font-size: .75rem;
+  opacity: .65;
+}
+
+/* rarity background tint — subtle gradient wash from left */
+.ach-common    { background: linear-gradient(100deg, rgba(152,152,168,.10) 0%, var(--bg2) 40%); }
+.ach-uncommon  { background: linear-gradient(100deg, rgba(74,255,110,.08)  0%, var(--bg2) 40%); }
+.ach-rare      { background: linear-gradient(100deg, rgba(122,173,255,.09) 0%, var(--bg2) 40%); }
+.ach-epic      { background: linear-gradient(100deg, rgba(200,125,255,.10) 0%, var(--bg2) 40%); }
+.ach-legendary { background: linear-gradient(100deg, rgba(255,180,0,.09)   0%, var(--bg2) 40%); }
+.ach-mythic    { background: linear-gradient(100deg, rgba(200,125,255,.12) 0%, rgba(74,255,218,.06) 35%, var(--bg2) 65%); }
+
+.ach-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: var(--bg3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ach-body { flex: 1; min-width: 0; padding-bottom: 20px; }
+.ach-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.ach-name {
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.ach-desc {
+  font-size: .75rem;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.ach-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+.ach-reward-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ach-reward-cat {
+  font-size: .6rem;
+  color: var(--text3);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  min-width: 38px;
+  flex-shrink: 0;
+}
+/* rewards panel — right column of achievement row card */
+.ach-rewards-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  border-left: 1px solid rgba(255,255,255,.06);
+  width: 210px;
+  min-width: 210px;
+  max-width: 210px;
+  flex-shrink: 0;
+  justify-content: flex-start;
+}
+/* hide the 'Title' / 'Border' text labels — layout speaks for itself */
+.ach-rewards-panel .ach-reward-cat { display: none; }
+/* collapse the wrapper so children flow directly into the panel row */
+.ach-rp-row { display: contents; }
+/* zoom the border-frame down to a thumbnail inside achievement cards */
+.ach-border-zoom {
+  display: inline-flex;
+  zoom: .52;
+  flex-shrink: 0;
+  order: -1;
+  margin-right: 10px;
+}
+.ach-reward {
+  font-size: .65rem;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.05);
+  color: var(--text2);
+  border: 1px solid rgba(255,255,255,.08);
+  letter-spacing: .04em;
+}
+.ach-reward.border-reward { color: #60efff; border-color: rgba(96,239,255,.25); }
+.ach-reward.tag-reward    { color: #c87dff; border-color: rgba(200,125,255,.25); }
+
+/* progress bar */
+.ach-progress-wrap {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ach-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ach-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.ach-progress-text {
+  font-size: .65rem;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* completed badge — anchored to the body column, not the rewards zone */
+.ach-card-earned {
+  position: absolute;
+  bottom: 10px;
+  left: 82px; /* card-padding(18) + icon(48) + gap(16) */
+  right: auto;
+  font-size: .6rem;
+  color: var(--accent);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* ── SECTION: Profile demo ────────────────────────────────────── */
+.profile-demo {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 420px;
+}
+.profile-demo-info { flex: 1; }
+.profile-demo-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.profile-demo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.profile-demo-stat {
+  font-size: .72rem;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+/* ── Divider ──────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,.05);
+  margin: 48px 0;
+}
+
+/* ── Rarity legend ────────────────────────────────────────────── */
+.rarity-legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.rarity-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .72rem;
+  color: var(--text2);
+}
+.rarity-dot::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.rd-common::before    { background: #9898a8; }
+.rd-uncommon::before  { background: #4aff6e; }
+.rd-rare::before      { background: #7aadff; }
+.rd-epic::before      { background: #c87dff; }
+.rd-legendary::before { background: #ffd700; }
+.rd-mythic::before    { background: conic-gradient(#ff4a6e, #c87dff, #4affda, #ff4a6e); animation: mythic-border 2s linear infinite; }
+
+/* ── Misc ────────────────────────────────────────────────────── */
+.note {
+  font-size: .72rem;
+  color: var(--text3);
+  margin-top: -20px;
+  margin-bottom: 28px;
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<h1>Cosmetics Preview</h1>
+<p class="subtitle">Profile borders · Titles · Achievements — design sandbox</p>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Profile Borders</h2>
+  <p class="note">Hover for name. All borders use the same 96 × 96 avatar base.</p>
+
+  <div class="border-grid">
+
+    <!-- 1 Default -->
+    <div class="border-item border-default">
+      <div class="border-frame"><div class="avatar">😎</div></div>
+      <div class="border-label">Default<span>no unlock needed</span></div>
+    </div>
+
+    <!-- 2 Bronze Veteran -->
+    <div class="border-item border-bronze">
+      <div class="border-frame"><div class="avatar">🎮</div></div>
+      <div class="border-label">Veteran<span>play 50 games</span></div>
+    </div>
+
+    <!-- 3 Silver -->
+    <div class="border-item border-silver">
+      <div class="border-frame"><div class="avatar">🎮</div></div>
+      <div class="border-label">Silver<span>reach Silver rank</span></div>
+    </div>
+
+    <!-- 4 Gold -->
+    <div class="border-item border-gold">
+      <div class="border-frame"><div class="avatar">🎮</div></div>
+      <div class="border-label">Gold<span>reach Gold rank</span></div>
+    </div>
+
+    <!-- 5 Diamond -->
+    <div class="border-item border-diamond">
+      <div class="border-frame"><div class="avatar">🎮</div></div>
+      <div class="border-label">Diamond<span>reach Diamond rank</span></div>
+    </div>
+
+    <!-- 6 Challenger -->
+    <div class="border-item border-challenger">
+      <div class="border-frame"><div class="avatar">🏆</div></div>
+      <div class="border-label">Challenger<span>reach Challenger</span></div>
+    </div>
+
+    <!-- 7 Neon Green -->
+    <div class="border-item border-neon-green">
+      <div class="border-frame"><div class="avatar">⚡</div></div>
+      <div class="border-label">Neon Green<span>win 100 games</span></div>
+    </div>
+
+    <!-- 8 Neon Cyan -->
+    <div class="border-item border-neon-cyan">
+      <div class="border-frame"><div class="avatar">🧊</div></div>
+      <div class="border-label">Neon Cyan<span>clear 5,000 lines</span></div>
+    </div>
+
+    <!-- 9 Neon Pink -->
+    <div class="border-item border-neon-pink">
+      <div class="border-frame"><div class="avatar">💥</div></div>
+      <div class="border-label">Neon Pink<span>10 back-to-back Tetrises</span></div>
+    </div>
+
+    <!-- 10 Neon Purple -->
+    <div class="border-item border-neon-purple">
+      <div class="border-frame"><div class="avatar">🔮</div></div>
+      <div class="border-label">Neon Purple<span>win 5 in a row</span></div>
+    </div>
+
+    <!-- 11 Rainbow -->
+    <div class="border-item border-rainbow">
+      <div class="border-frame"><div class="avatar">🌈</div></div>
+      <div class="border-label">Rainbow<span>use every piece in 1 game</span></div>
+    </div>
+
+    <!-- 12 Fire -->
+    <div class="border-item border-fire">
+      <div class="border-frame"><div class="avatar">🔥</div></div>
+      <div class="border-label">Fire<span>10-game win streak</span></div>
+    </div>
+
+    <!-- 13 Ice -->
+    <div class="border-item border-ice">
+      <div class="border-frame"><div class="avatar">❄️</div></div>
+      <div class="border-label">Ice<span>survive 5 min in solo</span></div>
+    </div>
+
+    <!-- 14 Storm -->
+    <div class="border-item border-storm">
+      <div class="border-frame"><div class="avatar">⛈️</div></div>
+      <div class="border-label">Storm<span>send 100 lines in 1 game</span></div>
+    </div>
+
+    <!-- 15 Galaxy -->
+    <div class="border-item border-galaxy">
+      <div class="border-frame"><div class="avatar">🌌</div></div>
+      <div class="border-label">Galaxy<span>play 500 games</span></div>
+    </div>
+
+    <!-- 16 Toxic -->
+    <div class="border-item border-toxic">
+      <div class="border-frame"><div class="avatar">☣️</div></div>
+      <div class="border-label">Toxic<span>win without using hold</span></div>
+    </div>
+
+    <!-- 17 Void -->
+    <div class="border-item border-void">
+      <div class="border-frame"><div class="avatar">🌑</div></div>
+      <div class="border-label">Void<span>play at midnight 30×</span></div>
+    </div>
+
+    <!-- 18 Molten -->
+    <div class="border-item border-molten">
+      <div class="border-frame"><div class="avatar">🌋</div></div>
+      <div class="border-label">Molten<span>reach 1,500 ELO</span></div>
+    </div>
+
+    <!-- 19 Ghost -->
+    <div class="border-item border-ghost">
+      <div class="border-frame"><div class="avatar">👻</div></div>
+      <div class="border-label">Ghost<span>win a game with 0 garbage</span></div>
+    </div>
+
+    <!-- 20 Pixel -->
+    <div class="border-item border-pixel">
+      <div class="border-frame"><div class="avatar">👾</div></div>
+      <div class="border-label">Pixel<span>8-bit: perfect sprint</span></div>
+    </div>
+
+    <!-- 21 Glitch -->
+    <div class="border-item border-glitch">
+      <div class="border-frame"><div class="avatar">📡</div></div>
+      <div class="border-label">Glitch<span>lose from 1-cell gap</span></div>
+    </div>
+
+    <!-- 22 Solar -->
+    <div class="border-item border-solar">
+      <div class="border-frame"><div class="avatar">☀️</div></div>
+      <div class="border-label">Solar<span>play 7 days straight</span></div>
+    </div>
+
+    <!-- 23 Blood Moon -->
+    <div class="border-item border-bloodmoon">
+      <div class="border-frame"><div class="avatar">🩸</div></div>
+      <div class="border-label">Blood Moon<span>win from near-death 10×</span></div>
+    </div>
+
+    <!-- 24 Tetromino -->
+    <div class="border-item border-tetromino">
+      <div class="border-frame"><div class="avatar"><span class="av-inner">🟦</span></div></div>
+      <div class="border-label">Tetromino<span>10,000 pieces placed</span></div>
+    </div>
+
+    <!-- 25 Obsidian -->
+    <div class="border-item border-obsidian">
+      <div class="border-frame"><div class="avatar">💀</div></div>
+      <div class="border-label">Obsidian<span>20-game win streak</span></div>
+    </div>
+
+    <!-- 26 Astral -->
+    <div class="border-item border-astral">
+      <div class="border-frame"><div class="avatar">🌟</div></div>
+      <div class="border-label">Astral<span>#1 ELO all-time</span></div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Titles</h2>
+  <p class="note">Titles appear on your profile card and in lobbies. Each has a rarity tier.</p>
+
+  <div class="rarity-legend">
+    <div class="rarity-dot rd-common">Common</div>
+    <div class="rarity-dot rd-uncommon">Uncommon</div>
+    <div class="rarity-dot rd-rare">Rare</div>
+    <div class="rarity-dot rd-epic">Epic</div>
+    <div class="rarity-dot rd-legendary">Legendary</div>
+    <div class="rarity-dot rd-mythic">Mythic</div>
+  </div>
+
+  <div class="tag-grid">
+
+    <!-- Common -->
+    <div class="tag-wrap">
+      <span class="tag tag-common">🎮 Casual</span>
+      <span class="tag-desc">Play your first game</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-common">📦 New Blood</span>
+      <span class="tag-desc">Register an account</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-common">🔁 Returner</span>
+      <span class="tag-desc">Log in after 30+ days away</span>
+    </div>
+
+    <!-- Uncommon -->
+    <div class="tag-wrap">
+      <span class="tag tag-uncommon">📈 Grinder</span>
+      <span class="tag-desc">Play 100 ranked games</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-uncommon">🧱 Line Clearer</span>
+      <span class="tag-desc">Clear 1,000 total lines</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-uncommon">🤝 Squad Up</span>
+      <span class="tag-desc">Play 20 co-op games</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-uncommon">🏁 Marathoner</span>
+      <span class="tag-desc">Finish a 40-line sprint</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-uncommon">🥈 Silver Stripes</span>
+      <span class="tag-desc">Reach Silver rank</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">⚡ Speed Demon</span>
+      <span class="tag-desc">Sprint sub-60 seconds</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">🔥 On Fire</span>
+      <span class="tag-desc">5-game win streak</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">🌊 Back-to-Back</span>
+      <span class="tag-desc">B2B Tetris ×5 in one game</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">🎯 Sharpshooter</span>
+      <span class="tag-desc">Finesse without errors 20 games</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">🕹️ Veteran</span>
+      <span class="tag-desc">50 total games played</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">💧 Flood</span>
+      <span class="tag-desc">Send 100 garbage lines in one game</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">🎖️ Ironclad</span>
+      <span class="tag-desc">Reach Gold rank</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-rare">💎 Diamond Status</span>
+      <span class="tag-desc">Reach Diamond rank</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">💜 Void Walker</span>
+      <span class="tag-desc">Reach GM rank</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">🌀 Infinite Loop</span>
+      <span class="tag-desc">1,000 games played</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">🧊 Cold-Blooded</span>
+      <span class="tag-desc">Win 10 comeback games</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">🎪 Showboat</span>
+      <span class="tag-desc">T-spin triple ×25</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">🛡️ Untouchable</span>
+      <span class="tag-desc">Win 5 games without dying once</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">📡 Glitched Out</span>
+      <span class="tag-desc">Discovered a bug (reported)</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">☣️ No Hold</span>
+      <span class="tag-desc">Win without using hold ×5</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">👻 The Phantom</span>
+      <span class="tag-desc">Win with zero garbage received</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">💻 8-Bit</span>
+      <span class="tag-desc">All-clear sprint</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-epic">🩸 Survivor</span>
+      <span class="tag-desc">Win from near-death ×10</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">👑 Tetris King</span>
+      <span class="tag-desc">Reach Challenger rank</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">⚡ Hyper Speed</span>
+      <span class="tag-desc">Sprint sub-30 seconds</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">🏆 The Champion</span>
+      <span class="tag-desc">Win a ranked season</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">💀 No Mercy</span>
+      <span class="tag-desc">20-game win streak</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">🔮 Oracle</span>
+      <span class="tag-desc">Flawless game (no garbage received)</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">🌋 Molten Core</span>
+      <span class="tag-desc">Reach 1,500 ELO</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-legendary">☀️ Solar Flare</span>
+      <span class="tag-desc">Play 7 consecutive days</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-mythic">✨ Transcendent</span>
+      <span class="tag-desc">All achievements unlocked</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-mythic">🌌 Galaxy Brain</span>
+      <span class="tag-desc">10,000 pieces placed</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-mythic">🎆 God of Tetris</span>
+      <span class="tag-desc">Top 1 ELO all-time</span>
+    </div>
+
+    <!-- Special / Staff -->
+    <div class="tag-wrap">
+      <span class="tag tag-founder">⭐ Founder</span>
+      <span class="tag-desc">Early access player</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-dev">🛠 Developer</span>
+      <span class="tag-desc">Staff — built this</span>
+    </div>
+    <div class="tag-wrap">
+      <span class="tag tag-mod">🛡 Moderator</span>
+      <span class="tag-desc">Staff — keeps it clean</span>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Achievement Page — Cards</h2>
+  <p class="note">Progress, earned, and locked states. Every achievement unlocks a matching title + border.</p>
+
+  <div class="achievement-grid">
+
+    <!-- ── COMMON ───────────────────────────────────────────── -->
+    <!-- 1. First Drop -->
+    <div class="achievement-card ach-common">
+      <div class="ach-icon">🎮</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">First Drop</span><span class="tag tag-common" style="font-size:.58rem;padding:2px 7px">Common</span></div>
+        <div class="ach-desc">Play your very first game.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-common" style="font-size:.6rem;padding:2px 8px">🎮 Casual</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-default ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">😎</div></div></div></div>
+      </div>
+      <span class="ach-card-earned">✓ earned</span>
+    </div>
+
+    <!-- 2. Welcome Aboard -->
+    <div class="achievement-card ach-common">
+      <div class="ach-icon">📦</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Welcome Aboard</span><span class="tag tag-common" style="font-size:.58rem;padding:2px 7px">Common</span></div>
+        <div class="ach-desc">Register an account.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-common" style="font-size:.6rem;padding:2px 8px">📦 New Blood</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-default ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">😎</div></div></div></div>
+      </div>
+      <span class="ach-card-earned">✓ earned</span>
+    </div>
+
+    <!-- 3. Long Time No See -->
+    <div class="achievement-card ach-common locked">
+      <div class="ach-icon">🔁</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Long Time No See</span><span class="tag tag-common" style="font-size:.58rem;padding:2px 7px">Common</span></div>
+        <div class="ach-desc">Log back in after being away for 30 or more days.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-common" style="font-size:.6rem;padding:2px 8px">🔁 Returner</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-default ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">😎</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── UNCOMMON ──────────────────────────────────────────── -->
+    <!-- 4. Veteran Presence -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">🕹️</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Veteran Presence</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Play 50 total games.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:96%;background:#4aff6e"></div></div><span class="ach-progress-text">48 / 50</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">🕹️ Veteran</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-bronze ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🎮</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 5. Sprint Debut -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">🏁</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Sprint Debut</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Complete your first 40-line sprint run.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">🏁 Marathoner</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-bronze ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🎮</div></div></div></div>
+      </div>
+      <span class="ach-card-earned">✓ earned</span>
+    </div>
+
+    <!-- 6. Team Player -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">🤝</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Team Player</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Play 20 co-op games with a partner.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:70%;background:#4aff6e"></div></div><span class="ach-progress-text">14 / 20</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">🤝 Squad Up</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-neon-cyan ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">⚡</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 7. Silver Lining -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">🥈</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Silver Lining</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Reach Silver rank on the ranked ladder.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">🥈 Silver Stripes</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-silver ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🎮</div></div></div></div>
+      </div>
+      <span class="ach-card-earned">✓ earned</span>
+    </div>
+
+    <!-- 8. Line Mind -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">🧱</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Line Mind</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Clear 1,000 lines across all games.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:64%;background:#4aff6e"></div></div><span class="ach-progress-text">640 / 1,000</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">🧱 Line Clearer</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-neon-green ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🧊</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 9. Century Mark -->
+    <div class="achievement-card ach-uncommon">
+      <div class="ach-icon">📈</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Century Mark</span><span class="tag tag-uncommon" style="font-size:.58rem;padding:2px 7px">Uncommon</span></div>
+        <div class="ach-desc">Play 100 ranked games.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-uncommon" style="font-size:.6rem;padding:2px 8px">📈 Grinder</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-bronze ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🎮</div></div></div></div>
+      </div>
+      <span class="ach-card-earned">✓ earned</span>
+    </div>
+
+    <!-- ── RARE ───────────────────────────────────────────────── -->
+    <!-- 10. Speed Demon -->
+    <div class="achievement-card ach-rare">
+      <div class="ach-icon">⚡</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Speed Demon</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Complete a 40-line sprint in under 60 seconds.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:58%;background:#7aadff"></div></div><span class="ach-progress-text">PB: 71s · Goal: 60s</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">⚡ Speed Demon</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-neon-purple ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">⛈️</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 11. On Fire -->
+    <div class="achievement-card ach-rare">
+      <div class="ach-icon">🔥</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">On Fire</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Win 5 games in a row.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:60%;background:#7aadff"></div></div><span class="ach-progress-text">3 / 5</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">🔥 On Fire</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-fire ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🔥</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 12. B2B King -->
+    <div class="achievement-card ach-rare">
+      <div class="ach-icon">🌊</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">B2B King</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Land 5 back-to-back Tetrises in a single game.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:60%;background:#7aadff"></div></div><span class="ach-progress-text">3 / 5</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">🌊 Back-to-Back</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-molten ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">💥</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 13. Rainbow Run -->
+    <div class="achievement-card ach-rare locked">
+      <div class="ach-icon">🌈</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Rainbow Run</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Place all 7 tetromino types in one game without topping out.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">🌈 Prism</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-rainbow ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌈</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 14. Sharpshooter -->
+    <div class="achievement-card ach-rare locked">
+      <div class="ach-icon">🎯</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Sharpshooter</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Finish 20 games with zero finesse errors.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">🎯 Sharpshooter</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-storm ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🔮</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 15. Gold Rush -->
+    <div class="achievement-card ach-rare locked">
+      <div class="ach-icon">🥇</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Gold Rush</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Climb to Gold rank on the ranked ladder.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">🎖️ Ironclad</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-gold ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🏆</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 16. Diamond Status -->
+    <div class="achievement-card ach-rare locked">
+      <div class="ach-icon">💎</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Diamond Status</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Reach Diamond rank on the ranked ladder.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">💎 Diamond Status</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-diamond ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🎮</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 17. Under Pressure -->
+    <div class="achievement-card ach-rare locked">
+      <div class="ach-icon">💧</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Under Pressure</span><span class="tag tag-rare" style="font-size:.58rem;padding:2px 7px">Rare</span></div>
+        <div class="ach-desc">Send 100 garbage lines in a single game.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-rare" style="font-size:.6rem;padding:2px 8px">💧 Flood</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-toxic ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">☣️</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── EPIC ───────────────────────────────────────────────── -->
+    <!-- 18. Cold-Blooded -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">🧊</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Cold-Blooded</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Win 10 games after the board reached the top 2 rows.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">🧊 Cold-Blooded</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-ice ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">❄️</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 19. Showboat -->
+    <div class="achievement-card ach-epic">
+      <div class="ach-icon">🎪</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Showboat</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Land a T-spin triple 25 times.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:36%;background:#c87dff"></div></div><span class="ach-progress-text">9 / 25</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">🎪 Showboat</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-neon-pink ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌋</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 20. Toxic Play -->
+    <div class="achievement-card ach-epic">
+      <div class="ach-icon">☣️</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Toxic Play</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Win 5 ranked games without ever using the hold piece.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:40%;background:#c87dff"></div></div><span class="ach-progress-text">2 / 5</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">☣️ No Hold</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-toxic ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">☣️</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 21. Glitched Out -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">📡</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Glitched Out</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Report a verified bug that gets patched. One of a kind.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">📡 Glitched Out</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-glitch ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">📡</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 22. Void Walker -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">🌑</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Void Walker</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Reach Grandmaster rank on the ranked ladder.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">💜 Void Walker</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-void ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌑</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 23. Infinite Loop -->
+    <div class="achievement-card ach-epic">
+      <div class="ach-icon">🌀</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Infinite Loop</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Play 1,000 total games.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:24%;background:#c87dff"></div></div><span class="ach-progress-text">243 / 1,000</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">🌀 Infinite Loop</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-galaxy ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌌</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 24. The Phantom -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">👻</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">The Phantom</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Win a ranked game without receiving any garbage lines.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">👻 The Phantom</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-ghost ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">👻</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 25. 8-Bit Brain -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">👾</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">8-Bit Brain</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Complete a 40-line sprint that includes at least one All-Clear.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">💻 8-Bit</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-pixel ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">👾</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 26. Near Death -->
+    <div class="achievement-card ach-epic locked">
+      <div class="ach-icon">🩸</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Near Death</span><span class="tag tag-epic" style="font-size:.58rem;padding:2px 7px">Epic</span></div>
+        <div class="ach-desc">Win 10 games after the board reached the top 2 rows.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-epic" style="font-size:.6rem;padding:2px 8px">🩸 Survivor</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-bloodmoon ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🩸</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── LEGENDARY ──────────────────────────────────────────── -->
+    <!-- 27. No Mercy -->
+    <div class="achievement-card ach-legendary locked">
+      <div class="ach-icon">💀</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">No Mercy</span><span class="tag tag-legendary" style="font-size:.58rem;padding:2px 7px">Legendary</span></div>
+        <div class="ach-desc">Win 20 games in a row without a single loss.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-legendary" style="font-size:.6rem;padding:2px 8px">💀 No Mercy</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-obsidian ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">💀</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 28. Committed -->
+    <div class="achievement-card ach-legendary locked">
+      <div class="ach-icon">☀️</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Committed</span><span class="tag tag-legendary" style="font-size:.58rem;padding:2px 7px">Legendary</span></div>
+        <div class="ach-desc">Log in and play at least one game for 7 consecutive days.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-legendary" style="font-size:.6rem;padding:2px 8px">☀️ Solar Flare</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-solar ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">☀️</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 29. Molten Core -->
+    <div class="achievement-card ach-legendary locked">
+      <div class="ach-icon">🌋</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Molten Core</span><span class="tag tag-legendary" style="font-size:.58rem;padding:2px 7px">Legendary</span></div>
+        <div class="ach-desc">Reach 1,500 ELO rating.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-legendary" style="font-size:.6rem;padding:2px 8px">🌋 Molten Core</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-molten ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌋</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 30. Tetris King -->
+    <div class="achievement-card ach-legendary locked">
+      <div class="ach-icon">👑</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Tetris King</span><span class="tag tag-legendary" style="font-size:.58rem;padding:2px 7px">Legendary</span></div>
+        <div class="ach-desc">Reach Challenger rank — the highest tier in the game.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-legendary" style="font-size:.6rem;padding:2px 8px">👑 Tetris King</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-challenger ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🏆</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 31. The Champion -->
+    <div class="achievement-card ach-legendary locked">
+      <div class="ach-icon">🏆</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">The Champion</span><span class="tag tag-legendary" style="font-size:.58rem;padding:2px 7px">Legendary</span></div>
+        <div class="ach-desc">End a full ranked season as the #1 player in your region.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-legendary" style="font-size:.6rem;padding:2px 8px">🏆 The Champion</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-diamond ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🏆</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── MYTHIC ──────────────────────────────────────────────── -->
+    <!-- 32. Galaxy Brain -->
+    <div class="achievement-card ach-mythic locked">
+      <div class="ach-icon">🌌</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Galaxy Brain</span><span class="tag tag-mythic" style="font-size:.58rem;padding:2px 7px">Mythic</span></div>
+        <div class="ach-desc">Place 10,000 pieces across all games.</div>
+        <div class="ach-progress-wrap"><div class="ach-progress-bar"><div class="ach-progress-fill" style="width:18%;background:linear-gradient(90deg,#c87dff,#4affda)"></div></div><span class="ach-progress-text">1,843 / 10,000</span></div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-mythic" style="font-size:.6rem;padding:2px 8px">🌌 Galaxy Brain</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-tetromino ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem"><span class="av-inner">🟦</span></div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 33. Transcendent -->
+    <div class="achievement-card ach-mythic locked">
+      <div class="ach-icon">✨</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">Transcendent</span><span class="tag tag-mythic" style="font-size:.58rem;padding:2px 7px">Mythic</span></div>
+        <div class="ach-desc">Unlock every other achievement in the game.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-mythic" style="font-size:.6rem;padding:2px 8px">✨ Transcendent</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-rainbow ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌈</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- 34. God of Tetris -->
+    <div class="achievement-card ach-mythic locked">
+      <div class="ach-icon">🎆</div>
+      <div class="ach-body">
+        <div class="ach-header"><span class="ach-name">God of Tetris</span><span class="tag tag-mythic" style="font-size:.58rem;padding:2px 7px">Mythic</span></div>
+        <div class="ach-desc">Hold the #1 position on the all-time ELO leaderboard.</div>
+      </div>
+      <div class="ach-rewards-panel">
+        <div class="ach-rp-row"><span class="ach-reward-cat">Title</span><span class="tag tag-mythic" style="font-size:.6rem;padding:2px 8px">🎆 God of Tetris</span></div>
+        <div class="ach-rp-row"><span class="ach-reward-cat">Border</span><div class="border-astral ach-border-zoom"><div class="border-frame"><div class="avatar" style="font-size:.9rem">🌟</div></div></div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Example Profile Card</h2>
+  <p class="note">How a border + tags look together on a profile.</p>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+
+    <!-- Example 1: Challenger player -->
+    <div class="profile-demo">
+      <div class="border-item border-challenger" style="gap:0">
+        <div class="border-frame"><div class="avatar" style="font-size:1.6rem;">🏆</div></div>
+      </div>
+      <div class="profile-demo-info">
+        <div class="profile-demo-name">taozi4887</div>
+        <div class="profile-demo-stat">ELO 1842 · Challenger</div>
+        <div class="profile-demo-tags">
+          <span class="tag tag-legendary" style="font-size:.65rem;padding:3px 10px;">👑 Tetris King</span>
+          <span class="tag tag-epic" style="font-size:.65rem;padding:3px 10px;">🛡️ Untouchable</span>
+          <span class="tag tag-founder" style="font-size:.65rem;padding:3px 10px;">⭐ Founder</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 2: Mid-ranked player -->
+    <div class="profile-demo">
+      <div class="border-item border-neon-green" style="gap:0">
+        <div class="border-frame"><div class="avatar" style="font-size:1.6rem;">😤</div></div>
+      </div>
+      <div class="profile-demo-info">
+        <div class="profile-demo-name">xXSlicerXx</div>
+        <div class="profile-demo-stat">ELO 1120 · Gold</div>
+        <div class="profile-demo-tags">
+          <span class="tag tag-rare" style="font-size:.65rem;padding:3px 10px;">🔥 On Fire</span>
+          <span class="tag tag-uncommon" style="font-size:.65rem;padding:3px 10px;">🧱 Line Clearer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 3: Speed runner -->
+    <div class="profile-demo">
+      <div class="border-item border-storm" style="gap:0">
+        <div class="border-frame"><div class="avatar" style="font-size:1.6rem;">💨</div></div>
+      </div>
+      <div class="profile-demo-info">
+        <div class="profile-demo-name">velocity99</div>
+        <div class="profile-demo-stat">Sprint PB: 28.4s</div>
+        <div class="profile-demo-tags">
+          <span class="tag tag-legendary" style="font-size:.65rem;padding:3px 10px;">⚡ Hyper Speed</span>
+          <span class="tag tag-dev" style="font-size:.65rem;padding:3px 10px;">🛠 Developer</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

@@ -169,6 +169,26 @@ const matchmaking = {
   serverBase() { return BASE; },
 };
 
+/* ── Cosmetics & Achievements ─────────────────────────────────── */
+
+const cosmetics = {
+  /**
+   * Get all cosmetics + achievements.
+   * If logged in, each item gets `owned` bool; achievements get `progress` + `earned`.
+   * params: { type?: 'border'|'title' }
+   */
+  getAll: (params) => req('GET', '/api/cosmetics', { params }),
+
+  /** Get own inventory + equipped slugs + achievement progress. Requires auth. */
+  getMe:  ()       => req('GET', '/api/cosmetics/me'),
+
+  /** Equip a cosmetic. { type: 'border'|'title', slug } */
+  equip:  (body)   => req('PUT', '/api/cosmetics/equip', { body }),
+
+  /** Unequip a cosmetic. { type: 'border'|'title' } */
+  unequip: (body)  => req('PUT', '/api/cosmetics/unequip', { body }),
+};
+
 /* ── Misc ─────────────────────────────────────────────────────── */
 
 const health = {
@@ -177,12 +197,25 @@ const health = {
 
 /* ── Exported API object ──────────────────────────────────────── */
 
-const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, BASE,
+const API = { auth, profile, leaderboard, stats, friends, inbox, matchmaking, health, cosmetics, BASE,
   clearNavCache: () => { try { sessionStorage.removeItem(_NAV_CACHE_KEY); } catch {} },
 };
 export default API;
 
 /* ── Helpers exposed as named exports ─────────────────────────── */
+
+/**
+ * Returns the CSS class for a title tag given its rarity and slug.
+ * Special-rarity titles use slug-specific classes (tag-dev / tag-mod).
+ */
+export function titleTagClass(rarity, slug) {
+  if (rarity === 'special') {
+    if (slug === 'title-dev') return 'tag-dev';
+    if (slug === 'title-mod') return 'tag-mod';
+    return 'tag-special';
+  }
+  return `tag-${rarity || 'common'}`;
+}
 
 /**
  * Try to fetch the currently-authed user.
@@ -226,26 +259,25 @@ function _navAvatarSrc(me) {
  */
 function _applyNavCache() {
   const cached = _readNavCache();
-  if (!cached) {
-    // No cache yet – hide Sign in to avoid the flash; it'll appear after auth check
-    document.getElementById('navLoginBtn')?.classList.add('hidden');
-    document.getElementById('navLogoutBtn')?.classList.add('hidden');
-    return;
-  }
-  if (!cached.loggedIn) {
-    document.getElementById('navLoginBtn')?.classList.remove('hidden');
-    document.getElementById('navLogoutBtn')?.classList.add('hidden');
+  // Always hide both auth action buttons until injectNavUser confirms the
+  // real auth state asynchronously. This prevents the glitch where stale
+  // cache shows sign-out/settings on a page the user is actually logged out of.
+  document.getElementById('navLoginBtn')?.classList.add('hidden');
+  document.getElementById('navLogoutBtn')?.classList.add('hidden');
+  document.getElementById('navSettingsBtn')?.classList.add('hidden');
+
+  if (!cached || !cached.loggedIn) {
+    // Definitely logged-out or no cache: hide all identity elements too
     document.getElementById('navUsername')?.classList.add('hidden');
     const av = document.getElementById('navAvatar'); if (av) av.style.display = 'none';
     const fl = document.getElementById('navFriendsLink'); if (fl) fl.style.display = 'none';
-    document.getElementById('navSettingsBtn')?.classList.add('hidden');
     return;
   }
-  // Logged-in state
-  document.getElementById('navLoginBtn')?.classList.add('hidden');
+  // Cache says logged-in: restore full logged-in nav state synchronously.
+  // sessionStorage is per-tab session so a stale "logged in" entry is very unlikely.
   document.getElementById('navLogoutBtn')?.classList.remove('hidden');
-  const fl = document.getElementById('navFriendsLink'); if (fl) fl.style.display = '';
   document.getElementById('navSettingsBtn')?.classList.remove('hidden');
+  const fl = document.getElementById('navFriendsLink'); if (fl) fl.style.display = '';
   const username = document.getElementById('navUsername');
   if (username && cached.username) {
     username.textContent = cached.username;
