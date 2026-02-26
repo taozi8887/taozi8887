@@ -21,8 +21,8 @@ router.get('/', requireAuth, async (req, res) => {
       .from('friendships')
       .select(`
         id, status,
-        requester:requester_id ( id, username, display_name, elo, xp, profiles(avatar_url, country) ),
-        addressee:addressee_id ( id, username, display_name, elo, xp, profiles(avatar_url, country) )
+        requester:requester_id ( id, username, display_name, elo, xp, profiles(avatar_url, country, equipped_border, equipped_title) ),
+        addressee:addressee_id ( id, username, display_name, elo, xp, profiles(avatar_url, country, equipped_border, equipped_title) )
       `)
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
       .in('status', ['accepted', 'pending']);
@@ -39,18 +39,40 @@ router.get('/', requireAuth, async (req, res) => {
         isSent,
         isPending: row.status === 'pending',
         friend: {
-          id:           friendId,
-          username:     friend?.username     || '',
-          display_name: friend?.display_name || '',
-          elo:          friend?.elo          ?? 1000,
-          xp:           friend?.xp           ?? 0,
-          avatar_url:   friend?.profiles?.avatar_url || null,
-          country:      friend?.profiles?.country    || '',
-          online:       online.has(friendId),
-          inGame:       activegame.has(friendId),
-          roomCode:     activegame.get(friendId) || null,
+          id:             friendId,
+          username:       friend?.username     || '',
+          display_name:   friend?.display_name || '',
+          elo:            friend?.elo          ?? 1000,
+          xp:             friend?.xp           ?? 0,
+          avatar_url:     friend?.profiles?.avatar_url      || null,
+          country:        friend?.profiles?.country          || '',
+          equipped_border:friend?.profiles?.equipped_border  || null,
+          equipped_title: friend?.profiles?.equipped_title   || null,
+          online:         online.has(friendId),
+          inGame:         activegame.has(friendId),
+          roomCode:       activegame.get(friendId) || null,
         },
       };
+    });
+
+    // Enrich friends with cosmetic metadata (name, rarity, icon)
+    const cosSlugSet = new Set();
+    friends.forEach(f => {
+      if (f.friend.equipped_border) cosSlugSet.add(f.friend.equipped_border);
+      if (f.friend.equipped_title)  cosSlugSet.add(f.friend.equipped_title);
+    });
+    const cosMap = {};
+    if (cosSlugSet.size) {
+      let { data: cosRows } = await supabase.from('cosmetics').select('slug,name,rarity,icon').in('slug',[...cosSlugSet]);
+      if (!cosRows?.length) {
+        await new Promise(r => setTimeout(r, 400));
+        ({ data: cosRows } = await supabase.from('cosmetics').select('slug,name,rarity,icon').in('slug',[...cosSlugSet]));
+      }
+      for (const c of cosRows||[]) cosMap[c.slug] = c;
+    }
+    friends.forEach(f => {
+      f.friend.equipped_title_info  = f.friend.equipped_title  ? (cosMap[f.friend.equipped_title]  || null) : null;
+      f.friend.equipped_border_info = f.friend.equipped_border ? (cosMap[f.friend.equipped_border] || null) : null;
     });
 
     res.json({ friends });

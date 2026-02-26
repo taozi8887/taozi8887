@@ -182,7 +182,7 @@ async function getProfileByUsername(username, res, requestorId) {
       .from('users')
       .select(`
         id, username, display_name, elo, xp, created_at,
-        profiles ( bio, avatar_url, country ),
+        profiles ( bio, avatar_url, country, equipped_border, equipped_title ),
         stats ( * )
       `)
       .eq('username', username)
@@ -201,8 +201,8 @@ async function getProfileByUsername(username, res, requestorId) {
         p1_score, p2_score, p1_lines, p2_lines,
         p1_elo_delta, p2_elo_delta, duration_ms, played_at,
         p1_final_board, p2_final_board,
-        p1:p1_id ( username, display_name, elo ),
-        p2:p2_id ( username, display_name, elo )
+        p1:p1_id ( username, display_name, elo, xp ),
+        p2:p2_id ( username, display_name, elo, xp )
       `)
       .or(`p1_id.eq.${user.id},p2_id.eq.${user.id}`)
       .order('played_at', { ascending: false })
@@ -214,12 +214,74 @@ async function getProfileByUsername(username, res, requestorId) {
       p1_name:    m.p1?.username     || null,
       p1_display: m.p1?.display_name || null,
       p1_elo:     m.p1?.elo          ?? null,
+      p1_xp:      m.p1?.xp           ?? 0,
       p2_name:    m.p2?.username     || null,
       p2_display: m.p2?.display_name || null,
       p2_elo:     m.p2?.elo          ?? null,
+      p2_xp:      m.p2?.xp           ?? 0,
     }));
 
+    // Batch-fetch profiles + equipped title cosmetics for all players in these matches
+    const allPlayerIds = [...new Set(recent_matches.flatMap(m => [m.p1_id, m.p2_id].filter(Boolean)))];
+    if (allPlayerIds.length) {
+      const { data: matchProfs } = await supabase
+        .from('profiles')
+        .select('user_id, avatar_url, equipped_title')
+        .in('user_id', allPlayerIds);
+      const matchProfMap = {};
+      for (const p of matchProfs || []) matchProfMap[p.user_id] = p;
+
+      const titleSlugs = [...new Set(Object.values(matchProfMap).map(p => p.equipped_title).filter(Boolean))];
+      const matchTitleMap = {};
+      if (titleSlugs.length) {
+        const { data: titleCos } = await supabase
+          .from('cosmetics')
+          .select('slug, name, icon, rarity')
+          .in('slug', titleSlugs);
+        for (const c of titleCos || []) matchTitleMap[c.slug] = c;
+      }
+
+      for (const m of recent_matches) {
+        const pp1 = matchProfMap[m.p1_id];
+        const pp2 = matchProfMap[m.p2_id];
+        m.p1_avatar = pp1?.avatar_url || null;
+        m.p2_avatar = pp2?.avatar_url || null;
+        m.p1_title  = pp1?.equipped_title ? (matchTitleMap[pp1.equipped_title] || null) : null;
+        m.p2_title  = pp2?.equipped_title ? (matchTitleMap[pp2.equipped_title] || null) : null;
+      }
+    }
+
     const liveRoomCode = activegame.get(user.id) || null;
+
+    // Achievement count
+    const { count: achEarned } = await supabase
+      .from('user_achievements')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('earned', true);
+
+    // Fetch full cosmetic objects for equipped items
+    const equippedSlugs = [
+      user.profiles?.equipped_border,
+      user.profiles?.equipped_title,
+    ].filter(Boolean);
+    const equippedCosMap = {};
+    if (equippedSlugs.length) {
+      let { data: cosRows } = await supabase
+        .from('cosmetics')
+        .select('slug, type, name, rarity, icon, description')
+        .in('slug', equippedSlugs);
+      // Retry once — on cold server start the Supabase connection pool may not
+      // be ready yet and the query silently returns null/[] on the first call.
+      if (!cosRows?.length) {
+        await new Promise(r => setTimeout(r, 400));
+        ({ data: cosRows } = await supabase
+          .from('cosmetics')
+          .select('slug, type, name, rarity, icon, description')
+          .in('slug', equippedSlugs));
+      }
+      for (const c of cosRows || []) equippedCosMap[c.slug] = c;
+    }
 
     // Flat structure — frontend reads these at the top level
     res.json({
@@ -231,13 +293,20 @@ async function getProfileByUsername(username, res, requestorId) {
       created_at:   user.created_at,
       bio:          user.profiles?.bio        || '',
       country:      user.profiles?.country    || '',
-      avatarUrl:    user.profiles?.avatar_url || null,  // camelCase for frontend
+      avatarUrl:    user.profiles?.avatar_url || null,
+      equippedBorder: user.profiles?.equipped_border
+        ? (equippedCosMap[user.profiles.equipped_border] || { slug: user.profiles.equipped_border })
+        : null,
+      equippedTitle: user.profiles?.equipped_title
+        ? (equippedCosMap[user.profiles.equipped_title] || { slug: user.profiles.equipped_title })
+        : null,
       rank:         rank.name,
       rank_color:   rank.color,
       liveRoomCode,
       isOwnProfile: requestorId === user.id,
       stats:         statsRaw,
       recent_matches: recent_matches,
+      achievements_earned: achEarned ?? 0,
     });
   } catch (err) {
     console.error('getProfileByUsername:', err);

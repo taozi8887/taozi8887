@@ -23,6 +23,7 @@ import { router as authRouter    } from './auth.js';
 import { router as profileRouter, initAvatarBucket } from './profile.js';
 import { router as statsRouter   } from './stats.js';
 import { router as friendsRouter } from './friends.js';
+import { router as cosmeticsRouter } from './cosmetics.js';
 
 const app    = express();
 const httpSv = createServer(app);
@@ -37,6 +38,22 @@ export const io = new Server(httpSv, {
 });
 
 export const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession:   false,
+      detectSessionInUrl: false,
+    },
+  },
+);
+
+// Separate client used ONLY for auth operations (signUp, signInWithPassword,
+// getUser, etc.) so those calls never pollute the main client's in-memory
+// session state, which would cause subsequent DB queries to run as the user
+// (with RLS) instead of as the service role.
+export const authClient = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   {
@@ -63,10 +80,11 @@ app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
 //  REST Routes 
-app.use('/api/auth',    authRouter);
-app.use('/api/profile', profileRouter);
-app.use('/api/stats',   statsRouter);
-app.use('/api/friends', friendsRouter);
+app.use('/api/auth',      authRouter);
+app.use('/api/profile',   profileRouter);
+app.use('/api/stats',     statsRouter);
+app.use('/api/friends',   friendsRouter);
+app.use('/api/cosmetics', cosmeticsRouter);
 
 // GET /api/leaderboard
 app.get('/api/leaderboard', async (req, res) => {
@@ -91,7 +109,7 @@ app.get('/api/leaderboard', async (req, res) => {
 
     let query = supabase
       .from('users')
-      .select('id, username, display_name, elo, xp, profiles(avatar_url, country), stats(versus_played, versus_won)', { count: 'exact' })
+      .select('id, username, display_name, elo, xp, profiles(avatar_url, country, equipped_border, equipped_title), stats(versus_played, versus_won)', { count: 'exact' })
       .order('elo', { ascending: false });
 
     if (q)    query = query.ilike('username', `%${q}%`);
@@ -104,19 +122,42 @@ app.get('/api/leaderboard', async (req, res) => {
     if (error) throw error;
 
     const entries = (data || []).map((u, i) => ({
-      rank:           offset + i + 1,
-      id:             u.id,
-      username:       u.username,
-      display_name:   u.display_name || '',
-      elo:            u.elo ?? 1000,
-      xp:             u.xp  ?? 0,
-      avatar_url:     u.profiles?.avatar_url || null,
-      country:        u.profiles?.country    || '',
-      versus_played:  u.stats?.versus_played || 0,
-      versus_won:     u.stats?.versus_won    || 0,
+      rank:            offset + i + 1,
+      id:              u.id,
+      username:        u.username,
+      display_name:    u.display_name || '',
+      elo:             u.elo ?? 1000,
+      xp:              u.xp  ?? 0,
+      avatar_url:      u.profiles?.avatar_url      || null,
+      country:         u.profiles?.country          || '',
+      equipped_border: u.profiles?.equipped_border  || null,
+      equipped_title:  u.profiles?.equipped_title   || null,
+      versus_played:   u.stats?.versus_played || 0,
+      versus_won:      u.stats?.versus_won    || 0,
     }));
 
-    res.json({ entries, total: count || 0, page, limit });
+    // Enrich with cosmetic metadata (name, rarity, icon) in one batch query
+    const cosSlugSet = new Set();
+    entries.forEach(e => {
+      if (e.equipped_border) cosSlugSet.add(e.equipped_border);
+      if (e.equipped_title)  cosSlugSet.add(e.equipped_title);
+    });
+    const cosMap = {};
+    if (cosSlugSet.size) {
+      let { data: cosRows } = await supabase.from('cosmetics').select('slug,name,rarity,icon').in('slug',[...cosSlugSet]);
+      if (!cosRows?.length) {
+        await new Promise(r => setTimeout(r, 400));
+        ({ data: cosRows } = await supabase.from('cosmetics').select('slug,name,rarity,icon').in('slug',[...cosSlugSet]));
+      }
+      for (const c of cosRows||[]) cosMap[c.slug] = c;
+    }
+    const enriched = entries.map(e => ({
+      ...e,
+      equipped_title_info:  e.equipped_title  ? (cosMap[e.equipped_title]  || null) : null,
+      equipped_border_info: e.equipped_border ? (cosMap[e.equipped_border] || null) : null,
+    }));
+
+    res.json({ entries: enriched, total: count || 0, page, limit });
   } catch (err) {
     console.error('leaderboard:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -214,8 +255,20 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-httpSv.listen(PORT, () => {
-  console.log(`Tetris backend running on :${PORT}`);
-  // Ensure avatar storage bucket exists (runs once, safe to re-run)
-  initAvatarBucket().catch(() => {});
-});
+
+// Warm up Supabase BEFORE accepting connections so the first real request
+// never hits a cold pool and gets empty results.
+async function start() {
+  try {
+    await supabase.from('cosmetics').select('slug').limit(1);
+    console.log('[db] connection pool warmed up');
+  } catch {
+    console.warn('[db] warm-up query failed — server will still start');
+  }
+  httpSv.listen(PORT, () => {
+    console.log(`Tetris backend running on :${PORT}`);
+    // Ensure avatar storage bucket exists (runs once, safe to re-run)
+    initAvatarBucket().catch(() => {});
+  });
+}
+start();

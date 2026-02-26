@@ -6,8 +6,9 @@
 // Middleware: requireAuth, optionalAuth
 
 import { Router }       from 'express';
-import { supabase }     from './index.js';
+import { supabase, authClient } from './index.js';
 import { getRank }      from './elo.js';
+import { grantRegistrationRewards } from './achievements.js';
 
 export const router = Router();
 
@@ -43,7 +44,7 @@ router.post('/register', async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Username already taken.' });
 
     // Use signUp (not admin.createUser) so Supabase sends the verification email via SMTP
-    const { data: authData, error: authErr } = await supabase.auth.signUp({
+    const { data: authData, error: authErr } = await authClient.auth.signUp({
       email,
       password,
       options: {
@@ -95,12 +96,14 @@ router.post('/session', async (req, res) => {
     const { token } = req.body || {};
     if (!token) return res.status(400).json({ error: 'Token required.' });
 
-    const { data, error } = await supabase.auth.getUser(token);
+    const { data, error } = await authClient.auth.getUser(token);
     if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired token.' });
     if (!data.user.email_confirmed_at) return res.status(403).json({ error: 'Email not yet verified. Please check your inbox.' });
 
     const { data: profile } = await supabase
       .from('users').select('id, username').eq('id', data.user.id).single();
+    // Grant default cosmetics + welcome-aboard achievement (safe to call multiple times — uses upsert)
+    grantRegistrationRewards(data.user.id, supabase).catch(err => console.error('[session] grantRegistrationRewards:', err));
     setCookie(res, req, token);
     res.json({ ok: true, userId: data.user.id, username: profile?.username || data.user.email });
   } catch (err) {
@@ -131,7 +134,7 @@ router.post('/login', async (req, res) => {
     email = authUser.user.email;
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
   if (error || !data?.session) return res.status(401).json({ error: 'Invalid username or password.' });
 
   const { data: profile } = await supabase.from('users').select('id, username').eq('id', data.user.id).single();
@@ -165,7 +168,7 @@ router.get('/me', async (req, res) => {
   const token = req.cookies?.sess;
   if (!token) return res.status(401).json({ error: 'Not authenticated.' });
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await authClient.auth.getUser(token);
   if (error || !data?.user) return res.status(401).json({ error: 'Session expired. Please log in again.' });
 
   const userId = data.user.id;
@@ -217,14 +220,20 @@ router.get('/me', async (req, res) => {
 export async function requireAuth(req, res, next) {
   const token = req.cookies?.sess || (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'Not authenticated.' });
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired session.' });
-
-  const { data: profile } = await supabase
-    .from('users').select('id, username, display_name, elo, xp').eq('id', data.user.id).single();
-  req.user = { ...data.user, ...profile, emailVerified: !!data.user.email_confirmed_at };
-  next();
+  try {
+    const { data, error } = await authClient.auth.getUser(token);
+    if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired session.' });
+    const { data: profile } = await supabase
+      .from('users').select('id, username, display_name, elo, xp').eq('id', data.user.id).single();
+    req.user = { ...data.user, ...profile, emailVerified: !!data.user.email_confirmed_at };
+    next();
+  } catch (err) {
+    if (err?.cause?.code === 'ECONNRESET' || err?.code === 'ECONNRESET' || err?.message?.includes('fetch failed')) {
+      return res.status(503).json({ error: 'Service temporarily unavailable. Please try again.' });
+    }
+    console.error('[requireAuth] unexpected error:', err);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
 }
 
 export function requireEmailVerified(req, res, next) {
@@ -237,11 +246,18 @@ export function requireEmailVerified(req, res, next) {
 export async function optionalAuth(req, _res, next) {
   const token = req.cookies?.sess || (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (token) {
-    const { data } = await supabase.auth.getUser(token);
-    if (data?.user) {
-      const { data: profile } = await supabase
-        .from('users').select('id, username, display_name, elo, xp').eq('id', data.user.id).single();
-      req.user = { ...data.user, ...profile };
+    try {
+      const { data } = await authClient.auth.getUser(token);
+      if (data?.user) {
+        const { data: profile } = await supabase
+          .from('users').select('id, username, display_name, elo, xp').eq('id', data.user.id).single();
+        req.user = { ...data.user, ...profile };
+      }
+    } catch (err) {
+      // Network blip — proceed as unauthenticated rather than crashing
+      if (!(err?.cause?.code === 'ECONNRESET' || err?.message?.includes('fetch failed'))) {
+        console.error('[optionalAuth] unexpected error:', err);
+      }
     }
   }
   next();

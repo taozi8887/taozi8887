@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { supabase } from './index.js';
 import { requireAuth, requireEmailVerified } from './auth.js';
+import { checkAndUpdateAchievements, updateDailyStreak } from './achievements.js';
 
 export const router = Router();
 
@@ -60,11 +61,27 @@ router.post('/solo', requireAuth, requireEmailVerified, async (req, res) => {
       t_spins = 0,   tSpins = 0,
       b2b_max = 0,   b2bMax = 0,
       max_combo = 0, maxCombo = 0,
+      // New extended fields
+      tspin_triples = 0, tspinTriples = 0,
+      no_hold_win = false, noHoldWin = false,
+      all_clear = false, allClear = false,
+      pieces_placed = 0, piecesPlaced = 0,
+      comeback_win = false, comebackWin = false,
+      finesse_perfect = false, finessePerfect = false,
+      garbage_sent = 0, garbageSent = 0,
+      rainbow = false,
     } = req.body || {};
-    const time_ms  = time_ms_snake || timeMs   || 0;
-    const t_spins_ = t_spins       || tSpins   || 0;
-    const b2b_max_ = b2b_max       || b2bMax   || 0;
-    const max_combo_ = max_combo   || maxCombo || 0;
+    const time_ms       = time_ms_snake  || timeMs         || 0;
+    const t_spins_      = t_spins        || tSpins         || 0;
+    const b2b_max_      = b2b_max        || b2bMax         || 0;
+    const max_combo_    = max_combo      || maxCombo       || 0;
+    const tspin_triples_= tspin_triples  || tspinTriples   || 0;
+    const no_hold_win_  = no_hold_win    || noHoldWin      || false;
+    const all_clear_    = all_clear      || allClear       || false;
+    const pieces_placed_= pieces_placed  || piecesPlaced   || 0;
+    const comeback_win_ = comeback_win   || comebackWin    || false;
+    const finesse_perf_ = finesse_perfect|| finessePerfect || false;
+    const garbage_sent_ = garbage_sent   || garbageSent    || 0;
 
     const xpGained = calcXpGainSolo({ lines, tetrises, tSpins: t_spins_, durationMs: time_ms, mode });
 
@@ -112,12 +129,38 @@ router.post('/solo', requireAuth, requireEmailVerified, async (req, res) => {
     if (b2b_max_   > (cur.b2b_max    || 0)) updates.b2b_max     = b2b_max_;
     if (score     > (cur.solo_best_score || 0)) updates.solo_best_score = score;
 
+    // Extended tracking columns (added by migration 002)
+    updates.tspin_triples = (cur.tspin_triples || 0) + tspin_triples_;
+    updates.pieces_placed = (cur.pieces_placed || 0) + pieces_placed_;
+    if (finesse_perf_)  updates.finesse_perfect_games = (cur.finesse_perfect_games || 0) + 1;
+    if (no_hold_win_)   updates.no_hold_wins           = (cur.no_hold_wins          || 0) + 1;
+    if (comeback_win_)  updates.comeback_wins          = (cur.comeback_wins         || 0) + 1;
+    if (rainbow)        updates.rainbow_games          = (cur.rainbow_games         || 0) + 1;
+    if (garbage_sent_ > (cur.garbage_sent_max_single || 0)) updates.garbage_sent_max_single = garbage_sent_;
+    if (mode === 'sprint' && all_clear_) updates.all_clear_sprint = (cur.all_clear_sprint || 0) + 1;
+
     await Promise.all([
       supabase.from('stats').upsert({ user_id: userId, ...updates }),
       supabase.from('users').update({ xp: newXp, updated_at: new Date().toISOString() }).eq('id', userId),
     ]);
 
-    res.json({ ok: true, xpGained, xp: newXp, level: newLvl, leveledUp: newLvl > oldLvl });
+    // Update daily streak then check achievements (fire-and-forget style but await for newly earned list)
+    await updateDailyStreak(userId, supabase);
+    const { newlyEarned } = await checkAndUpdateAchievements(userId, supabase, {
+      mode,
+      isWinner:      true,
+      garbageSent:   garbage_sent_,
+      noHold:        no_hold_win_,
+      allClear:      all_clear_,
+      rainbow,
+      piecesPlaced:  pieces_placed_,
+      comebackWin:   comeback_win_,
+      finessePerfect: finesse_perf_,
+      tspinTriples:  tspin_triples_,
+      sprintTimeMs:  mode === 'sprint' ? time_ms : 0,
+    }).catch(err => { console.error('[stats/solo] achievement check:', err); return { newlyEarned: [] }; });
+
+    res.json({ ok: true, xpGained, xp: newXp, level: newLvl, leveledUp: newLvl > oldLvl, newlyEarned });
   } catch (err) {
     console.error('POST /api/stats/solo:', err);
     res.status(500).json({ error: 'Server error.' });

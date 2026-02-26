@@ -1,0 +1,40 @@
+/**
+ * run-migration-004.js
+ * Inserts Grandmaster rank cosmetics and achievement.
+ * Run from backend folder: node scripts/run-migration-004.js
+ */
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
+
+async function run() {
+  const cosmetics = [
+    { slug: 'border-grandmaster',       type: 'border', name: 'Grandmaster',        rarity: 'legendary', description: 'Dual-spinning crown ring of violet flame and molten gold.', icon: '👑' },
+    { slug: 'title-grandmaster-gambit', type: 'title',  name: 'Grandmaster Gambit', rarity: 'legendary', description: null, icon: '👑' },
+  ];
+
+  const { error: ce } = await supabase.from('cosmetics').upsert(cosmetics, { onConflict: 'slug', ignoreDuplicates: true });
+  if (ce) { console.error('cosmetics insert failed:', ce.message); } else { console.log('✅ 2 cosmetics inserted/skipped'); }
+
+  const achievements = [
+    {
+      slug: 'grandmaster-gambit',
+      name: 'Grandmaster Gambit',
+      description: 'Reach Grandmaster rank on the ranked ladder.',
+      rarity: 'legendary',
+      icon: '👑',
+      progress_total: 1,
+      reward_border_slug: 'border-grandmaster',
+      reward_title_slug:  'title-grandmaster-gambit',
+    },
+  ];
+
+  const { error: ae } = await supabase.from('achievements').upsert(achievements, { onConflict: 'slug', ignoreDuplicates: true });
+  if (ae) { console.error('achievements insert failed:', ae.message); } else { console.log('✅ 1 achievement inserted/skipped'); }
+}
+
+run().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

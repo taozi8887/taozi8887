@@ -3,6 +3,7 @@
 // Handles one multiplayer room.
 
 import { calcElo } from './elo.js';
+import { checkAndUpdateAchievements, updateDailyStreak } from './achievements.js';
 
 const ROOM_TIMEOUT_MS       = 5 * 60 * 1000;
 const START_COUNTDOWN_MS    = 1000;
@@ -119,7 +120,11 @@ export class GameRoom {
       maxCombo:     0,
       b2bMax:       0,
       garbageSent:  0,
+      garbageReceived: 0,
       pendingGarbage: 0,
+      piecesPlaced: 0,
+      tSpinTriples: 0,
+      wasCritical:  false,
       board:        null,
       combo:        -1,
       b2bChain:     -1,
@@ -193,6 +198,8 @@ export class GameRoom {
       // Accumulate stats
       if (linesCleared === 4 && !isRealTSpin) player.tetrises++;
       if (isRealTSpin && linesCleared > 0)   player.tSpins++;
+      if (isRealTSpin && linesCleared >= 3)   player.tSpinTriples++;
+      player.piecesPlaced++;
       if (player.combo > player.maxCombo)    player.maxCombo = player.combo;
       if (player.b2bChain > player.b2bMax)   player.b2bMax  = player.b2bChain;
 
@@ -305,13 +312,22 @@ export class GameRoom {
 
     else if (eventType === 'garbageApplied') {
       // Client sends `count`, normalise to `lines`
-      player.pendingGarbage = Math.max(0, player.pendingGarbage - (data.lines ?? data.count ?? 0));
+      const applied = data.lines ?? data.count ?? 0;
+      player.pendingGarbage = Math.max(0, player.pendingGarbage - applied);
+      if (applied > 0) player.garbageReceived += applied;
     }
 
     else if (eventType === 'boardHeartbeat') {
       // Client sends `snapshot`, server also accepts `board`
       const board = data.board ?? data.snapshot;
       player.board = board;
+      // Track if board ever reached critical height (row 18+ = top 2 rows)
+      if (Array.isArray(board) && board.length >= 18) {
+        const topRows = board.slice(0, 2);
+        if (topRows.some(row => Array.isArray(row) ? row.some(c => c !== 0 && c !== null) : false)) {
+          player.wasCritical = true;
+        }
+      }
       // Forward to opponent for live board mirroring
       const opp = this._opponent(player.id);
       if (opp) {
@@ -410,7 +426,9 @@ export class GameRoom {
     for (const [, p] of this.players) {
       p.over = false; p.score = 0; p.lines = 0;
       p.tetrises = 0; p.tSpins = 0; p.maxCombo = 0; p.b2bMax = 0;
-      p.garbageSent = 0; p.pendingGarbage = 0; p.board = null;
+      p.garbageSent = 0; p.garbageReceived = 0; p.pendingGarbage = 0;
+      p.piecesPlaced = 0; p.tSpinTriples = 0; p.wasCritical = false;
+      p.board = null;
       p.combo = -1; p.b2bChain = -1;
     }
 
@@ -606,7 +624,7 @@ export class GameRoom {
     inc.games_played   = 1;
     inc.total_lines    = p.lines;
     inc.total_score    = p.score;
-    inc.total_pieces   = 0; // not tracked per-piece here
+    inc.total_pieces   = p.piecesPlaced || 0;
     inc.tetrises       = p.tetrises;
     inc.t_spins        = p.tSpins;
     inc.time_played_ms = duration;
@@ -688,6 +706,61 @@ export class GameRoom {
     }
 
     await this.supabase.from('stats').upsert({ user_id: p.userId, ...updates });
+
+    // ── Extended stat columns (migration 002) ───────────────────────────────
+    // Re-fetch updated row to avoid races with bests logic above
+    const { data: updated } = await this.supabase.from('stats').select(
+      'win_streak_current, win_streak_max, tspin_triples, pieces_placed, garbage_sent_max_single, comeback_wins, zero_garbage_wins'
+    ).eq('user_id', p.userId).single();
+    const u = updated || {};
+
+    const extUpdates = {
+      tspin_triples:  (u.tspin_triples  || 0) + (p.tSpinTriples || 0),
+      pieces_placed:  (u.pieces_placed  || 0) + (p.piecesPlaced || 0),
+    };
+    if ((p.garbageSent || 0) > (u.garbage_sent_max_single || 0)) {
+      extUpdates.garbage_sent_max_single = p.garbageSent;
+    }
+
+    // Win/loss streak
+    if (isWinner) {
+      const newStreak = (u.win_streak_current || 0) + 1;
+      extUpdates.win_streak_current = newStreak;
+      extUpdates.win_streak_max = Math.max(newStreak, u.win_streak_max || 0);
+    } else {
+      extUpdates.win_streak_current = 0;
+    }
+
+    // Comeback win: was critical board height AND won
+    if (isWinner && p.wasCritical) {
+      extUpdates.comeback_wins = (u.comeback_wins || 0) + 1;
+    }
+
+    // Zero-garbage win: won in versus mode without receiving any garbage
+    if (isWinner && this.mode === 'versus' && (p.garbageReceived || 0) === 0) {
+      extUpdates.zero_garbage_wins = (u.zero_garbage_wins || 0) + 1;
+    }
+
+    await this.supabase.from('stats').update(extUpdates).eq('user_id', p.userId);
+
+    // ── Check achievements ───────────────────────────────────────────────────
+    try {
+      await updateDailyStreak(p.userId, this.supabase);
+      const { newlyEarned } = await checkAndUpdateAchievements(p.userId, this.supabase, {
+        mode:          this.mode,
+        isWinner,
+        garbageSent:   p.garbageSent || 0,
+        piecesPlaced:  p.piecesPlaced || 0,
+        tspinTriples:  p.tSpinTriples || 0,
+        comebackWin:   isWinner && p.wasCritical,
+        garbageReceived: p.garbageReceived || 0,
+      });
+      if (newlyEarned.length > 0) {
+        p.socket.emit('achievementsUnlocked', { achievements: newlyEarned });
+      }
+    } catch (err) {
+      console.error('[_updateStats] achievement check:', err);
+    }
   }
 
   //  Helpers 
